@@ -2,41 +2,89 @@
 
 .page-about {
   min-height: 100vh;
-  padding-top: 80px;
   background: var(--home-bg);
+  padding-top: 80px;
 }
 
-.page-about .hero {
-  max-width: 800px;
-  margin: 0 auto var(--spacing-2xl);
-  padding: var(--spacing-2xl) var(--spacing-xl);
-  text-align: center;
-}
-
-.page-about .stats-strip {
-  max-width: 1000px;
-}
-
-.section {
-  max-width: 800px;
-  margin: 0 auto var(--spacing-2xl);
+.about-container {
+  max-width: 1400px;
+  margin: 0 auto;
   padding: var(--spacing-xl);
-  background: var(--home-surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--home-border);
 }
 
-.section-tag {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--accent-blue);
+.about-hero {
+  text-align: center;
+  margin-bottom: var(--spacing-4xl);
+}
+
+.about-title {
+  font-size: clamp(var(--text-3xl), 6vw, var(--text-5xl));
+  font-weight: var(--font-bold);
+  letter-spacing: -0.03em;
   margin-bottom: var(--spacing-md);
 }
 
-.section-content p {
+.about-subtitle {
+  font-size: var(--text-lg);
   color: var(--home-muted);
-  line-height: 1.7;
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.about-section {
+  margin-bottom: var(--spacing-3xl);
+}
+
+.about-section-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--spacing-lg);
+}
+
+.about-section-content {
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--home-muted);
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.about-card {
+  background: var(--home-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--home-border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-2xl);
+  transition: all var(--transition-normal);
+}
+
+.about-card:hover {
+  border-color: var(--home-border-strong);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.about-card-icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.8;
+}
+
+.about-card-title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--home-text);
+  margin-bottom: var(--spacing-sm);
+}
+
+.about-card-description {
+  font-size: var(--text-base);
+  color: var(--home-muted);
+  line-height: 1.6;
 }

@@ -11,7 +11,7 @@ const routes = {
   '#/creators': 'creators'
 };
 
-let currentRoute = 'home';
+let currentRoute = null;
 let currentParams = {};
 
 function parseHash() {

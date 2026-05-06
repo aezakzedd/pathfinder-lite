@@ -55,14 +55,5 @@ export function renderNavbar() {
     </div>
   `;
   
-  // Add click handlers
-  nav.querySelectorAll('[data-navigate]').forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-      const path = button.getAttribute('data-navigate');
-      navigateTo(path);
-    });
-  });
-  
   return nav;
 }
