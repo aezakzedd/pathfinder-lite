@@ -1,5 +1,5 @@
 // Itinerary page module
-import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState } from '../map/liteMap.js';
+import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState } from '../map/leafletOfflineMap.js';
 import { askPathfinder } from '../api.js';
 import { getState as getAppState, setState as setAppState } from '../state.js';
 import {

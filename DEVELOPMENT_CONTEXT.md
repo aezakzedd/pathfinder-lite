@@ -16,7 +16,7 @@
 - **JavaScript:** Vanilla JavaScript ES modules (no frameworks)
 - **Styling:** Plain CSS with CSS variables (no Tailwind)
 - **Routing:** Hash-based router (custom implementation)
-- **Map:** Local SVG/GeoJSON renderer (no Leaflet or MapLibre)
+- **Map:** Leaflet offline renderer with local GeoJSON fallback (no online tiles or MapLibre)
 - **State Management:** localStorage/sessionStorage with custom state modules
 - **Backend:** External FastAPI backend on localhost (not modified in this project)
 - **PDF Generation:** Backend-generated only (no frontend PDF rendering)
@@ -200,12 +200,22 @@
 - Expanded destination details with distance from hub, cost, best time, exposure, and add/remove state
 - Kept the lightweight local SVG/GeoJSON renderer and avoided new dependencies
 
+**Focused Phase: Leaflet Offline Map Restoration**
+- Added `src/map/leafletOfflineMap.js` as the active map adapter while keeping the previous `liteMap.js` file as fallback/reference
+- Reintroduced Leaflet for real panning, zooming, lat/lng marker placement, max-bounds focus, and polyline route rendering
+- Kept the map fully offline: local `/tiles/{z}/{x}/{y}.png` are used only if actual image tiles exist, otherwise the map falls back to local GeoJSON polygons/lines with a sea-colored base
+- Rendered `public/data/catanduanes_datafile.geojson` polygon/line features through Leaflet canvas and destination points as custom div markers
+- Preserved category colors, selected marker highlight, featured/top-10 marker styling, added-marker state, hub marker, popup Add/Remove state, route polyline, and dashed preview polyline
+- Added `requestRouteGeometry(waypoints)` placeholder for future local `POST /api/route` FastAPI integration; no public routing servers are called
+- Added minimal local Leaflet CSS in `itinerary.css` instead of loading any CDN stylesheet
+
 ## Current Known Implementation
 
 **Working Features:**
 - Home page with full layout and animations
 - About, Contact, and Creators pages are polished with kiosk-consistent styling
-- Itinerary page with local SVG/GeoJSON Catanduanes map
+- Itinerary page with offline Leaflet Catanduanes map
+- Leaflet panning and zooming are restored
 - Itinerary map filters markers by selected activities and budget
 - Itinerary map shows selected start hub, current-day route, preview route, selected marker highlight, and featured markers
 - First visit to itinerary opens setup overlay until setup is completed
@@ -232,7 +242,7 @@
 ## Current Dependency State
 
 **Production Dependencies:**
-- None
+- `leaflet` (^1.9.4) - offline interactive map rendering
 
 **Dev Dependencies:**
 - `vite` (^8.0.10) - Build tool
@@ -242,15 +252,16 @@
 
 ## Current Bundle Size
 
-Latest build (Restore Original Pathfinder Map Features Lightweight):
+Latest build (Leaflet Offline Map Restoration):
 - HTML: 0.56 kB
-- Main CSS: 74.27 kB
-- Main JS: 84.74 kB
+- Main CSS: 79.54 kB
+- Main JS: 85.66 kB
+- Leaflet async JS chunk: 149.47 kB
 - Lazy route CSS chunks: 13.21 kB total
 - Lazy route JS chunks: 18.55 kB total
-- Full built JS/CSS assets: ~190.77 kB
+- Full built JS/CSS assets: ~346.43 kB
 
-Initial itinerary payload remains significantly smaller than the previous ~308.08 kB bundle, excluding the offline GeoJSON data asset.
+Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
 ## Important Technical Notes
 
@@ -262,9 +273,11 @@ Initial itinerary payload remains significantly smaller than the previous ~308.0
 - Itinerary setup state is stored inside `pathfinder-lite-itinerary-state` under `setup`
 
 **Map Implementation:**
-- Lightweight map logic is in `src/map/liteMap.js`
+- Active offline Leaflet map logic is in `src/map/leafletOfflineMap.js`
+- Previous lightweight SVG map logic remains in `src/map/liteMap.js` as fallback/reference
 - Local map geometry is in `public/data/catanduanes_datafile.geojson`
-- The map no longer requests external tiles and no longer depends on Leaflet
+- The map checks local `/tiles/{z}/{x}/{y}.png` candidates and only enables tiles when the response is an actual image
+- If no local tiles are present, Leaflet renders the local GeoJSON polygon/line layer over a local sea-colored base
 - The renderer preserves the same itinerary events for destination selection and Add to Trip
 - Map feature utilities are in `src/utils/distance.js`, `src/utils/generateItinerary.js`, `src/utils/optimize.js`, and `src/utils/visualRoute.js`
 
