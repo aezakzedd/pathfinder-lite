@@ -119,11 +119,32 @@
 - Dead code removal
 - Build verification
 
+**Phase 10: About, Contact, Creators Polish**
+- Completed About page content and responsive styling
+- Completed Contact page channel cards and feedback checklist
+- Completed Creators page team presentation and credits band
+- Preserved vanilla JS/CSS stack and avoided new dependencies
+
+**Focused Phase: Original Pathfinder Itinerary Setup Design Match**
+- Added setup-first itinerary behavior with persistent localStorage setup state
+- Added original-inspired floating setup overlay over the visible Leaflet map
+- Added top-right Setup control to reopen setup anytime
+- Added Virac and San Andres start point selector
+- Added native date input styled as the setup date field
+- Added Water, Outdoor, Views, Heritage, Dining, and Stay activity buttons
+- Added budget selector with <=PHP200, PHP200-PHP600, and PHP600+ labels
+- Added Done validation requiring start point, date, and at least one activity
+- Preserved existing map, markers, destination preview, Add to Trip, duplicate prevention, day tabs, stop controls, time wallet, chat, export, route cleanup, and storage behavior
+
 ## Current Known Implementation
 
 **Working Features:**
 - Home page with full layout and animations
+- About, Contact, and Creators pages are polished with kiosk-consistent styling
 - Itinerary page with real Leaflet map
+- First visit to itinerary opens setup overlay until setup is completed
+- Setup completion persists in localStorage and can be reopened from the top-right Setup control
+- Setup overlay validates start point, trip date, and activities before enabling Done
 - Destination marker click updates preview card
 - Add to Trip button adds to active day
 - Duplicate stop prevention
@@ -155,10 +176,11 @@
 
 ## Current Bundle Size
 
-Latest build (Phase 9):
-- CSS: ~67.78 kB
-- JS: ~202.96 kB
-- Total: ~270 kB
+Latest build (Original Pathfinder Itinerary Setup Design Match):
+- HTML: 0.56 kB
+- CSS: 76.57 kB
+- JS: 218.46 kB
+- Total: ~295.59 kB
 
 Still acceptable for lightweight Raspberry Pi target.
 
@@ -169,6 +191,7 @@ Still acceptable for lightweight Raspberry Pi target.
 - Itinerary cleanup is exported from `src/pages/itinerary.js` as `cleanupItinerary()`
 - Chat state is in `src/state/chatStore.js`
 - Itinerary state is in `src/state/itineraryStore.js`
+- Itinerary setup state is stored inside `pathfinder-lite-itinerary-state` under `setup`
 
 **Map Implementation:**
 - Leaflet map logic is in `src/map/leafletMap.js`
@@ -185,12 +208,9 @@ Still acceptable for lightweight Raspberry Pi target.
 - Itinerary export payload stored in `pathfinder-lite-export-payload` localStorage key
 - Chat messages stored in `pathfinder-lite-chat-messages` sessionStorage key
 - Itinerary state stored in `pathfinder-lite-itinerary-state` localStorage key
+- Setup completion, start point, trip date, activities, and budget are stored in itinerary state
 
 ## Remaining Work
-
-**Phase 10: About, Contact, Creators Polish**
-- Complete placeholder pages with proper content
-- Ensure consistent styling
 
 **Phase 11: Asset Optimization**
 - Convert images to WebP/AVIF

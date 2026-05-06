@@ -3,6 +3,15 @@
 
 const STORAGE_KEY = 'pathfinder-lite-itinerary-state';
 
+const DEFAULT_TRIP_SETUP = {
+  startPoint: '',
+  tripDate: '',
+  activities: [],
+  budget: 'low',
+  completed: false,
+  completedAt: null
+};
+
 const DEFAULT_STATE = {
   selectedDestination: null,
   activeDay: 1,
@@ -11,6 +20,7 @@ const DEFAULT_STATE = {
     2: [],
     3: []
   },
+  setup: { ...DEFAULT_TRIP_SETUP },
   dayCapacity: 8 // 8 hours per day
 };
 
@@ -28,6 +38,7 @@ function loadState() {
       if (!state.days) {
         state.days = { 1: [], 2: [], 3: [] };
       }
+      state.setup = normalizeTripSetup(state.setup);
     }
   } catch (error) {
     console.error('Error loading itinerary state:', error);
@@ -47,6 +58,70 @@ function saveState() {
 // Notify listeners of state changes
 function notifyListeners() {
   listeners.forEach(listener => listener(state));
+}
+
+function normalizeTripSetup(setup = {}) {
+  return {
+    ...DEFAULT_TRIP_SETUP,
+    ...setup,
+    activities: Array.isArray(setup.activities) ? setup.activities : []
+  };
+}
+
+function getTripSetup() {
+  return {
+    ...state.setup,
+    activities: [...state.setup.activities]
+  };
+}
+
+function updateTripSetup(updates = {}) {
+  state.setup = normalizeTripSetup({
+    ...state.setup,
+    ...updates,
+    completed: false,
+    completedAt: null
+  });
+  saveState();
+  notifyListeners();
+}
+
+function toggleTripSetupActivity(activity) {
+  const activities = new Set(state.setup.activities);
+  if (activities.has(activity)) {
+    activities.delete(activity);
+  } else {
+    activities.add(activity);
+  }
+  updateTripSetup({ activities: [...activities] });
+}
+
+function setTripSetupBudget(budget) {
+  updateTripSetup({ budget });
+}
+
+function isTripSetupComplete(setup = state.setup) {
+  return Boolean(
+    setup.startPoint &&
+    setup.tripDate &&
+    Array.isArray(setup.activities) &&
+    setup.activities.length > 0
+  );
+}
+
+function completeTripSetup() {
+  if (!isTripSetupComplete(state.setup)) {
+    return { success: false, message: 'Complete start point, date, and activities first' };
+  }
+
+  state.setup = normalizeTripSetup({
+    ...state.setup,
+    completed: true,
+    completedAt: new Date().toISOString()
+  });
+  saveState();
+  notifyListeners();
+  return { success: true, setup: getTripSetup() };
 }
 
 // Get selected destination
@@ -211,7 +286,11 @@ function getStopCount(day = null) {
 
 // Reset itinerary state
 function resetItinerary() {
-  state = { ...DEFAULT_STATE };
+  state = {
+    ...DEFAULT_STATE,
+    days: { 1: [], 2: [], 3: [] },
+    setup: { ...DEFAULT_TRIP_SETUP }
+  };
   saveState();
   notifyListeners();
 }
@@ -281,6 +360,12 @@ export {
   getTimeWalletInfo,
   isDestinationInDay,
   getStopCount,
+  getTripSetup,
+  updateTripSetup,
+  toggleTripSetupActivity,
+  setTripSetupBudget,
+  isTripSetupComplete,
+  completeTripSetup,
   resetItinerary,
   clearItinerary,
   getAllStops,

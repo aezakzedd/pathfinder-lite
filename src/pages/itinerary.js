@@ -1,5 +1,5 @@
 // Itinerary page module
-import { initMap, zoomIn, zoomOut, resetView, destroyMap } from '../map/leafletMap.js';
+import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize } from '../map/leafletMap.js';
 import { askPathfinder } from '../api.js';
 import {
   getSelectedDestination,
@@ -15,6 +15,12 @@ import {
   getTimeWalletInfo,
   isDestinationInDay,
   getStopCount,
+  getTripSetup,
+  updateTripSetup,
+  toggleTripSetupActivity,
+  setTripSetupBudget,
+  isTripSetupComplete,
+  completeTripSetup,
   subscribe,
   getAllStops,
   clearItinerary
@@ -31,6 +37,23 @@ let stateUnsubscribe = null;
 let chatUnsubscribe = null;
 let eventListeners = [];
 let isSending = false;
+let setupOverlayOpen = false;
+
+const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
+const budgetOptions = [
+  { value: 'low', label: '&le;&#8369;200' },
+  { value: 'medium', label: '&#8369;200-&#8369;600' },
+  { value: 'high', label: '&#8369;600+' }
+];
+
+const setupActivityIcons = {
+  Water: '<path d="M8 17a4 4 0 0 0 8 0c0-3-4-7-4-7s-4 4-4 7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /><path d="M15 6h2l2 4M13 6h-2l-2 4M14 3l-2 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />',
+  Outdoor: '<path d="M12 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" stroke="currentColor" stroke-width="1.8" /><path d="M7 21l2-7 3-2 3 2 2 7M9 10l-3 3M15 10l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />',
+  Views: '<path d="m4 19 5-9 4 6 2-3 5 6H4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /><path d="M14 7h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round" />',
+  Heritage: '<path d="M5 9h14M7 9v10M17 9v10M4 19h16M6 5h12l1 4H5l1-4Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />',
+  Dining: '<path d="M7 3v8M10 3v8M7 7h3M8.5 11v10M16 3v18M14 3v7a2 2 0 0 0 2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />',
+  Stay: '<path d="M4 20V9l8-5 8 5v11M8 20v-7h8v7M10 20v-3h4v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />'
+};
 
 // Category emoji mapping
 const categoryEmojis = {
@@ -43,8 +66,11 @@ const categoryEmojis = {
 };
 
 export function renderItinerary(container) {
+  const setup = getTripSetup();
+  setupOverlayOpen = !setup.completed || !isTripSetupComplete(setup);
+
   container.innerHTML = `
-    <div class="page page-itinerary">
+    <div class="page page-itinerary ${setupOverlayOpen ? 'setup-active' : ''}">
       <div class="itinerary-container">
         <!-- Grid Overlay -->
         <div class="grid-overlay"></div>
@@ -117,6 +143,7 @@ export function renderItinerary(container) {
           
           <!-- Real Leaflet Map -->
           <div id="pathfinder-map" class="map-placeholder"></div>
+          <div class="setup-map-dim" id="setup-map-dim" aria-hidden="true"></div>
           
           <!-- Map Controls -->
           <div class="map-controls">
@@ -150,6 +177,32 @@ export function renderItinerary(container) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                 <path d="M3 3v5h5" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="setup-control-bar" aria-label="Map setup controls">
+            <button class="setup-icon-btn" type="button" aria-label="Preview map">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
+              </svg>
+            </button>
+            <button class="setup-icon-btn" type="button" aria-label="Map display">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </button>
+            <button class="setup-open-btn" id="open-setup-btn" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              Setup
+            </button>
+            <button class="setup-icon-btn setup-home-control" type="button" data-navigate="#/" aria-label="Go to home">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3V10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
               </svg>
             </button>
           </div>
@@ -220,6 +273,68 @@ export function renderItinerary(container) {
               <button class="btn-primary">Apply Filters</button>
             </div>
           </div>
+
+          <section class="trip-setup-overlay" id="trip-setup-overlay" aria-label="Trip setup">
+            <div class="trip-setup-card" role="dialog" aria-modal="true" aria-labelledby="trip-setup-title">
+              <div class="trip-setup-main">
+                <h2 id="trip-setup-title">START POINT AND TRIP DATE</h2>
+
+                <label class="setup-field setup-select-field" for="setup-start-point">
+                  <span class="setup-field-icon" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 21s6-5.1 6-10A6 6 0 0 0 6 11c0 4.9 6 10 6 10Z" stroke="currentColor" stroke-width="1.8" />
+                      <circle cx="12" cy="11" r="2" stroke="currentColor" stroke-width="1.8" />
+                    </svg>
+                  </span>
+                  <select id="setup-start-point" class="setup-input setup-select" aria-label="Start point">
+                    <option value="">Set start point here</option>
+                    <option value="Virac">Virac</option>
+                    <option value="San Andres">San Andres</option>
+                  </select>
+                </label>
+
+                <label class="setup-field" for="setup-trip-date">
+                  <span class="setup-field-icon" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                      <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8" />
+                      <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                  </span>
+                  <input id="setup-trip-date" class="setup-input setup-date" type="date" aria-label="Trip date" />
+                </label>
+
+                <div class="setup-budget-group">
+                  <h3>BUDGET SLIDER</h3>
+                  <input id="setup-budget-range" class="setup-budget-range" type="range" min="0" max="2" step="1" value="0" aria-label="Budget range" />
+                  <div class="setup-budget-options" id="setup-budget-options" aria-label="Budget options">
+                    ${budgetOptions.map(option => `
+                      <button class="setup-budget-option" type="button" data-budget="${option.value}">
+                        ${option.label}
+                      </button>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+
+              <aside class="setup-activity-panel">
+                <h3>CHOOSE ACTIVITIES</h3>
+                <div class="setup-activity-list" id="setup-activity-list">
+                  ${setupActivities.map(activity => `
+                    <button class="setup-activity-btn" type="button" data-activity="${activity}">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        ${setupActivityIcons[activity]}
+                      </svg>
+                      <span>${activity}</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </aside>
+
+              <div class="setup-card-footer">
+                <button class="setup-done-btn" id="setup-done-btn" type="button" disabled>Done</button>
+              </div>
+            </div>
+          </section>
           
           <!-- Destination Preview Card -->
           <div class="destination-preview-card" id="destination-preview">
@@ -299,6 +414,7 @@ function initializeUI() {
     renderItinerarySpots();
     renderTimeWallet();
     updateDayTabs();
+    renderTripSetup();
   });
   
   // Subscribe to chat changes
@@ -321,6 +437,10 @@ function initializeUI() {
   
   // Setup export handlers
   setupExportHandlers();
+
+  // Setup trip setup overlay handlers
+  setupTripSetupHandlers();
+  renderTripSetup();
   
   // Setup custom event listener for select-destination from map markers
   const selectDestinationHandler = (e) => {
@@ -347,6 +467,7 @@ function setupMapControls() {
   const resetBtn = document.getElementById('reset-btn');
   const locateBtn = document.getElementById('locate-btn');
   const filterBtn = document.getElementById('filter-btn');
+  const openSetupBtn = document.getElementById('open-setup-btn');
 
   if (zoomInBtn) {
     const clickHandler = () => zoomIn();
@@ -376,16 +497,145 @@ function setupMapControls() {
 
   if (filterBtn) {
     const clickHandler = () => {
-      console.log('Filter - to be implemented');
+      openTripSetup();
     };
     filterBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: filterBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (openSetupBtn) {
+    const clickHandler = () => openTripSetup();
+    openSetupBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: openSetupBtn, event: 'click', handler: clickHandler });
   }
 }
 
 function setupMapMarkerHandlers() {
   // Marker click events are handled by markers.js which dispatch custom events
   // No additional setup needed here
+}
+
+function setupTripSetupHandlers() {
+  const startSelect = document.getElementById('setup-start-point');
+  const dateInput = document.getElementById('setup-trip-date');
+  const budgetRange = document.getElementById('setup-budget-range');
+  const budgetButtons = document.querySelectorAll('.setup-budget-option');
+  const activityButtons = document.querySelectorAll('.setup-activity-btn');
+  const doneBtn = document.getElementById('setup-done-btn');
+
+  if (startSelect) {
+    const changeHandler = () => {
+      updateTripSetup({ startPoint: startSelect.value });
+    };
+    startSelect.addEventListener('change', changeHandler);
+    eventListeners.push({ element: startSelect, event: 'change', handler: changeHandler });
+  }
+
+  if (dateInput) {
+    const changeHandler = () => {
+      updateTripSetup({ tripDate: dateInput.value });
+    };
+    dateInput.addEventListener('change', changeHandler);
+    eventListeners.push({ element: dateInput, event: 'change', handler: changeHandler });
+  }
+
+  if (budgetRange) {
+    const inputHandler = () => {
+      const option = budgetOptions[Number(budgetRange.value)] || budgetOptions[0];
+      setTripSetupBudget(option.value);
+    };
+    budgetRange.addEventListener('input', inputHandler);
+    eventListeners.push({ element: budgetRange, event: 'input', handler: inputHandler });
+  }
+
+  budgetButtons.forEach(button => {
+    const clickHandler = () => {
+      setTripSetupBudget(button.dataset.budget);
+    };
+    button.addEventListener('click', clickHandler);
+    eventListeners.push({ element: button, event: 'click', handler: clickHandler });
+  });
+
+  activityButtons.forEach(button => {
+    const clickHandler = () => {
+      toggleTripSetupActivity(button.dataset.activity);
+    };
+    button.addEventListener('click', clickHandler);
+    eventListeners.push({ element: button, event: 'click', handler: clickHandler });
+  });
+
+  if (doneBtn) {
+    const clickHandler = () => {
+      const result = completeTripSetup();
+      if (result.success) {
+        setupOverlayOpen = false;
+        renderTripSetup();
+      }
+    };
+    doneBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: doneBtn, event: 'click', handler: clickHandler });
+  }
+}
+
+function openTripSetup() {
+  setupOverlayOpen = true;
+  renderTripSetup();
+}
+
+function renderTripSetup() {
+  const page = document.querySelector('.page-itinerary');
+  const overlay = document.getElementById('trip-setup-overlay');
+  const dim = document.getElementById('setup-map-dim');
+  const startSelect = document.getElementById('setup-start-point');
+  const dateInput = document.getElementById('setup-trip-date');
+  const budgetRange = document.getElementById('setup-budget-range');
+  const budgetButtons = document.querySelectorAll('.setup-budget-option');
+  const activityButtons = document.querySelectorAll('.setup-activity-btn');
+  const doneBtn = document.getElementById('setup-done-btn');
+
+  if (!page || !overlay) return;
+
+  const setup = getTripSetup();
+  const isValid = isTripSetupComplete(setup);
+  const isOpen = setupOverlayOpen || !setup.completed || !isValid;
+  setupOverlayOpen = isOpen;
+
+  page.classList.toggle('setup-active', isOpen);
+  overlay.classList.toggle('setup-visible', isOpen);
+  overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  if (dim) dim.classList.toggle('setup-map-dim-visible', isOpen);
+
+  if (startSelect && startSelect.value !== setup.startPoint) {
+    startSelect.value = setup.startPoint;
+  }
+
+  if (dateInput && dateInput.value !== setup.tripDate) {
+    dateInput.value = setup.tripDate;
+  }
+
+  const budgetIndex = Math.max(0, budgetOptions.findIndex(option => option.value === setup.budget));
+  if (budgetRange && Number(budgetRange.value) !== budgetIndex) {
+    budgetRange.value = String(budgetIndex);
+  }
+
+  budgetButtons.forEach(button => {
+    button.classList.toggle('setup-budget-selected', button.dataset.budget === setup.budget);
+  });
+
+  activityButtons.forEach(button => {
+    const selected = setup.activities.includes(button.dataset.activity);
+    button.classList.toggle('setup-activity-selected', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+
+  if (doneBtn) {
+    doneBtn.disabled = !isValid;
+    doneBtn.classList.toggle('setup-done-ready', isValid);
+  }
+
+  if (mapInitialized) {
+    window.requestAnimationFrame(() => invalidateSize());
+  }
 }
 
 function setupDayTabs() {
