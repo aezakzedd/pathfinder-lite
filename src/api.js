@@ -59,6 +59,11 @@ async function askChatbot(question) {
   return post('/ask', { question });
 }
 
+// Alias for clarity in itinerary context
+async function askPathfinder(message) {
+  return post('/ask', { question: message });
+}
+
 async function getPdfCache(pdfId) {
   return get(`/api/pdf-cache/${pdfId}.pdf`);
 }
@@ -75,4 +80,4 @@ async function getHealth() {
   return get('/health');
 }
 
-export { get, post, put, del, askChatbot, getPdfCache, createPdfShare, finishSession, getHealth };
+export { get, post, put, del, askChatbot, askPathfinder, getPdfCache, createPdfShare, finishSession, getHealth };

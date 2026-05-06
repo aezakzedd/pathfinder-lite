@@ -1,5 +1,6 @@
 // Itinerary page module
 import { initMap, zoomIn, zoomOut, resetView, destroyMap } from '../map/leafletMap.js';
+import { askPathfinder } from '../api.js';
 import {
   getSelectedDestination,
   setSelectedDestination,
@@ -16,10 +17,17 @@ import {
   getStopCount,
   subscribe
 } from '../state/itineraryStore.js';
+import {
+  addMessage,
+  getMessages,
+  subscribe as subscribeChat
+} from '../state/chatStore.js';
 
 let mapInitialized = false;
 let stateUnsubscribe = null;
+let chatUnsubscribe = null;
 let eventListeners = [];
+let isSending = false;
 
 // Category emoji mapping
 const categoryEmojis = {
@@ -58,8 +66,8 @@ export function renderItinerary(container) {
           </div>
           
           <div class="chatbot-body">
-            <div class="chatbot-messages">
-              <div class="empty-state">
+            <div class="chatbot-messages" id="chatbot-messages">
+              <div class="empty-state" id="chat-empty-state">
                 <div class="empty-icon">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 8V4H8" />
@@ -74,19 +82,19 @@ export function renderItinerary(container) {
                 <p class="empty-subtitle">Ask me about destinations, activities, or anything about Catanduanes</p>
               </div>
               
-              <div class="suggestion-chips">
-                <button class="suggestion-chip">Best beaches</button>
-                <button class="suggestion-chip">Hidden waterfalls</button>
-                <button class="suggestion-chip">Local food</button>
-                <button class="suggestion-chip">Budget tips</button>
+              <div class="suggestion-chips" id="suggestion-chips">
+                <button class="suggestion-chip" data-prompt="Best beaches">Best beaches</button>
+                <button class="suggestion-chip" data-prompt="Hidden waterfalls">Hidden waterfalls</button>
+                <button class="suggestion-chip" data-prompt="Local food">Local food</button>
+                <button class="suggestion-chip" data-prompt="Budget tips">Budget tips</button>
               </div>
             </div>
           </div>
           
           <div class="chatbot-input-area">
-            <form class="chatbot-form">
-              <input type="text" class="chatbot-input" placeholder="Ask Pathfinder..." />
-              <button type="submit" class="send-btn" aria-label="Send message">
+            <form class="chatbot-form" id="chatbot-form">
+              <input type="text" class="chatbot-input" id="chatbot-input" placeholder="Ask Pathfinder..." />
+              <button type="submit" class="send-btn" id="send-btn" aria-label="Send message">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
                 </svg>
@@ -293,14 +301,23 @@ function initializeUI() {
     updateDayTabs();
   });
   
+  // Subscribe to chat changes
+  chatUnsubscribe = subscribeChat(() => {
+    renderChatMessages();
+  });
+  
   // Initial render
   renderDestinationPreview();
   renderItinerarySpots();
   renderTimeWallet();
   updateDayTabs();
+  renderChatMessages();
   
   // Setup day tab handlers
   setupDayTabs();
+  
+  // Setup chat handlers
+  setupChatHandlers();
   
   // Setup custom event listener for select-destination from map markers
   const selectDestinationHandler = (e) => {
@@ -372,6 +389,155 @@ function setupDayTabs() {
     tab.addEventListener('click', clickHandler);
     eventListeners.push({ element: tab, event: 'click', handler: clickHandler });
   });
+}
+
+function setupChatHandlers() {
+  const chatForm = document.getElementById('chatbot-form');
+  const chatInput = document.getElementById('chatbot-input');
+  const suggestionChips = document.querySelectorAll('.suggestion-chip');
+  
+  // Form submit handler
+  if (chatForm) {
+    const submitHandler = (e) => {
+      e.preventDefault();
+      const message = chatInput.value.trim();
+      if (message && !isSending) {
+        sendMessage(message);
+        chatInput.value = '';
+      }
+    };
+    chatForm.addEventListener('submit', submitHandler);
+    eventListeners.push({ element: chatForm, event: 'submit', handler: submitHandler });
+  }
+  
+  // Enter key handler
+  if (chatInput) {
+    const keydownHandler = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (message && !isSending) {
+          sendMessage(message);
+          chatInput.value = '';
+        }
+      }
+    };
+    chatInput.addEventListener('keydown', keydownHandler);
+    eventListeners.push({ element: chatInput, event: 'keydown', handler: keydownHandler });
+  }
+  
+  // Suggestion chip handlers
+  suggestionChips.forEach(chip => {
+    const clickHandler = () => {
+      const prompt = chip.dataset.prompt;
+      if (prompt && !isSending) {
+        sendMessage(prompt);
+      }
+    };
+    chip.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chip, event: 'click', handler: clickHandler });
+  });
+}
+
+async function sendMessage(message) {
+  isSending = true;
+  
+  // Add user message
+  addMessage({
+    role: 'user',
+    content: message
+  });
+  
+  // Add loading indicator
+  const loadingId = `loading-${Date.now()}`;
+  addMessage({
+    id: loadingId,
+    role: 'assistant',
+    content: '...',
+    isLoading: true
+  });
+  
+  try {
+    const response = await askPathfinder(message);
+    
+    // Remove loading message
+    const messages = getMessages();
+    const updatedMessages = messages.filter(m => m.id !== loadingId);
+    
+    // Add actual response
+    let responseText = '';
+    if (typeof response === 'string') {
+      responseText = response;
+    } else if (response && response.answer) {
+      responseText = response.answer;
+    } else if (response && response.message) {
+      responseText = response.message;
+    } else {
+      responseText = JSON.stringify(response);
+    }
+    
+    addMessage({
+      role: 'assistant',
+      content: responseText
+    });
+    
+  } catch (error) {
+    // Remove loading message
+    const messages = getMessages();
+    const updatedMessages = messages.filter(m => m.id !== loadingId);
+    
+    // Add error message
+    addMessage({
+      role: 'system',
+      content: 'Sorry, I encountered an error. Please try again.'
+    });
+    
+    console.error('Chat error:', error);
+  } finally {
+    isSending = false;
+  }
+}
+
+function renderChatMessages() {
+  const messagesContainer = document.getElementById('chatbot-messages');
+  const emptyState = document.getElementById('chat-empty-state');
+  const suggestionChips = document.getElementById('suggestion-chips');
+  
+  if (!messagesContainer) return;
+  
+  const messages = getMessages();
+  
+  // Show/hide empty state
+  if (emptyState && suggestionChips) {
+    if (messages.length === 0) {
+      emptyState.style.display = 'block';
+      suggestionChips.style.display = 'flex';
+    } else {
+      emptyState.style.display = 'none';
+      suggestionChips.style.display = 'none';
+    }
+  }
+  
+  // Render messages
+  const existingMessages = messagesContainer.querySelectorAll('.chat-message');
+  existingMessages.forEach(msg => msg.remove());
+  
+  messages.forEach(message => {
+    if (message.isLoading) {
+      const loadingEl = document.createElement('div');
+      loadingEl.className = 'chat-message chat-message-assistant chat-message-loading';
+      loadingEl.innerHTML = '<span class="typing-indicator">...</span>';
+      messagesContainer.appendChild(loadingEl);
+    } else {
+      const messageEl = document.createElement('div');
+      messageEl.className = `chat-message chat-message-${message.role === 'user' ? 'user' : 'assistant'}`;
+      messageEl.textContent = message.content;
+      messagesContainer.appendChild(messageEl);
+    }
+  });
+  
+  // Scroll to bottom
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 function renderDestinationPreview() {
@@ -531,6 +697,12 @@ export function cleanupItinerary() {
     stateUnsubscribe = null;
   }
   
+  // Unsubscribe from chat changes
+  if (chatUnsubscribe) {
+    chatUnsubscribe();
+    chatUnsubscribe = null;
+  }
+  
   // Remove all event listeners
   eventListeners.forEach(({ element, event, handler }) => {
     element.removeEventListener(event, handler);
@@ -545,4 +717,7 @@ export function cleanupItinerary() {
   
   // Clear selected destination
   clearSelectedDestination();
+  
+  // Reset sending state
+  isSending = false;
 }
