@@ -1,6 +1,7 @@
 // Itinerary page module
 import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize } from '../map/leafletMap.js';
 import { askPathfinder } from '../api.js';
+import { getState as getAppState, setState as setAppState } from '../state.js';
 import {
   getSelectedDestination,
   setSelectedDestination,
@@ -12,6 +13,8 @@ import {
   removeStopFromDay,
   moveStopUp,
   moveStopDown,
+  reorderStop,
+  reorderStopToEnd,
   getTimeWalletInfo,
   isDestinationInDay,
   getStopCount,
@@ -40,6 +43,8 @@ let isSending = false;
 let setupOverlayOpen = false;
 let setupCalendarOpen = false;
 let setupOpenedFromCompleted = false;
+let draggedStopId = null;
+let pointerDrag = null;
 
 const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
 const budgetOptions = [
@@ -221,23 +226,6 @@ export function renderItinerary(container) {
                 <path d="M8 11h6" />
               </svg>
             </button>
-            <button class="map-control-btn" id="locate-btn" aria-label="Locate me">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
-            <button class="map-control-btn" id="filter-btn" aria-label="Filter">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-            </button>
-            <button class="map-control-btn" id="reset-btn" aria-label="Reset view">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-            </button>
           </div>
 
           <div class="setup-control-bar" aria-label="Map setup controls">
@@ -247,8 +235,12 @@ export function renderItinerary(container) {
                 <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
               </svg>
             </button>
-            <button class="setup-icon-btn" type="button" aria-label="Map display">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <button class="setup-icon-btn map-theme-toggle" type="button" id="itinerary-theme-toggle" aria-label="Switch to night mode">
+              <svg class="theme-day-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <svg class="theme-night-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
               </svg>
             </button>
@@ -347,7 +339,6 @@ export function renderItinerary(container) {
                     </svg>
                   </span>
                   <select id="setup-start-point" class="setup-input setup-select" aria-label="Start point">
-                    <option value="" disabled selected></option>
                     <option value="Virac">Virac</option>
                     <option value="San Andres">San Andres</option>
                   </select>
@@ -464,6 +455,7 @@ function initializeUI() {
   
   // Initial render
   renderDestinationPreview();
+  syncMapInfoButton();
   renderItinerarySpots();
   renderTimeWallet();
   updateDayTabs();
@@ -509,6 +501,7 @@ function setupMapControls() {
   const filterBtn = document.getElementById('filter-btn');
   const openSetupBtn = document.getElementById('open-setup-btn');
   const mapInfoBtn = document.getElementById('map-info-btn');
+  const itineraryThemeToggle = document.getElementById('itinerary-theme-toggle');
 
   if (zoomInBtn) {
     const clickHandler = () => zoomIn();
@@ -571,6 +564,28 @@ function setupMapControls() {
     mapInfoBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: mapInfoBtn, event: 'click', handler: clickHandler });
   }
+
+  if (itineraryThemeToggle) {
+    const clickHandler = () => {
+      const currentTheme = getAppState('theme') || 'light';
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      setAppState('theme', nextTheme);
+      applyItineraryTheme(nextTheme);
+    };
+    itineraryThemeToggle.addEventListener('click', clickHandler);
+    eventListeners.push({ element: itineraryThemeToggle, event: 'click', handler: clickHandler });
+    applyItineraryTheme(getAppState('theme') || 'light');
+  }
+}
+
+function applyItineraryTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const themeToggle = document.getElementById('itinerary-theme-toggle');
+  if (!themeToggle) return;
+
+  const isDark = theme === 'dark';
+  themeToggle.classList.toggle('theme-night', isDark);
+  themeToggle.setAttribute('aria-label', isDark ? 'Switch to day mode' : 'Switch to night mode');
 }
 
 function setupMapMarkerHandlers() {
@@ -628,6 +643,7 @@ function setupTripSetupHandlers() {
   if (budgetRange) {
     const inputHandler = () => {
       const option = budgetOptions[Number(budgetRange.value)] || budgetOptions[0];
+      updateBudgetSliderVisual(budgetRange);
       setTripSetupBudget(option.value);
     };
     budgetRange.addEventListener('input', inputHandler);
@@ -674,22 +690,30 @@ function openTripSetup() {
 
 function showMapInfo() {
   const previewCard = document.getElementById('destination-preview');
+
+  if (!previewCard) return;
+
+  const isHidden = previewCard.classList.contains('hidden');
+
+  if (isHidden) {
+    previewCard.classList.remove('hidden');
+  } else {
+    previewCard.classList.add('hidden');
+  }
+
+  syncMapInfoButton();
+}
+
+function syncMapInfoButton() {
+  const previewCard = document.getElementById('destination-preview');
   const infoBtn = document.getElementById('map-info-btn');
   const infoBtnText = infoBtn?.querySelector('.info-btn-text');
 
   if (!previewCard || !infoBtn) return;
 
   const isHidden = previewCard.classList.contains('hidden');
-
-  if (isHidden) {
-    previewCard.classList.remove('hidden');
-    infoBtn.setAttribute('aria-label', 'Hide Info');
-    if (infoBtnText) infoBtnText.textContent = 'Hide Info';
-  } else {
-    previewCard.classList.add('hidden');
-    infoBtn.setAttribute('aria-label', 'Show Info');
-    if (infoBtnText) infoBtnText.textContent = 'Show Info';
-  }
+  infoBtn.setAttribute('aria-label', isHidden ? 'Show Info' : 'Hide Info');
+  if (infoBtnText) infoBtnText.textContent = isHidden ? 'Show Info' : 'Hide Info';
 }
 
 function renderTripSetup() {
@@ -739,6 +763,9 @@ function renderTripSetup() {
   const budgetIndex = Math.max(0, budgetOptions.findIndex(option => option.value === setup.budget));
   if (budgetRange && Number(budgetRange.value) !== budgetIndex) {
     budgetRange.value = String(budgetIndex);
+  }
+  if (budgetRange) {
+    updateBudgetSliderVisual(budgetRange);
   }
 
   budgetButtons.forEach(button => {
@@ -1230,7 +1257,7 @@ function renderItinerarySpots() {
   }
   
   spotsContainer.innerHTML = stops.map((stop, index) => `
-    <div class="itinerary-spot" data-stop-id="${stop.stopId}">
+    <div class="itinerary-spot" data-stop-id="${stop.stopId}" draggable="true">
       ${index > 0 ? `
         <div class="spot-drive-row">
           <span class="spot-timeline-dot"></span>
@@ -1268,6 +1295,139 @@ function renderItinerarySpots() {
     btn.addEventListener('click', clickHandler);
     eventListeners.push({ element: btn, event: 'click', handler: clickHandler });
   });
+
+  setupStopDragHandlers(spotsContainer);
+}
+
+function setupStopDragHandlers(spotsContainer) {
+  spotsContainer.querySelectorAll('.itinerary-spot').forEach(spot => {
+    const dragStartHandler = (event) => {
+      draggedStopId = spot.dataset.stopId;
+      spot.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', draggedStopId);
+    };
+
+    const dragEndHandler = () => {
+      draggedStopId = null;
+      spotsContainer.querySelectorAll('.itinerary-spot').forEach(item => {
+        item.classList.remove('dragging', 'drag-over');
+      });
+      spotsContainer.classList.remove('drag-active');
+    };
+
+    const dragOverHandler = (event) => {
+      if (!draggedStopId || draggedStopId === spot.dataset.stopId) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      spotsContainer.classList.add('drag-active');
+      spotsContainer.querySelectorAll('.itinerary-spot').forEach(item => item.classList.remove('drag-over'));
+      spot.classList.add('drag-over');
+    };
+
+    const dropHandler = (event) => {
+      event.preventDefault();
+      const sourceStopId = event.dataTransfer.getData('text/plain') || draggedStopId;
+      const targetStopId = spot.dataset.stopId;
+      draggedStopId = null;
+      if (sourceStopId && targetStopId && sourceStopId !== targetStopId) {
+        reorderStop(sourceStopId, targetStopId);
+      }
+    };
+
+    const pointerDownHandler = (event) => {
+      if (event.target.closest('button')) return;
+      pointerDrag = {
+        stopId: spot.dataset.stopId,
+        startY: event.clientY,
+        active: false
+      };
+      spot.setPointerCapture?.(event.pointerId);
+    };
+
+    const pointerMoveHandler = (event) => {
+      if (!pointerDrag || pointerDrag.stopId !== spot.dataset.stopId) return;
+      const deltaY = event.clientY - pointerDrag.startY;
+
+      if (!pointerDrag.active && Math.abs(deltaY) > 8) {
+        pointerDrag.active = true;
+        spot.classList.add('dragging');
+        spotsContainer.classList.add('drag-active');
+      }
+
+      if (pointerDrag.active) {
+        event.preventDefault();
+        spot.style.transform = `translateY(${deltaY}px) scale(0.985)`;
+        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.itinerary-spot');
+        spotsContainer.querySelectorAll('.itinerary-spot').forEach(item => item.classList.remove('drag-over'));
+        if (target && target !== spot && spotsContainer.contains(target)) {
+          target.classList.add('drag-over');
+        }
+      }
+    };
+
+    const pointerUpHandler = (event) => {
+      if (!pointerDrag || pointerDrag.stopId !== spot.dataset.stopId) return;
+      const sourceStopId = pointerDrag.stopId;
+      const wasDragging = pointerDrag.active;
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.itinerary-spot');
+
+      pointerDrag = null;
+      spot.releasePointerCapture?.(event.pointerId);
+      spot.style.transform = '';
+      spotsContainer.classList.remove('drag-active');
+      spotsContainer.querySelectorAll('.itinerary-spot').forEach(item => {
+        item.classList.remove('dragging', 'drag-over');
+      });
+
+      if (wasDragging && target && target !== spot && spotsContainer.contains(target)) {
+        reorderStop(sourceStopId, target.dataset.stopId);
+      }
+    };
+
+    spot.addEventListener('dragstart', dragStartHandler);
+    spot.addEventListener('dragend', dragEndHandler);
+    spot.addEventListener('dragover', dragOverHandler);
+    spot.addEventListener('drop', dropHandler);
+    spot.addEventListener('pointerdown', pointerDownHandler);
+    spot.addEventListener('pointermove', pointerMoveHandler);
+    spot.addEventListener('pointerup', pointerUpHandler);
+    spot.addEventListener('pointercancel', pointerUpHandler);
+    eventListeners.push({ element: spot, event: 'dragstart', handler: dragStartHandler });
+    eventListeners.push({ element: spot, event: 'dragend', handler: dragEndHandler });
+    eventListeners.push({ element: spot, event: 'dragover', handler: dragOverHandler });
+    eventListeners.push({ element: spot, event: 'drop', handler: dropHandler });
+    eventListeners.push({ element: spot, event: 'pointerdown', handler: pointerDownHandler });
+    eventListeners.push({ element: spot, event: 'pointermove', handler: pointerMoveHandler });
+    eventListeners.push({ element: spot, event: 'pointerup', handler: pointerUpHandler });
+    eventListeners.push({ element: spot, event: 'pointercancel', handler: pointerUpHandler });
+  });
+
+  const containerDragOverHandler = (event) => {
+    if (!draggedStopId) return;
+    event.preventDefault();
+  };
+
+  const containerDropHandler = (event) => {
+    if (!draggedStopId || event.target.closest('.itinerary-spot')) return;
+    event.preventDefault();
+    const sourceStopId = event.dataTransfer.getData('text/plain') || draggedStopId;
+    draggedStopId = null;
+    reorderStopToEnd(sourceStopId);
+  };
+
+  spotsContainer.addEventListener('dragover', containerDragOverHandler);
+  spotsContainer.addEventListener('drop', containerDropHandler);
+  eventListeners.push({ element: spotsContainer, event: 'dragover', handler: containerDragOverHandler });
+  eventListeners.push({ element: spotsContainer, event: 'drop', handler: containerDropHandler });
+}
+
+function updateBudgetSliderVisual(slider) {
+  const min = Number(slider.min || 0);
+  const max = Number(slider.max || 2);
+  const value = Number(slider.value || 0);
+  const percent = max === min ? 0 : ((value - min) / (max - min)) * 100;
+  slider.style.setProperty('--budget-fill', `${percent}%`);
 }
 
 function renderTimeWallet() {

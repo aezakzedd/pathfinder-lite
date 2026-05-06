@@ -228,6 +228,37 @@ function moveStopDown(stopId) {
   }
 }
 
+function reorderStop(stopId, targetStopId) {
+  const day = state.activeDay;
+  const stops = state.days[day];
+  const fromIndex = stops.findIndex(stop => stop.stopId === stopId);
+  const toIndex = stops.findIndex(stop => stop.stopId === targetStopId);
+
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+    return;
+  }
+
+  const [movedStop] = stops.splice(fromIndex, 1);
+  stops.splice(toIndex, 0, movedStop);
+  saveState();
+  notifyListeners();
+}
+
+function reorderStopToEnd(stopId) {
+  const day = state.activeDay;
+  const stops = state.days[day];
+  const fromIndex = stops.findIndex(stop => stop.stopId === stopId);
+
+  if (fromIndex === -1 || fromIndex === stops.length - 1) {
+    return;
+  }
+
+  const [movedStop] = stops.splice(fromIndex, 1);
+  stops.push(movedStop);
+  saveState();
+  notifyListeners();
+}
+
 // Update stop time
 function updateStopTime(stopId, time) {
   const day = state.activeDay;
@@ -354,6 +385,8 @@ export {
   removeStopFromDay,
   moveStopUp,
   moveStopDown,
+  reorderStop,
+  reorderStopToEnd,
   updateStopTime,
   calculateDayDuration,
   calculateTimeWalletPercentage,
