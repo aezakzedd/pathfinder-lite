@@ -11,17 +11,21 @@ body[data-route="itinerary"] .page-container {
 .page-itinerary {
   min-height: 100vh;
   height: 100vh;
-  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+  background: #f8fafc;
+  padding: 4px;
   overflow: hidden;
 }
 
 .itinerary-container {
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: calc(100vh - 8px);
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
 }
 
 .grid-overlay {
@@ -592,8 +596,6 @@ body[data-route="itinerary"] .page-container {
 
 .page-itinerary.setup-active .itinerary-container {
   grid-template-columns: 1fr;
-  padding: 0;
-  background: transparent;
 }
 
 .page-itinerary.setup-active .map-header,
