@@ -3,6 +3,8 @@
 ## Project Overview
 This is a Raspberry Pi 4B kiosk frontend rebuild of the Pathfinder tourism application. The goal is to create a lightweight, performant frontend optimized for touch-based kiosk deployment.
 
+**Before making changes, read `DEVELOPMENT_CONTEXT.md` for current phase status and project history.**
+
 ## Scope
 **Work only inside `pathfinder-lite`.** The old React project in the parent directory is read-only reference material. Do not modify any files outside of the `pathfinder-lite` directory.
 
