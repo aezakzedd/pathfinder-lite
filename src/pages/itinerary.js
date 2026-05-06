@@ -78,20 +78,16 @@ export function renderItinerary(container) {
         <!-- Left Chatbot Panel -->
         <aside class="chatbot-panel">
           <div class="chatbot-header">
-            <div class="window-controls">
-              <button class="window-btn" aria-label="Minimize"></button>
-              <button class="window-btn" aria-label="Maximize"></button>
-              <button class="window-btn" aria-label="Close"></button>
-            </div>
-            <div class="chatbot-title-group">
-              <button class="home-btn" data-navigate="#/" aria-label="Go to home">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                  <polyline points="9 22 9 12 15 12 15 22" />
-                </svg>
-              </button>
-              <h2 class="chatbot-title">ASK PATHFINDER</h2>
-            </div>
+            <a class="pathfinder-brand" href="#/" data-navigate="#/" aria-label="Pathfinder Home">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 12v2a2 2 0 0 1-2 2H9a1 1 0 0 0-1 1v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h0"/>
+                <path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3a1 1 0 0 1-1 1h-5a2 2 0 0 0-2 2v2"/>
+              </svg>
+              <span>PATHFINDER</span>
+            </a>
+            <button class="check-itinerary-btn" id="check-itinerary-btn" type="button" aria-label="Check Itinerary">
+              Check Itinerary
+            </button>
           </div>
           
           <div class="chatbot-body">
@@ -116,6 +112,36 @@ export function renderItinerary(container) {
                 <button class="suggestion-chip" data-prompt="Hidden waterfalls">Hidden waterfalls</button>
                 <button class="suggestion-chip" data-prompt="Local food">Local food</button>
                 <button class="suggestion-chip" data-prompt="Budget tips">Budget tips</button>
+              </div>
+
+              <!-- Itinerary Preview as Chat Card -->
+              <div class="chat-itinerary-card" id="chat-itinerary-card">
+                <div class="itinerary-header">
+                  <h3>Itinerary Preview</h3>
+                  <span class="spot-count" id="chat-spot-count">0 spots</span>
+                </div>
+                <div class="day-tabs" id="chat-day-tabs">
+                  <button class="day-tab day-tab-active" data-day="1">Day 1</button>
+                  <button class="day-tab" data-day="2">Day 2</button>
+                  <button class="day-tab" data-day="3">Day 3</button>
+                </div>
+                <div class="itinerary-spots" id="chat-itinerary-spots">
+                  <div class="itinerary-empty">No stops added yet</div>
+                </div>
+                <div class="time-wallet">
+                  <div class="wallet-header">
+                    <span class="wallet-label" id="chat-wallet-label">Schedule: Relaxed pace</span>
+                    <span class="wallet-percent" id="chat-wallet-percent">0%</span>
+                  </div>
+                  <div class="wallet-bar">
+                    <div class="wallet-fill" id="chat-wallet-fill" style="width: 0%;"></div>
+                  </div>
+                </div>
+                <div class="itinerary-actions">
+                  <button class="btn-secondary" data-navigate="#/">Back</button>
+                  <button class="btn-primary" id="chat-generate-pdf-btn">Generate PDF</button>
+                  <button class="btn-primary" id="chat-save-btn">Save</button>
+                </div>
               </div>
             </div>
           </div>
@@ -182,7 +208,7 @@ export function renderItinerary(container) {
           </div>
 
           <div class="setup-control-bar" aria-label="Map setup controls">
-            <button class="setup-icon-btn" type="button" aria-label="Preview map">
+            <button class="setup-icon-btn" type="button" id="toggle-map-title-btn" aria-label="Preview map">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                 <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
@@ -347,35 +373,8 @@ export function renderItinerary(container) {
             </div>
           </div>
           
-          <!-- Itinerary Preview Card -->
-          <div class="itinerary-preview-card">
-            <div class="itinerary-header">
-              <h3>Itinerary Preview</h3>
-              <span class="spot-count" id="spot-count">0 spots</span>
-            </div>
-            <div class="day-tabs" id="day-tabs">
-              <button class="day-tab day-tab-active" data-day="1">Day 1</button>
-              <button class="day-tab" data-day="2">Day 2</button>
-              <button class="day-tab" data-day="3">Day 3</button>
-            </div>
-            <div class="itinerary-spots" id="itinerary-spots">
-              <div class="itinerary-empty">No stops added yet</div>
-            </div>
-            <div class="time-wallet">
-              <div class="wallet-header">
-                <span class="wallet-label" id="wallet-label">Schedule: Relaxed pace</span>
-                <span class="wallet-percent" id="wallet-percent">0%</span>
-              </div>
-              <div class="wallet-bar">
-                <div class="wallet-fill" id="wallet-fill" style="width: 0%;"></div>
-              </div>
-            </div>
-            <div class="itinerary-actions">
-              <button class="btn-secondary" data-navigate="#/">Back</button>
-              <button class="btn-primary" id="generate-pdf-btn">Generate PDF</button>
-              <button class="btn-primary" id="save-btn">Save</button>
-            </div>
-          </div>
+          <!-- Itinerary Preview Card (hidden - now in chat panel) -->
+          <div class="itinerary-preview-card" style="display: none;"></div>
         </main>
       </div>
     </div>
@@ -507,7 +506,17 @@ function setupMapControls() {
 
   if (openSetupBtn) {
     const clickHandler = () => {
-      openTripSetup();
+      // Toggle setup overlay
+      const setup = getTripSetup();
+      const isValid = isTripSetupComplete(setup);
+      const isCurrentlyOpen = setupOverlayOpen || !setup.completed || !isValid;
+      
+      if (isCurrentlyOpen) {
+        setupOverlayOpen = false;
+      } else {
+        setupOverlayOpen = true;
+      }
+      renderTripSetup();
     };
     openSetupBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: openSetupBtn, event: 'click', handler: clickHandler });
@@ -595,9 +604,20 @@ function openTripSetup() {
 }
 
 function showMapInfo() {
-  // Placeholder for map information display
-  // For now, show a simple alert with map info
-  alert('Catanduanes Map\n\nLocation: Bicol Region, Philippines\nCoordinates: 13.7°N, 124.2°E\n\nMap shows tourism destinations across the island including beaches, waterfalls, heritage sites, and dining options.');
+  const previewCard = document.getElementById('destination-preview');
+  const infoBtn = document.getElementById('map-info-btn');
+
+  if (!previewCard || !infoBtn) return;
+
+  const isHidden = previewCard.classList.contains('hidden');
+
+  if (isHidden) {
+    previewCard.classList.remove('hidden');
+    infoBtn.setAttribute('aria-label', 'Hide Info');
+  } else {
+    previewCard.classList.add('hidden');
+    infoBtn.setAttribute('aria-label', 'Show Info');
+  }
 }
 
 function renderTripSetup() {
@@ -657,7 +677,7 @@ function renderTripSetup() {
 }
 
 function setupDayTabs() {
-  const dayTabs = document.querySelectorAll('.day-tab');
+  const dayTabs = document.querySelectorAll('#chat-day-tabs .day-tab');
   dayTabs.forEach(tab => {
     const clickHandler = () => {
       const day = parseInt(tab.dataset.day);
@@ -818,6 +838,9 @@ function renderChatMessages() {
 function setupExportHandlers() {
   const generatePdfBtn = document.getElementById('generate-pdf-btn');
   const saveBtn = document.getElementById('save-btn');
+  const chatGeneratePdfBtn = document.getElementById('chat-generate-pdf-btn');
+  const chatSaveBtn = document.getElementById('chat-save-btn');
+  const checkItineraryBtn = document.getElementById('check-itinerary-btn');
   
   const handleExport = () => {
     // Prepare export payload
@@ -842,11 +865,36 @@ function setupExportHandlers() {
     generatePdfBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: generatePdfBtn, event: 'click', handler: clickHandler });
   }
-  
+
   if (saveBtn) {
     const clickHandler = () => handleExport();
     saveBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: saveBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (chatGeneratePdfBtn) {
+    const clickHandler = () => handleExport();
+    chatGeneratePdfBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatGeneratePdfBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (chatSaveBtn) {
+    const clickHandler = () => handleExport();
+    chatSaveBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatSaveBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (checkItineraryBtn) {
+    const clickHandler = () => {
+      const itineraryCard = document.getElementById('chat-itinerary-card');
+      const messagesContainer = document.getElementById('chatbot-messages');
+      if (itineraryCard && messagesContainer) {
+        // Scroll the itinerary card into view
+        itineraryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    };
+    checkItineraryBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: checkItineraryBtn, event: 'click', handler: clickHandler });
   }
 }
 
@@ -859,10 +907,17 @@ function renderDestinationPreview() {
   if (!destination) {
     previewContainer.innerHTML = `
       <div class="destination-image">
-        <div class="destination-placeholder">📍</div>
+        <div class="destination-placeholder">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+        </div>
       </div>
       <div class="destination-content">
-        <p class="destination-empty">Select a destination from the map</p>
+        <h3 class="destination-empty-title">Select a destination</h3>
+        <p class="destination-empty-subtitle">Click on a map marker to view location details</p>
+        <button class="btn-add-trip btn-disabled" disabled>Add Spot</button>
       </div>
     `;
     return;
@@ -896,7 +951,7 @@ function renderDestinationPreview() {
         </span>
       </div>
       <button class="btn-add-trip ${isAdded ? 'btn-disabled' : ''}" id="add-trip-btn" ${isAdded ? 'disabled' : ''}>
-        ${isAdded ? 'Already Added' : 'Add to Trip'}
+        ${isAdded ? 'Already Added' : 'Add Spot'}
       </button>
     </div>
   `;
@@ -921,8 +976,8 @@ function handleAddToTrip(destination) {
 }
 
 function renderItinerarySpots() {
-  const spotsContainer = document.getElementById('itinerary-spots');
-  const spotCountEl = document.getElementById('spot-count');
+  const spotsContainer = document.getElementById('chat-itinerary-spots');
+  const spotCountEl = document.getElementById('chat-spot-count');
   
   if (!spotsContainer || !spotCountEl) return;
   
@@ -970,9 +1025,9 @@ function renderItinerarySpots() {
 }
 
 function renderTimeWallet() {
-  const walletLabel = document.getElementById('wallet-label');
-  const walletPercent = document.getElementById('wallet-percent');
-  const walletFill = document.getElementById('wallet-fill');
+  const walletLabel = document.getElementById('chat-wallet-label');
+  const walletPercent = document.getElementById('chat-wallet-percent');
+  const walletFill = document.getElementById('chat-wallet-fill');
   
   if (!walletLabel || !walletPercent || !walletFill) return;
   
@@ -985,7 +1040,7 @@ function renderTimeWallet() {
 
 function updateDayTabs() {
   const activeDay = getActiveDay();
-  const dayTabs = document.querySelectorAll('.day-tab');
+  const dayTabs = document.querySelectorAll('#chat-day-tabs .day-tab');
   
   if (dayTabs.length === 0) return;
   

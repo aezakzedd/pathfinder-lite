@@ -136,6 +136,20 @@
 - Added Done validation requiring start point, date, and at least one activity
 - Preserved existing map, markers, destination preview, Add to Trip, duplicate prevention, day tabs, stop controls, time wallet, chat, export, route cleanup, and storage behavior
 
+**Focused Phase: Original Pathfinder Post-Setup UI Match**
+- Redesigned left chatbot header - removed window controls, home button, ASK PATHFINDER text
+- Added Pathfinder brand/logo as home link with inline SVG icon
+- Added Check Itinerary button in header to bring itinerary card into view
+- Integrated itinerary preview into chatbot panel as a message/card
+- Removed standalone floating itinerary preview card from map area
+- Updated render functions to use chat-itinerary-card elements
+- Styled right location details panel with placeholder when no destination selected
+- Replaced alert-based map info with Hide Info/Show Info toggle for right panel
+- Made map title visibility conditional - only shows when eye button is active
+- Implemented Setup button toggle behavior (open/close overlay)
+- Moved zoom controls to bottom-right corner with 32px spacing
+- Preserved all existing functionality (setup, map, markers, Add to Trip, chat, export, cleanup)
+
 ## Current Known Implementation
 
 **Working Features:**
@@ -176,11 +190,11 @@
 
 ## Current Bundle Size
 
-Latest build (Original Pathfinder Itinerary Setup Design Match):
+Latest build (Original Pathfinder Post-Setup UI Match):
 - HTML: 0.56 kB
-- CSS: 76.57 kB
-- JS: 218.46 kB
-- Total: ~295.59 kB
+- CSS: 78.84 kB
+- JS: 220.45 kB
+- Total: ~299.85 kB
 
 Still acceptable for lightweight Raspberry Pi target.
 
