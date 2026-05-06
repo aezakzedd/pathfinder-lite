@@ -150,6 +150,21 @@
 - Moved zoom controls to bottom-right corner with 32px spacing
 - Preserved all existing functionality (setup, map, markers, Add to Trip, chat, export, cleanup)
 
+**Focused Phase: Original Pathfinder Chat Panel Behavior Match**
+- Separated chat panel and map as two rounded cards with 12px gap between them
+- Added border and border-radius to both chatbot-panel and map-area
+- Renamed Generate PDF button to Generate with placeholder auto-fill behavior
+- Generate button shows system message about recommendation logic requirement
+- PDF/export action (Save button) only appears on final day (Day 3)
+- Generate button appears on Days 1-2, Save button appears on Day 3
+- Replaced day tabs with Day X of Y text and prev/next navigation buttons
+- Added minimize/maximize button to itinerary card with collapse behavior
+- Minimized card shows only header with rotated icon
+- Check Itinerary expands minimized card and moves it to bottom if new messages exist
+- Chat input remains visible at bottom of left panel
+- Suggestion chips visible when no chat messages exist
+- Preserved all existing functionality (setup, map, markers, Add Spot, chat, export, cleanup)
+
 ## Current Known Implementation
 
 **Working Features:**
@@ -190,11 +205,11 @@
 
 ## Current Bundle Size
 
-Latest build (Original Pathfinder Post-Setup UI Match):
+Latest build (Original Pathfinder Chat Panel Behavior Match):
 - HTML: 0.56 kB
-- CSS: 78.84 kB
-- JS: 220.45 kB
-- Total: ~299.85 kB
+- CSS: 79.85 kB
+- JS: 222.59 kB
+- Total: ~303.00 kB
 
 Still acceptable for lightweight Raspberry Pi target.
 

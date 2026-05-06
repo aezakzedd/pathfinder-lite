@@ -119,11 +119,24 @@ export function renderItinerary(container) {
                 <div class="itinerary-header">
                   <h3>Itinerary Preview</h3>
                   <span class="spot-count" id="chat-spot-count">0 spots</span>
+                  <button class="itinerary-minimize-btn" id="itinerary-minimize-btn" type="button" aria-label="Minimize itinerary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 15l-6-6-6 6" />
+                    </svg>
+                  </button>
                 </div>
-                <div class="day-tabs" id="chat-day-tabs">
-                  <button class="day-tab day-tab-active" data-day="1">Day 1</button>
-                  <button class="day-tab" data-day="2">Day 2</button>
-                  <button class="day-tab" data-day="3">Day 3</button>
+                <div class="day-navigation" id="day-navigation">
+                  <button class="day-nav-btn day-nav-prev" id="day-nav-prev" type="button" aria-label="Previous day" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  <span class="day-nav-text" id="day-nav-text">Day 1 of 3</span>
+                  <button class="day-nav-btn day-nav-next" id="day-nav-next" type="button" aria-label="Next day">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
                 </div>
                 <div class="itinerary-spots" id="chat-itinerary-spots">
                   <div class="itinerary-empty">No stops added yet</div>
@@ -139,8 +152,8 @@ export function renderItinerary(container) {
                 </div>
                 <div class="itinerary-actions">
                   <button class="btn-secondary" data-navigate="#/">Back</button>
-                  <button class="btn-primary" id="chat-generate-pdf-btn">Generate PDF</button>
-                  <button class="btn-primary" id="chat-save-btn">Save</button>
+                  <button class="btn-primary" id="chat-generate-btn">Generate</button>
+                  <button class="btn-primary" id="chat-save-btn" style="display: none;">Save</button>
                 </div>
               </div>
             </div>
@@ -838,9 +851,12 @@ function renderChatMessages() {
 function setupExportHandlers() {
   const generatePdfBtn = document.getElementById('generate-pdf-btn');
   const saveBtn = document.getElementById('save-btn');
-  const chatGeneratePdfBtn = document.getElementById('chat-generate-pdf-btn');
+  const chatGenerateBtn = document.getElementById('chat-generate-btn');
   const chatSaveBtn = document.getElementById('chat-save-btn');
   const checkItineraryBtn = document.getElementById('check-itinerary-btn');
+  const minimizeBtn = document.getElementById('itinerary-minimize-btn');
+  const dayNavPrev = document.getElementById('day-nav-prev');
+  const dayNavNext = document.getElementById('day-nav-next');
   
   const handleExport = () => {
     // Prepare export payload
@@ -859,6 +875,20 @@ function setupExportHandlers() {
     // Navigate to last page
     window.location.hash = '#/last';
   };
+
+  const handleGenerate = () => {
+    // Placeholder auto-fill behavior
+    const stops = getDayStops();
+    if (stops.length === 0) {
+      // Add a system message about personalized generation
+      addMessage('system', 'Personalized itinerary generation requires recommendation logic. For now, add destinations manually from the map.');
+      renderChatMessages();
+    } else {
+      // Add a system message that the itinerary already has stops
+      addMessage('system', 'Your itinerary already has stops. Use the map to add more destinations.');
+      renderChatMessages();
+    }
+  };
   
   if (generatePdfBtn) {
     const clickHandler = () => handleExport();
@@ -872,10 +902,10 @@ function setupExportHandlers() {
     eventListeners.push({ element: saveBtn, event: 'click', handler: clickHandler });
   }
 
-  if (chatGeneratePdfBtn) {
-    const clickHandler = () => handleExport();
-    chatGeneratePdfBtn.addEventListener('click', clickHandler);
-    eventListeners.push({ element: chatGeneratePdfBtn, event: 'click', handler: clickHandler });
+  if (chatGenerateBtn) {
+    const clickHandler = () => handleGenerate();
+    chatGenerateBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatGenerateBtn, event: 'click', handler: clickHandler });
   }
 
   if (chatSaveBtn) {
@@ -889,12 +919,58 @@ function setupExportHandlers() {
       const itineraryCard = document.getElementById('chat-itinerary-card');
       const messagesContainer = document.getElementById('chatbot-messages');
       if (itineraryCard && messagesContainer) {
+        // Check if card is minimized
+        if (itineraryCard.classList.contains('minimized')) {
+          itineraryCard.classList.remove('minimized');
+        }
+        // Check if there are new messages after the itinerary card
+        const messages = getMessages();
+        const itineraryCardIndex = Array.from(messagesContainer.children).indexOf(itineraryCard);
+        const hasNewMessages = messages.length > 0 && itineraryCardIndex < messagesContainer.children.length - 1;
+        
+        if (hasNewMessages) {
+          // Move card to bottom
+          messagesContainer.appendChild(itineraryCard);
+        }
         // Scroll the itinerary card into view
         itineraryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     };
     checkItineraryBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: checkItineraryBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (minimizeBtn) {
+    const clickHandler = () => {
+      const itineraryCard = document.getElementById('chat-itinerary-card');
+      if (itineraryCard) {
+        itineraryCard.classList.toggle('minimized');
+      }
+    };
+    minimizeBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: minimizeBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (dayNavPrev) {
+    const clickHandler = () => {
+      const activeDay = getActiveDay();
+      if (activeDay > 1) {
+        setActiveDay(activeDay - 1);
+      }
+    };
+    dayNavPrev.addEventListener('click', clickHandler);
+    eventListeners.push({ element: dayNavPrev, event: 'click', handler: clickHandler });
+  }
+
+  if (dayNavNext) {
+    const clickHandler = () => {
+      const activeDay = getActiveDay();
+      if (activeDay < 3) {
+        setActiveDay(activeDay + 1);
+      }
+    };
+    dayNavNext.addEventListener('click', clickHandler);
+    eventListeners.push({ element: dayNavNext, event: 'click', handler: clickHandler });
   }
 }
 
@@ -1040,18 +1116,34 @@ function renderTimeWallet() {
 
 function updateDayTabs() {
   const activeDay = getActiveDay();
-  const dayTabs = document.querySelectorAll('#chat-day-tabs .day-tab');
+  const dayNavText = document.getElementById('day-nav-text');
+  const dayNavPrev = document.getElementById('day-nav-prev');
+  const dayNavNext = document.getElementById('day-nav-next');
+  const chatSaveBtn = document.getElementById('chat-save-btn');
+  const chatGenerateBtn = document.getElementById('chat-generate-btn');
   
-  if (dayTabs.length === 0) return;
+  if (dayNavText) {
+    dayNavText.textContent = `Day ${activeDay} of 3`;
+  }
   
-  dayTabs.forEach(tab => {
-    const tabDay = parseInt(tab.dataset.day);
-    if (tabDay === activeDay) {
-      tab.classList.add('day-tab-active');
+  if (dayNavPrev) {
+    dayNavPrev.disabled = activeDay <= 1;
+  }
+  
+  if (dayNavNext) {
+    dayNavNext.disabled = activeDay >= 3;
+  }
+  
+  // Show Save button only on final day (Day 3)
+  if (chatSaveBtn && chatGenerateBtn) {
+    if (activeDay === 3) {
+      chatSaveBtn.style.display = 'block';
+      chatGenerateBtn.style.display = 'none';
     } else {
-      tab.classList.remove('day-tab-active');
+      chatSaveBtn.style.display = 'none';
+      chatGenerateBtn.style.display = 'block';
     }
-  });
+  }
 }
 
 // Cleanup function to be called when leaving the page

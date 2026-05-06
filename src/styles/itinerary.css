@@ -22,7 +22,7 @@ body[data-route="itinerary"] .page-container {
   height: calc(100vh - 8px);
   display: grid;
   grid-template-columns: 320px 1fr;
-  gap: 0;
+  gap: 12px;
   border-radius: 12px;
   overflow: hidden;
   background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
@@ -46,10 +46,12 @@ body[data-route="itinerary"] .page-container {
   background: rgba(15, 15, 25, 0.85);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
 .chatbot-header {
@@ -122,6 +124,10 @@ body[data-route="itinerary"] .page-container {
   padding: 0 0 12px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .chat-itinerary-card .itinerary-header h3 {
@@ -137,41 +143,97 @@ body[data-route="itinerary"] .page-container {
   font-weight: 500;
 }
 
-.chat-itinerary-card .day-tabs {
+.itinerary-minimize-btn {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.chat-itinerary-card .day-tab {
-  flex: 1;
-  padding: 8px 12px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.7);
-  font-size: 12px;
-  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 36px;
+  flex-shrink: 0;
 }
 
-.chat-itinerary-card .day-tab:hover {
+.itinerary-minimize-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.9);
 }
 
-.chat-itinerary-card .day-tab-active {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: rgba(255, 255, 255, 0.95);
+.chat-itinerary-card.minimized .itinerary-minimize-btn svg {
+  transform: rotate(180deg);
+}
+
+.day-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.day-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.day-nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.day-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.day-nav-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.05em;
+}
+
+.chat-itinerary-card .day-tabs {
+  display: none;
+}
+
+.chat-itinerary-card .day-tab {
+  display: none;
 }
 
 .chat-itinerary-card .itinerary-spots {
   max-height: 200px;
   overflow-y: auto;
   margin-bottom: 12px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.chat-itinerary-card.minimized .itinerary-spots,
+.chat-itinerary-card.minimized .time-wallet,
+.chat-itinerary-card.minimized .itinerary-actions {
+  display: none;
+}
+
+.chat-itinerary-card.minimized .day-navigation {
+  display: none;
+}
+
+.chat-itinerary-card.minimized {
+  padding: 12px;
 }
 
 .chat-itinerary-card .itinerary-empty {
@@ -364,6 +426,8 @@ body[data-route="itinerary"] .page-container {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
 }
 
 .map-header {
