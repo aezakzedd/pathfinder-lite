@@ -3,7 +3,7 @@ import { onRouteChange, navigateTo } from './router.js';
 import { renderNavbar } from './components/navbar.js';
 import { renderThemeToggle } from './components/theme-toggle.js';
 import { renderHome } from './pages/home.js';
-import { renderItinerary } from './pages/itinerary.js';
+import { renderItinerary, cleanupItinerary } from './pages/itinerary.js';
 import { renderLast } from './pages/last.js';
 import { renderAbout } from './pages/about.js';
 import { renderContact } from './pages/contact.js';
@@ -31,11 +31,29 @@ const pageRenderers = {
   creators: renderCreators
 };
 
+// Page cleanup functions map
+const pageCleanup = {
+  home: null,
+  itinerary: cleanupItinerary,
+  last: null,
+  about: null,
+  contact: null,
+  creators: null
+};
+
 // Main app container
 const app = document.getElementById('app');
 
+// Track current route for cleanup
+let currentRoute = null;
+
 // Render the app
 function renderApp(routeName) {
+  // Cleanup previous page if needed
+  if (currentRoute && pageCleanup[currentRoute]) {
+    pageCleanup[currentRoute]();
+  }
+  
   // Clear app
   app.innerHTML = '';
   
@@ -71,6 +89,9 @@ function renderApp(routeName) {
     pageContainer.style.opacity = '1';
     pageContainer.style.transform = 'translateY(0)';
   });
+  
+  // Update current route after rendering
+  currentRoute = routeName;
 }
 
 // Initialize router

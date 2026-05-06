@@ -280,9 +280,6 @@ export function renderItinerary(container) {
           
           // Setup control button handlers
           setupMapControls();
-          
-          // Setup map marker click handlers
-          setupMapMarkerHandlers();
         })
         .catch(error => {
           console.error('Failed to load destination data:', error);
@@ -352,37 +349,43 @@ function setupMapControls() {
   const filterBtn = document.getElementById('filter-btn');
 
   if (zoomInBtn) {
-    zoomInBtn.addEventListener('click', () => zoomIn());
+    const clickHandler = () => zoomIn();
+    zoomInBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: zoomInBtn, event: 'click', handler: clickHandler });
   }
 
   if (zoomOutBtn) {
-    zoomOutBtn.addEventListener('click', () => zoomOut());
+    const clickHandler = () => zoomOut();
+    zoomOutBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: zoomOutBtn, event: 'click', handler: clickHandler });
   }
 
   if (resetBtn) {
-    resetBtn.addEventListener('click', () => resetView());
+    const clickHandler = () => resetView();
+    resetBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: resetBtn, event: 'click', handler: clickHandler });
   }
 
   if (locateBtn) {
-    locateBtn.addEventListener('click', () => {
+    const clickHandler = () => {
       console.log('Locate me - to be implemented');
-    });
+    };
+    locateBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: locateBtn, event: 'click', handler: clickHandler });
   }
 
   if (filterBtn) {
-    filterBtn.addEventListener('click', () => {
+    const clickHandler = () => {
       console.log('Filter - to be implemented');
-    });
+    };
+    filterBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: filterBtn, event: 'click', handler: clickHandler });
   }
 }
 
 function setupMapMarkerHandlers() {
-  // Listen for marker clicks to select destination
-  const mapContainer = document.getElementById('pathfinder-map');
-  if (mapContainer) {
-    // This will be handled by the marker click events in markers.js
-    // which dispatch custom events
-  }
+  // Marker click events are handled by markers.js which dispatch custom events
+  // No additional setup needed here
 }
 
 function setupDayTabs() {
