@@ -39,7 +39,7 @@ function saveMessages() {
 function addMessage(message) {
   messages.push({
     ...message,
-    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: message.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     timestamp: new Date().toISOString()
   });
   

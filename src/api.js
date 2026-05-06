@@ -60,8 +60,9 @@ async function askChatbot(question) {
 }
 
 // Alias for clarity in itinerary context
-async function askPathfinder(message) {
-  return post('/ask', { question: message });
+async function askPathfinder(input) {
+  const payload = typeof input === 'string' ? { question: input } : input;
+  return post('/ask', payload);
 }
 
 async function getPdfCache(pdfId) {

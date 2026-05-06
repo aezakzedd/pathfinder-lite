@@ -1,5 +1,5 @@
 // Itinerary page module
-import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize } from '../map/liteMap.js';
+import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState } from '../map/liteMap.js';
 import { askPathfinder } from '../api.js';
 import { getState as getAppState, setState as setAppState } from '../state.js';
 import {
@@ -11,6 +11,8 @@ import {
   getDayStops,
   addStopToDay,
   removeStopFromDay,
+  removeDestinationFromDay,
+  replaceItineraryDays,
   moveStopUp,
   moveStopDown,
   reorderStop,
@@ -34,6 +36,14 @@ import {
   removeMessage,
   subscribe as subscribeChat
 } from '../state/chatStore.js';
+import { calculateDistance, calculateDriveTimes } from '../utils/distance.js';
+import {
+  featureCollectionToDestinations,
+  filterDestinationsForSetup,
+  findDestinationsByLocations,
+  generateItinerary
+} from '../utils/generateItinerary.js';
+import { buildPreviewRouteCoordinates, buildRouteCoordinates, getHubByName } from '../utils/visualRoute.js';
 
 let mapInitialized = false;
 let stateUnsubscribe = null;
@@ -45,6 +55,8 @@ let setupCalendarOpen = false;
 let setupOpenedFromCompleted = false;
 let draggedStopId = null;
 let pointerDrag = null;
+let allDestinations = [];
+let allSpotsGeoJson = null;
 
 const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
 const budgetOptions = [
@@ -77,7 +89,13 @@ const destinationImages = {
   'binurong-point': '/images/binurong_point.webp',
   'twin-rock': '/images/twin_rock.webp',
   'mamangsal': '/images/mamangal.webp',
-  'bato-church': '/images/st_john_church.webp'
+  'bato-church': '/images/st_john_church.webp',
+  'puraran beach': '/images/puraran_beach.webp',
+  'binurong point': '/images/binurong_point.webp',
+  'twin rock beach resort': '/images/twin_rock.webp',
+  'mamangal beach': '/images/mamangal.webp',
+  'bato church': '/images/st_john_church.webp',
+  'st. john the baptist church': '/images/st_john_church.webp'
 };
 
 export function renderItinerary(container) {
@@ -413,19 +431,25 @@ export function renderItinerary(container) {
   // Initialize map after DOM is updated
   setTimeout(() => {
     if (!mapInitialized) {
-      // Load destination data
-      fetch('/data/destinations.sample.json')
+      // Load the real local GeoJSON once for both base map and destination points.
+      fetch('/data/catanduanes_datafile.geojson')
         .then(response => response.json())
-        .then(data => {
-          initMap('pathfinder-map', data.destinations);
+        .then(geojson => {
+          allSpotsGeoJson = geojson;
+          allDestinations = featureCollectionToDestinations(geojson);
+          const filteredDestinations = getFilteredMapDestinations();
+          initMap('pathfinder-map', filteredDestinations, { geojson });
           mapInitialized = true;
-          
+          updateMapFeatures();
+
           // Setup control button handlers
           setupMapControls();
         })
         .catch(error => {
           console.error('Failed to load destination data:', error);
           // Initialize map without data
+          allSpotsGeoJson = null;
+          allDestinations = [];
           initMap('pathfinder-map', []);
           mapInitialized = true;
           setupMapControls();
@@ -442,6 +466,7 @@ function initializeUI() {
     renderTimeWallet();
     updateDayTabs();
     renderTripSetup();
+    updateMapFeatures();
   });
   
   // Subscribe to chat changes
@@ -484,6 +509,20 @@ function initializeUI() {
   };
   document.addEventListener('add-to-trip', addToTripHandler);
   eventListeners.push({ element: document, event: 'add-to-trip', handler: addToTripHandler });
+
+  const removeFromTripHandler = (e) => {
+    if (e.detail && e.detail.destination) {
+      handleRemoveFromTrip(e.detail.destination.id);
+    }
+  };
+  document.addEventListener('remove-from-trip', removeFromTripHandler);
+  eventListeners.push({ element: document, event: 'remove-from-trip', handler: removeFromTripHandler });
+
+  const clearDestinationHandler = () => {
+    clearSelectedDestination();
+  };
+  document.addEventListener('clear-destination', clearDestinationHandler);
+  eventListeners.push({ element: document, event: 'clear-destination', handler: clearDestinationHandler });
 }
 
 function setupMapControls() {
@@ -569,6 +608,57 @@ function setupMapControls() {
     eventListeners.push({ element: itineraryThemeToggle, event: 'click', handler: clickHandler });
     applyItineraryTheme(getAppState('theme') || 'light');
   }
+}
+
+function updateMapFeatures() {
+  if (!mapInitialized) return;
+
+  const setup = getTripSetup();
+  const selectedDestination = getSelectedDestination();
+  const currentStops = getDayStops();
+  const hub = getHubByName(setup.startPoint);
+  const filteredDestinations = getFilteredMapDestinations();
+  const visibleDestinations = includeSelectedDestination(filteredDestinations, selectedDestination);
+  const isSelectedAdded = selectedDestination ? isDestinationInDay(selectedDestination.id) : false;
+
+  updateMapState({
+    destinations: visibleDestinations,
+    hub,
+    selectedDestinationId: selectedDestination?.id || null,
+    addedDestinationIds: currentStops.map(stop => stop.id),
+    routeCoordinates: hub ? buildRouteCoordinates(hub, currentStops) : [],
+    previewCoordinates: hub && selectedDestination && !isSelectedAdded
+      ? buildPreviewRouteCoordinates(hub, currentStops, selectedDestination)
+      : [],
+    popupDestination: selectedDestination || null
+  });
+}
+
+function getFilteredMapDestinations() {
+  const setup = getTripSetup();
+  return filterDestinationsForSetup(allDestinations, setup);
+}
+
+function includeSelectedDestination(destinations, selectedDestination) {
+  if (!selectedDestination || destinations.some(destination => destination.id === selectedDestination.id)) {
+    return destinations;
+  }
+
+  return [...destinations, selectedDestination];
+}
+
+function getActivePinPayload() {
+  const destination = getSelectedDestination();
+  if (!destination) return null;
+
+  return {
+    id: destination.id,
+    name: destination.name,
+    category: destination.category,
+    type: destination.type,
+    municipality: destination.municipality,
+    coordinates: destination.coordinates
+  };
 }
 
 function applyItineraryTheme(theme) {
@@ -924,7 +1014,10 @@ async function sendMessage(message) {
   });
   
   try {
-    const response = await askPathfinder(message);
+    const response = await askPathfinder({
+      question: message,
+      active_pin: getActivePinPayload()
+    });
     
     // Remove loading message
     removeMessage(loadingId);
@@ -945,6 +1038,8 @@ async function sendMessage(message) {
       role: 'assistant',
       content: responseText
     });
+
+    handleChatLocations(response);
     
   } catch (error) {
     // Remove loading message
@@ -959,6 +1054,23 @@ async function sendMessage(message) {
     console.error('Chat error:', error);
   } finally {
     isSending = false;
+  }
+}
+
+function handleChatLocations(response) {
+  const locations = Array.isArray(response?.locations) ? response.locations : [];
+  if (locations.length === 0 || allDestinations.length === 0) return;
+
+  const matches = findDestinationsByLocations(allDestinations, locations);
+  if (matches.length === 0) return;
+
+  setSelectedDestination(matches[0]);
+
+  if (matches.length > 1) {
+    addMessage({
+      role: 'system',
+      content: `I found ${matches.length} matching places and selected ${matches[0].name}.`
+    });
   }
 }
 
@@ -1033,17 +1145,38 @@ function setupExportHandlers() {
   };
 
   const handleGenerate = () => {
-    // Placeholder auto-fill behavior
-    const stops = getDayStops();
-    if (stops.length === 0) {
-      // Add a system message about personalized generation
-      addMessage('system', 'Personalized itinerary generation requires recommendation logic. For now, add destinations manually from the map.');
-      renderChatMessages();
-    } else {
-      // Add a system message that the itinerary already has stops
-      addMessage('system', 'Your itinerary already has stops. Use the map to add more destinations.');
-      renderChatMessages();
+    const setup = getTripSetup();
+    const hub = getHubByName(setup.startPoint);
+
+    if (!hub || allDestinations.length === 0) {
+      addMessage({
+        role: 'system',
+        content: 'Complete setup first so Pathfinder can generate from the local destination map.'
+      });
+      return;
     }
+
+    const result = generateItinerary({
+      hub,
+      dayCount: 3,
+      budgetFilter: setup.budget,
+      selectedActivities: setup.activities,
+      allSpots: allDestinations
+    });
+
+    if (!Object.keys(result.days).length) {
+      addMessage({
+        role: 'system',
+        content: 'No local destinations matched the current activity and budget filters.'
+      });
+      return;
+    }
+
+    replaceItineraryDays(result.days);
+    addMessage({
+      role: 'system',
+      content: 'Generated a lightweight local itinerary from your selected activities and budget.'
+    });
   };
   
   if (generatePdfBtn) {
@@ -1157,41 +1290,85 @@ function renderDestinationPreview() {
   }
   
   const isAdded = isDestinationInDay(destination.id);
-  const imageSrc = destinationImages[destination.id];
-  const distanceText = destination.distanceFromHub || '10 km from hub';
+  const imageSrc = getDestinationImageSrc(destination);
+  const hub = getHubByName(getTripSetup().startPoint);
+  const distanceText = getDestinationDistanceText(destination, hub);
   const description = destination.description || 'Explore this destination and add it to your Catanduanes itinerary.';
+  const categoryLabel = destination.displayCategory || destination.categoryGroup || destination.category || 'Spot';
+  const bestTime = formatValue(destination.best_time_of_day, 'Any time');
+  const exposure = formatValue(destination.outdoor_exposure, 'Mixed');
+  const costLevel = destination.budgetLabel || formatValue(destination.min_budget, 'Low');
   
   previewContainer.innerHTML = `
     <div class="destination-image">
-      ${imageSrc ? `<img src="${imageSrc}" alt="${destination.name}" />` : `<div class="destination-placeholder">${categoryEmojis[destination.category] || '📍'}</div>`}
+      ${imageSrc ? `<img src="${imageSrc}" alt="${destination.name}" />` : `<div class="destination-placeholder">${categoryEmojis[categoryLabel] || '+'}</div>`}
       <span class="destination-distance">${distanceText}</span>
     </div>
     <div class="destination-content">
       <h3 class="destination-name">${destination.name}</h3>
       <p class="destination-description">${description}</p>
-      <button class="btn-add-trip ${isAdded ? 'btn-disabled' : ''}" id="add-trip-btn" ${isAdded ? 'disabled' : ''}>
-        ${isAdded ? 'Already Added' : 'Add Spot'}
+      <div class="destination-meta-grid">
+        <span><strong>Type</strong>${categoryLabel}</span>
+        <span><strong>Cost</strong>${costLevel}</span>
+        <span><strong>Best</strong>${bestTime}</span>
+        <span><strong>Exposure</strong>${exposure}</span>
+      </div>
+      <button class="btn-add-trip ${isAdded ? 'btn-remove-trip' : ''}" id="trip-toggle-btn">
+        ${isAdded ? 'Remove Spot' : 'Add Spot'}
       </button>
     </div>
   `;
   
-  // Setup add to trip button
-  const addBtn = document.getElementById('add-trip-btn');
-  if (addBtn && !isAdded) {
-    const clickHandler = () => handleAddToTrip(destination);
-    addBtn.addEventListener('click', clickHandler);
-    eventListeners.push({ element: addBtn, event: 'click', handler: clickHandler });
+  const toggleBtn = document.getElementById('trip-toggle-btn');
+  if (toggleBtn) {
+    const clickHandler = () => {
+      if (isAdded) {
+        handleRemoveFromTrip(destination.id);
+      } else {
+        handleAddToTrip(destination);
+      }
+    };
+    toggleBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: toggleBtn, event: 'click', handler: clickHandler });
   }
 }
 
 function handleAddToTrip(destination) {
   const result = addStopToDay(destination);
   if (result.success) {
-    // Show success feedback
     renderDestinationPreview();
   } else {
     console.log(result.message);
   }
+}
+
+function handleRemoveFromTrip(destinationId) {
+  const result = removeDestinationFromDay(destinationId);
+  if (!result.success) {
+    console.log(result.message);
+  }
+}
+
+function getDestinationImageSrc(destination) {
+  const directKey = destinationImages[destination.id];
+  if (directKey) return directKey;
+
+  const nameKey = String(destination.name || '').toLowerCase();
+  return destinationImages[nameKey] || '';
+}
+
+function getDestinationDistanceText(destination, hub) {
+  if (!destination?.coordinates || !hub?.coordinates) return 'Distance pending';
+  const distanceKm = calculateDistance(hub.coordinates, destination.coordinates);
+  return `${distanceKm} km from hub`;
+}
+
+function formatValue(value, fallback) {
+  const text = String(value || '').trim();
+  if (!text) return fallback;
+  return text
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
 }
 
 function renderItinerarySpots() {
@@ -1201,6 +1378,8 @@ function renderItinerarySpots() {
   if (!spotsContainer || !spotCountEl) return;
   
   const stops = getDayStops();
+  const hub = getHubByName(getTripSetup().startPoint);
+  const driveTimes = hub ? calculateDriveTimes(hub, stops, { includeReturnLeg: false }) : [];
   
   spotCountEl.textContent = `${stops.length} spot${stops.length !== 1 ? 's' : ''}`;
   
@@ -1215,7 +1394,7 @@ function renderItinerarySpots() {
         <div class="spot-drive-row">
           <span class="spot-timeline-dot"></span>
           <span class="spot-drive-icon">↝</span>
-          <span>21 min drive</span>
+          <span>${driveTimes[index]?.driveTime || 0} min drive</span>
         </div>
       ` : ''}
       <div class="spot-info">

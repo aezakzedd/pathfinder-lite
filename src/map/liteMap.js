@@ -32,7 +32,7 @@ const MAP_LABELS = [
 
 let mapInstance = null;
 
-export function initMap(containerId, destinations = []) {
+export function initMap(containerId, destinations = [], options = {}) {
   destroyMap();
 
   const container = document.getElementById(containerId);
@@ -45,62 +45,93 @@ export function initMap(containerId, destinations = []) {
     container,
     destinations,
     bounds: DEFAULT_BOUNDS,
-    geojsonMarkup: '',
-    labelMarkup: '',
     zoom: 1,
     popupDestination: null,
-    eventListeners: []
+    selectedDestinationId: null,
+    addedDestinationIds: new Set(),
+    hub: null,
+    routeCoordinates: [],
+    previewCoordinates: [],
+    eventListeners: [],
+    baseGroup: null,
+    overlayGroup: null,
+    popupLayer: null,
+    worldGroups: []
   };
 
   container.classList.add('lite-map');
-  container.innerHTML = renderMapShell(destinations, mapInstance.zoom);
+  container.innerHTML = renderMapShell();
+  cacheDomRefs();
   bindMapEvents();
 
-  fetch(GEOJSON_URL)
-    .then(response => response.json())
-    .then(geojson => {
-      if (!mapInstance || mapInstance.container !== container) return;
-      mapInstance.bounds = padBounds(computeGeoJsonBounds(geojson) || DEFAULT_BOUNDS);
-      mapInstance.geojsonMarkup = renderGeoJson(geojson);
-      mapInstance.labelMarkup = renderLabels();
-      renderMap();
-    })
-    .catch(error => {
-      console.warn('Failed to load Catanduanes GeoJSON:', error);
-    });
+  if (options.geojson) {
+    applyGeoJson(options.geojson);
+  } else {
+    fetch(GEOJSON_URL)
+      .then(response => response.json())
+      .then(geojson => {
+        if (!mapInstance || mapInstance.container !== container) return;
+        applyGeoJson(geojson);
+      })
+      .catch(error => {
+        console.warn('Failed to load Catanduanes GeoJSON:', error);
+        renderStaticBase();
+      });
+  }
 
+  renderDynamicLayers();
   return mapInstance;
 }
 
 export function addMarkers(destinations = []) {
   if (!mapInstance) return;
   mapInstance.destinations = destinations;
-  renderMap();
+  renderDynamicLayers();
+}
+
+export function updateMapState(updates = {}) {
+  if (!mapInstance) return;
+
+  if (updates.destinations) mapInstance.destinations = updates.destinations;
+  if ('hub' in updates) mapInstance.hub = updates.hub;
+  if ('selectedDestinationId' in updates) mapInstance.selectedDestinationId = updates.selectedDestinationId;
+  if ('addedDestinationIds' in updates) {
+    mapInstance.addedDestinationIds = new Set(updates.addedDestinationIds || []);
+  }
+  if ('routeCoordinates' in updates) mapInstance.routeCoordinates = updates.routeCoordinates || [];
+  if ('previewCoordinates' in updates) mapInstance.previewCoordinates = updates.previewCoordinates || [];
+  if ('popupDestination' in updates) mapInstance.popupDestination = updates.popupDestination;
+
+  renderDynamicLayers();
 }
 
 export function flyTo() {
   if (!mapInstance) return;
   mapInstance.zoom = 1.22;
-  renderMap();
+  updateZoomTransform();
+  renderDynamicLayers();
 }
 
 export function resetView() {
   if (!mapInstance) return;
   mapInstance.zoom = 1;
   mapInstance.popupDestination = null;
-  renderMap();
+  updateZoomTransform();
+  renderDynamicLayers();
 }
 
 export function zoomIn() {
   if (!mapInstance) return;
   mapInstance.zoom = Math.min(mapInstance.zoom + 0.18, 1.9);
-  renderMap();
+  updateZoomTransform();
+  renderDynamicLayers();
 }
 
 export function zoomOut() {
   if (!mapInstance) return;
   mapInstance.zoom = Math.max(mapInstance.zoom - 0.18, 0.82);
-  renderMap();
+  updateZoomTransform();
+  renderDynamicLayers();
 }
 
 export function getMap() {
@@ -119,23 +150,10 @@ export function destroyMap() {
 }
 
 export function invalidateSize() {
-  renderMap();
+  updateZoomTransform();
 }
 
-function renderMap() {
-  if (!mapInstance) return;
-  mapInstance.container.innerHTML = renderMapShell(
-    mapInstance.destinations,
-    mapInstance.zoom,
-    mapInstance.popupDestination
-  );
-  bindMapEvents();
-}
-
-function renderMapShell(destinations, zoom, popupDestination = null) {
-  const geojsonMarkup = mapInstance?.geojsonMarkup || `<path class="lite-map-island" d="${fallbackIslandPath()}" />`;
-  const labelMarkup = mapInstance?.labelMarkup || renderLabels();
-
+function renderMapShell() {
   return `
     <div class="lite-map-stage">
       <svg class="lite-map-svg" viewBox="0 0 ${MAP_VIEWBOX_SIZE} ${MAP_VIEWBOX_SIZE}" role="img" aria-label="Catanduanes map">
@@ -145,23 +163,57 @@ function renderMapShell(destinations, zoom, popupDestination = null) {
           </filter>
         </defs>
         <rect class="lite-map-sea" width="${MAP_VIEWBOX_SIZE}" height="${MAP_VIEWBOX_SIZE}" />
-        <g class="lite-map-world" transform="${getZoomTransform(zoom)}">
-          ${geojsonMarkup}
-          ${labelMarkup}
-          ${renderMarkers(destinations)}
-        </g>
+        <g class="lite-map-world lite-map-base" data-map-base></g>
+        <g class="lite-map-world lite-map-overlay" data-map-overlay></g>
       </svg>
-      ${popupDestination ? renderPopup(popupDestination) : ''}
+      <div class="lite-map-popup-layer" data-map-popup></div>
       <div class="lite-map-attribution">Local GeoJSON map</div>
     </div>
   `;
 }
 
-function renderGeoJson(geojson) {
-  if (!geojson?.features?.length) {
-    return `<path class="lite-map-island" d="${fallbackIslandPath()}" />`;
+function cacheDomRefs() {
+  if (!mapInstance) return;
+  mapInstance.baseGroup = mapInstance.container.querySelector('[data-map-base]');
+  mapInstance.overlayGroup = mapInstance.container.querySelector('[data-map-overlay]');
+  mapInstance.popupLayer = mapInstance.container.querySelector('[data-map-popup]');
+  mapInstance.worldGroups = Array.from(mapInstance.container.querySelectorAll('.lite-map-world'));
+  updateZoomTransform();
+}
+
+function applyGeoJson(geojson) {
+  if (!mapInstance) return;
+  mapInstance.bounds = padBounds(computeGeoJsonBounds(geojson) || DEFAULT_BOUNDS);
+  renderStaticBase(geojson);
+  renderDynamicLayers();
+}
+
+function renderStaticBase(geojson = null) {
+  if (!mapInstance?.baseGroup) return;
+  const baseMarkup = geojson?.features?.length
+    ? `${renderGeoJson(geojson)}${renderLabels()}`
+    : `<path class="lite-map-island" d="${fallbackIslandPath()}" />${renderLabels()}`;
+
+  mapInstance.baseGroup.innerHTML = baseMarkup;
+}
+
+function renderDynamicLayers() {
+  if (!mapInstance) return;
+  if (mapInstance.overlayGroup) {
+    mapInstance.overlayGroup.innerHTML = `
+      ${renderRouteLine(mapInstance.routeCoordinates, 'lite-map-route-line')}
+      ${renderRouteLine(mapInstance.previewCoordinates, 'lite-map-preview-line')}
+      ${renderHubMarker(mapInstance.hub)}
+      ${renderMarkers(mapInstance.destinations)}
+    `;
   }
 
+  if (mapInstance.popupLayer) {
+    mapInstance.popupLayer.innerHTML = mapInstance.popupDestination ? renderPopup(mapInstance.popupDestination) : '';
+  }
+}
+
+function renderGeoJson(geojson) {
   return geojson.features.map(feature => {
     const geometry = feature.geometry;
     if (!geometry) return '';
@@ -195,33 +247,70 @@ function renderLabels() {
   }).join('');
 }
 
+function renderRouteLine(coordinates = [], className) {
+  if (!Array.isArray(coordinates) || coordinates.length < 2) return '';
+  const points = coordinates
+    .map(project)
+    .map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join(' ');
+
+  return `<polyline class="${className}" points="${points}" vector-effect="non-scaling-stroke" />`;
+}
+
+function renderHubMarker(hub) {
+  if (!hub?.coordinates || hub.coordinates.length < 2) return '';
+  const point = project(hub.coordinates);
+  return `
+    <g class="lite-map-hub-marker" transform="translate(${point.x} ${point.y})" aria-label="${escapeHtml(hub.name)} hub">
+      <circle class="lite-map-hub-halo" r="34" />
+      <circle class="lite-map-hub-dot" r="15" />
+      <text class="lite-map-hub-label" y="50">${escapeHtml(hub.name)}</text>
+    </g>
+  `;
+}
+
 function renderMarkers(destinations = []) {
   return destinations.map(destination => {
     if (!destination.coordinates || destination.coordinates.length < 2) return '';
 
     const point = project(destination.coordinates);
-    const color = CATEGORY_COLORS[destination.category] || '#3b82f6';
+    const displayCategory = destination.categoryGroup || destination.displayCategory || destination.category;
+    const color = destination.isTop10 || destination.is_top_10
+      ? '#ef4444'
+      : (CATEGORY_COLORS[displayCategory] || '#3b82f6');
+    const isSelected = mapInstance.selectedDestinationId === destination.id;
+    const isAdded = mapInstance.addedDestinationIds.has(destination.id);
+    const featuredClass = destination.isTop10 || destination.is_top_10 ? ' featured' : '';
+    const selectedClass = isSelected ? ' selected' : '';
+    const addedClass = isAdded ? ' added' : '';
+    const pinSize = destination.isTop10 || destination.is_top_10 ? 1.12 : 1;
 
     return `
-      <g class="lite-map-marker" data-destination-id="${escapeHtml(destination.id)}" transform="translate(${point.x} ${point.y})" tabindex="0" role="button" aria-label="${escapeHtml(destination.name)}">
+      <g class="lite-map-marker${featuredClass}${selectedClass}${addedClass}" data-destination-id="${escapeHtml(destination.id)}" transform="translate(${point.x} ${point.y}) scale(${pinSize})" tabindex="0" role="button" aria-label="${escapeHtml(destination.name)}">
+        <circle class="lite-map-selected-ring" r="40" />
         <path d="M0 -30C18 -30 30 -18 30 0c0 22-30 44-30 44S-30 22-30 0c0-18 12-30 30-30Z" fill="${color}" />
         <path d="M0 -30C18 -30 30 -18 30 0c0 22-30 44-30 44S-30 22-30 0c0-18 12-30 30-30Z" class="lite-map-marker-outline" />
         <circle cx="0" cy="0" r="10" class="lite-map-marker-core" />
+        ${featuredClass ? `<text class="lite-map-marker-label" y="61">${escapeHtml(destination.name)}</text>` : ''}
       </g>
     `;
   }).join('');
 }
 
 function renderPopup(destination) {
-  const point = project(destination.coordinates);
+  const point = projectForCurrentZoom(destination.coordinates);
   const left = (point.x / MAP_VIEWBOX_SIZE) * 100;
   const top = (point.y / MAP_VIEWBOX_SIZE) * 100;
+  const isAdded = mapInstance.addedDestinationIds.has(destination.id);
+  const actionAttr = isAdded ? 'data-popup-remove' : 'data-popup-add';
+  const actionText = isAdded ? 'Remove Spot' : 'Add Spot';
+  const category = destination.displayCategory || destination.categoryGroup || destination.category || 'Spot';
 
   return `
     <div class="lite-map-popup" style="left: ${left}%; top: ${top}%;">
       <strong>${escapeHtml(destination.name)}</strong>
-      <span>${escapeHtml(destination.category)} - ${escapeHtml(destination.estimatedTime || '1 hour')}</span>
-      <button type="button" data-popup-add="${escapeHtml(destination.id)}">Add Spot</button>
+      <span>${escapeHtml(category)} - ${escapeHtml(destination.budgetLabel || destination.min_budget || 'low')}</span>
+      <button type="button" ${actionAttr}="${escapeHtml(destination.id)}">${actionText}</button>
     </div>
   `;
 }
@@ -236,15 +325,17 @@ function bindMapEvents() {
   mapInstance.eventListeners = [];
 
   const clickHandler = event => {
-    const marker = event.target.closest?.('.lite-map-marker');
     const addButton = event.target.closest?.('[data-popup-add]');
+    const removeButton = event.target.closest?.('[data-popup-remove]');
+    const marker = event.target.closest?.('.lite-map-marker');
 
-    if (addButton) {
-      const destination = findDestination(addButton.dataset.popupAdd);
+    if (addButton || removeButton) {
+      const destination = findDestination(addButton?.dataset.popupAdd || removeButton?.dataset.popupRemove);
       if (destination) {
-        document.dispatchEvent(new CustomEvent('add-to-trip', { detail: { destination } }));
-        mapInstance.popupDestination = null;
-        renderMap();
+        const eventName = addButton ? 'add-to-trip' : 'remove-from-trip';
+        document.dispatchEvent(new CustomEvent(eventName, { detail: { destination } }));
+        mapInstance.popupDestination = destination;
+        renderDynamicLayers();
       }
       return;
     }
@@ -254,14 +345,15 @@ function bindMapEvents() {
       if (destination) {
         mapInstance.popupDestination = destination;
         document.dispatchEvent(new CustomEvent('select-destination', { detail: { destination } }));
-        renderMap();
+        renderDynamicLayers();
       }
       return;
     }
 
     if (event.target.closest?.('.lite-map-popup')) return;
     mapInstance.popupDestination = null;
-    renderMap();
+    document.dispatchEvent(new CustomEvent('clear-destination'));
+    renderDynamicLayers();
   };
 
   const keyHandler = event => {
@@ -274,7 +366,7 @@ function bindMapEvents() {
     if (destination) {
       mapInstance.popupDestination = destination;
       document.dispatchEvent(new CustomEvent('select-destination', { detail: { destination } }));
-      renderMap();
+      renderDynamicLayers();
     }
   };
 
@@ -285,7 +377,16 @@ function bindMapEvents() {
 }
 
 function findDestination(destinationId) {
-  return mapInstance?.destinations.find(destination => destination.id === destinationId);
+  return mapInstance?.destinations.find(destination => destination.id === destinationId) ||
+    (mapInstance?.popupDestination?.id === destinationId ? mapInstance.popupDestination : null);
+}
+
+function updateZoomTransform() {
+  if (!mapInstance) return;
+  const transform = getZoomTransform(mapInstance.zoom);
+  mapInstance.worldGroups.forEach(group => {
+    group.setAttribute('transform', transform);
+  });
 }
 
 function getZoomTransform(zoom) {
@@ -324,6 +425,16 @@ function project([lng, lat]) {
   const x = ((lng - bounds.minLng) / lngSpan) * MAP_VIEWBOX_SIZE;
   const y = ((bounds.maxLat - lat) / latSpan) * MAP_VIEWBOX_SIZE;
   return { x, y };
+}
+
+function projectForCurrentZoom(coordinates) {
+  const point = project(coordinates);
+  const origin = MAP_VIEWBOX_SIZE / 2;
+  const zoom = mapInstance?.zoom || 1;
+  return {
+    x: origin + ((point.x - origin) * zoom),
+    y: origin + ((point.y - origin) * zoom)
+  };
 }
 
 function computeGeoJsonBounds(geojson) {

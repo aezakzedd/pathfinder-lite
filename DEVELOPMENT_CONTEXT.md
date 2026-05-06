@@ -188,17 +188,31 @@
 - Removed unused hidden itinerary preview, day-tab, and time-wallet UI remnants
 - Trimmed unused destination imagery from the public image set
 
+**Focused Phase: Restore Original Pathfinder Map Features Lightweight**
+- Added vanilla utility ports for distance, route optimization, itinerary generation, and visual route helpers in `src/utils/`
+- Switched itinerary markers from sample JSON to the real local GeoJSON destination points
+- Added activity and budget marker filtering using original Pathfinder category mappings
+- Added selected hub marker for Virac and San Andres
+- Added current-day SVG route line and selected-destination preview route line
+- Added selected marker highlighting and featured/top-10 marker styling
+- Added popup Add Spot/Remove Spot state with matching itinerary updates
+- Sent `active_pin` with chatbot requests and selected returned `locations` by matching local destination data
+- Expanded destination details with distance from hub, cost, best time, exposure, and add/remove state
+- Kept the lightweight local SVG/GeoJSON renderer and avoided new dependencies
+
 ## Current Known Implementation
 
 **Working Features:**
 - Home page with full layout and animations
 - About, Contact, and Creators pages are polished with kiosk-consistent styling
 - Itinerary page with local SVG/GeoJSON Catanduanes map
+- Itinerary map filters markers by selected activities and budget
+- Itinerary map shows selected start hub, current-day route, preview route, selected marker highlight, and featured markers
 - First visit to itinerary opens setup overlay until setup is completed
 - Setup completion persists in localStorage and can be reopened from the top-right Setup control
 - Setup overlay validates start point, trip date, and activities before enabling Done
 - Destination marker click updates preview card
-- Add to Trip button adds to active day
+- Add/Remove Spot buttons on map popup and details card update the active day
 - Duplicate stop prevention
 - Itinerary list is dynamic per day
 - Day tabs switch between Day 1, 2, 3
@@ -228,15 +242,15 @@
 
 ## Current Bundle Size
 
-Latest build (Lightweight GeoJSON map and lazy routes):
+Latest build (Restore Original Pathfinder Map Features Lightweight):
 - HTML: 0.56 kB
-- Main CSS: 72.16 kB
-- Main JS: 66.23 kB
+- Main CSS: 74.27 kB
+- Main JS: 84.74 kB
 - Lazy route CSS chunks: 13.21 kB total
 - Lazy route JS chunks: 18.55 kB total
-- Full built assets: ~170.71 kB
+- Full built JS/CSS assets: ~190.77 kB
 
-Initial itinerary payload is significantly smaller than the previous ~308.08 kB bundle.
+Initial itinerary payload remains significantly smaller than the previous ~308.08 kB bundle, excluding the offline GeoJSON data asset.
 
 ## Important Technical Notes
 
@@ -252,6 +266,7 @@ Initial itinerary payload is significantly smaller than the previous ~308.08 kB 
 - Local map geometry is in `public/data/catanduanes_datafile.geojson`
 - The map no longer requests external tiles and no longer depends on Leaflet
 - The renderer preserves the same itinerary events for destination selection and Add to Trip
+- Map feature utilities are in `src/utils/distance.js`, `src/utils/generateItinerary.js`, `src/utils/optimize.js`, and `src/utils/visualRoute.js`
 
 **Event Listener Management:**
 - All event listeners must be tracked in `eventListeners` array

@@ -184,7 +184,7 @@ function addStopToDay(destination) {
     ...destination,
     stopId: `${destination.id}-${Date.now()}`,
     time: '9:00 AM',
-    duration: parseDuration(destination.estimatedTime)
+    duration: parseDuration(destination.estimatedTime, destination.visit_time_minutes)
   };
   
   state.days[day].push(stop);
@@ -198,6 +198,38 @@ function addStopToDay(destination) {
 function removeStopFromDay(stopId) {
   const day = state.activeDay;
   state.days[day] = state.days[day].filter(stop => stop.stopId !== stopId);
+  saveState();
+  notifyListeners();
+}
+
+function removeDestinationFromDay(destinationId, day = null) {
+  const targetDay = day || state.activeDay;
+  const stop = state.days[targetDay]?.find(item => item.id === destinationId);
+  if (!stop) {
+    return { success: false, message: 'Destination is not in this day' };
+  }
+
+  state.days[targetDay] = state.days[targetDay].filter(item => item.id !== destinationId);
+  saveState();
+  notifyListeners();
+  return { success: true, message: 'Removed from itinerary' };
+}
+
+function replaceItineraryDays(days = {}) {
+  const timestamp = Date.now();
+  state.days = { 1: [], 2: [], 3: [] };
+
+  [1, 2, 3].forEach(day => {
+    const dayStops = Array.isArray(days[day]) ? days[day] : [];
+    state.days[day] = dayStops.map((destination, index) => ({
+      ...destination,
+      stopId: `${destination.id}-${timestamp}-${day}-${index}`,
+      time: destination.time || '9:00 AM',
+      duration: parseDuration(destination.estimatedTime, destination.visit_time_minutes)
+    }));
+  });
+
+  state.activeDay = 1;
   saveState();
   notifyListeners();
 }
@@ -357,7 +389,12 @@ function getState() {
 }
 
 // Parse duration string to hours (e.g., "2-3 hours" -> 2.5)
-function parseDuration(durationStr) {
+function parseDuration(durationStr, visitTimeMinutes = null) {
+  const minutes = Number(visitTimeMinutes);
+  if (Number.isFinite(minutes) && minutes > 0) {
+    return minutes / 60;
+  }
+
   if (!durationStr) return 1; // Default 1 hour
   
   const match = durationStr.match(/(\d+)(?:-(\d+))?\s*hours?/i);
@@ -383,6 +420,8 @@ export {
   getAllDays,
   addStopToDay,
   removeStopFromDay,
+  removeDestinationFromDay,
+  replaceItineraryDays,
   moveStopUp,
   moveStopDown,
   reorderStop,
