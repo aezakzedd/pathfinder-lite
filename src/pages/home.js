@@ -6,6 +6,7 @@ export function renderHome(container) {
       <section class="hero">
         <div class="hero-bg"></div>
         <div class="hero-content">
+          <div class="debug-badge">PATHFINDER-LITE ACTIVE</div>
           <div class="status-badge">
             <span class="status-dot"></span>
             <span>Live · Catanduanes Tourism</span>
