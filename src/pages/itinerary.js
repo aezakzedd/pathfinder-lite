@@ -38,6 +38,8 @@ let chatUnsubscribe = null;
 let eventListeners = [];
 let isSending = false;
 let setupOverlayOpen = false;
+let setupCalendarOpen = false;
+let setupOpenedFromCompleted = false;
 
 const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
 const budgetOptions = [
@@ -252,8 +254,9 @@ export function renderItinerary(container) {
             </button>
             <button class="setup-open-btn" id="open-setup-btn" type="button">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
+              <span>Setup</span>
             </button>
             <button class="setup-icon-btn setup-info-control" type="button" id="map-info-btn" aria-label="Show Info">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -344,7 +347,7 @@ export function renderItinerary(container) {
                     </svg>
                   </span>
                   <select id="setup-start-point" class="setup-input setup-select" aria-label="Start point">
-                    <option value="" disabled selected>Set start point here</option>
+                    <option value="" disabled selected></option>
                     <option value="Virac">Virac</option>
                     <option value="San Andres">San Andres</option>
                   </select>
@@ -357,7 +360,14 @@ export function renderItinerary(container) {
                       <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                     </svg>
                   </span>
-                  <input id="setup-trip-date" class="setup-input setup-date" type="date" aria-label="Trip date" />
+                  <input id="setup-trip-date" class="setup-input setup-date" type="text" inputmode="none" readonly aria-label="Trip date" />
+                  <button class="setup-calendar-trigger" id="setup-calendar-trigger" type="button" aria-label="Open calendar">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8" />
+                      <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                  </button>
+                  <div class="setup-calendar-popover" id="setup-calendar-popover" aria-hidden="true"></div>
                 </label>
 
                 <div class="setup-budget-group">
@@ -543,7 +553,9 @@ function setupMapControls() {
       
       if (isCurrentlyOpen) {
         setupOverlayOpen = false;
+        setupOpenedFromCompleted = false;
       } else {
+        setupOpenedFromCompleted = setup.completed && isValid;
         setupOverlayOpen = true;
       }
       renderTripSetup();
@@ -569,6 +581,8 @@ function setupMapMarkerHandlers() {
 function setupTripSetupHandlers() {
   const startSelect = document.getElementById('setup-start-point');
   const dateInput = document.getElementById('setup-trip-date');
+  const calendarTrigger = document.getElementById('setup-calendar-trigger');
+  const calendarPopover = document.getElementById('setup-calendar-popover');
   const budgetRange = document.getElementById('setup-budget-range');
   const budgetButtons = document.querySelectorAll('.setup-budget-option');
   const activityButtons = document.querySelectorAll('.setup-activity-btn');
@@ -583,11 +597,32 @@ function setupTripSetupHandlers() {
   }
 
   if (dateInput) {
-    const changeHandler = () => {
-      updateTripSetup({ tripDate: dateInput.value });
+    const clickHandler = () => {
+      setupCalendarOpen = true;
+      renderTripSetup();
     };
-    dateInput.addEventListener('change', changeHandler);
-    eventListeners.push({ element: dateInput, event: 'change', handler: changeHandler });
+    dateInput.addEventListener('click', clickHandler);
+    eventListeners.push({ element: dateInput, event: 'click', handler: clickHandler });
+  }
+
+  if (calendarTrigger) {
+    const clickHandler = () => {
+      setupCalendarOpen = !setupCalendarOpen;
+      renderTripSetup();
+    };
+    calendarTrigger.addEventListener('click', clickHandler);
+    eventListeners.push({ element: calendarTrigger, event: 'click', handler: clickHandler });
+  }
+
+  if (calendarPopover) {
+    const clickHandler = (event) => {
+      const dateButton = event.target.closest('[data-calendar-date]');
+      if (!dateButton) return;
+      setupCalendarOpen = false;
+      updateTripSetup({ tripDate: dateButton.dataset.calendarDate });
+    };
+    calendarPopover.addEventListener('click', clickHandler);
+    eventListeners.push({ element: calendarPopover, event: 'click', handler: clickHandler });
   }
 
   if (budgetRange) {
@@ -620,6 +655,8 @@ function setupTripSetupHandlers() {
       const result = completeTripSetup();
       if (result.success) {
         setupOverlayOpen = false;
+        setupCalendarOpen = false;
+        setupOpenedFromCompleted = false;
         renderTripSetup();
       }
     };
@@ -629,6 +666,8 @@ function setupTripSetupHandlers() {
 }
 
 function openTripSetup() {
+  const setup = getTripSetup();
+  setupOpenedFromCompleted = setup.completed && isTripSetupComplete(setup);
   setupOverlayOpen = true;
   renderTripSetup();
 }
@@ -659,6 +698,7 @@ function renderTripSetup() {
   const dim = document.getElementById('setup-map-dim');
   const startSelect = document.getElementById('setup-start-point');
   const dateInput = document.getElementById('setup-trip-date');
+  const calendarPopover = document.getElementById('setup-calendar-popover');
   const budgetRange = document.getElementById('setup-budget-range');
   const budgetButtons = document.querySelectorAll('.setup-budget-option');
   const activityButtons = document.querySelectorAll('.setup-activity-btn');
@@ -669,9 +709,12 @@ function renderTripSetup() {
   const setup = getTripSetup();
   const isValid = isTripSetupComplete(setup);
   const isOpen = setupOverlayOpen || !setup.completed || !isValid;
+  const isInitialSetup = isOpen && !setupOpenedFromCompleted && (!setup.completed || !isValid);
   setupOverlayOpen = isOpen;
 
   page.classList.toggle('setup-active', isOpen);
+  page.classList.toggle('setup-initial', isInitialSetup);
+  page.classList.toggle('setup-reopen', isOpen && !isInitialSetup);
   overlay.classList.toggle('setup-visible', isOpen);
   overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
   if (dim) dim.classList.toggle('setup-map-dim-visible', isOpen);
@@ -680,8 +723,17 @@ function renderTripSetup() {
     startSelect.value = setup.startPoint;
   }
 
-  if (dateInput && dateInput.value !== setup.tripDate) {
-    dateInput.value = setup.tripDate;
+  if (dateInput) {
+    const displayDate = formatSetupDateDisplay(setup.tripDate);
+    if (dateInput.value !== displayDate) {
+      dateInput.value = displayDate;
+    }
+  }
+
+  if (calendarPopover) {
+    calendarPopover.classList.toggle('setup-calendar-open', setupCalendarOpen);
+    calendarPopover.setAttribute('aria-hidden', setupCalendarOpen ? 'false' : 'true');
+    calendarPopover.innerHTML = renderSetupCalendar(setup.tripDate);
   }
 
   const budgetIndex = Math.max(0, budgetOptions.findIndex(option => option.value === setup.budget));
@@ -707,6 +759,87 @@ function renderTripSetup() {
   if (mapInitialized) {
     window.requestAnimationFrame(() => invalidateSize());
   }
+}
+
+function formatSetupDateDisplay(dateValue) {
+  if (!dateValue) return '';
+
+  const start = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(start.getTime())) return '';
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 1);
+
+  const month = start.toLocaleString('en-US', { month: 'short' });
+  const endMonth = end.toLocaleString('en-US', { month: 'short' });
+  const startDay = start.getDate();
+  const endDay = end.getDate();
+
+  return `${month} ${startDay} - ${endMonth} ${endDay}`;
+}
+
+function renderSetupCalendar(dateValue) {
+  const selected = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+  const year = selected.getFullYear();
+  const month = selected.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const monthLabel = selected.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const selectedDay = selected.getDate();
+  const rangeEnd = new Date(selected);
+  rangeEnd.setDate(selectedDay + 1);
+  const weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const cells = [];
+
+  for (let index = 0; index < 42; index += 1) {
+    const dayNumber = index - startOffset + 1;
+    let cellDate;
+    let cellLabel;
+    let muted = false;
+
+    if (dayNumber < 1) {
+      cellLabel = daysInPrevMonth + dayNumber;
+      cellDate = new Date(year, month - 1, cellLabel);
+      muted = true;
+    } else if (dayNumber > daysInMonth) {
+      cellLabel = dayNumber - daysInMonth;
+      cellDate = new Date(year, month + 1, cellLabel);
+      muted = true;
+    } else {
+      cellLabel = dayNumber;
+      cellDate = new Date(year, month, cellLabel);
+    }
+
+    const isoDate = toIsoDate(cellDate);
+    const inRange = isoDate === dateValue || isoDate === toIsoDate(rangeEnd);
+    cells.push(`
+      <button class="setup-calendar-day ${muted ? 'muted' : ''} ${inRange ? 'selected' : ''}" type="button" data-calendar-date="${isoDate}">
+        ${cellLabel}
+      </button>
+    `);
+  }
+
+  return `
+    <div class="setup-calendar-header">
+      <span>${monthLabel}</span>
+      <span class="setup-calendar-next" aria-hidden="true">›</span>
+    </div>
+    <div class="setup-calendar-weekdays">
+      ${weekdayLabels.map(day => `<span>${day}</span>`).join('')}
+    </div>
+    <div class="setup-calendar-grid">
+      ${cells.join('')}
+    </div>
+  `;
+}
+
+function toIsoDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function setupDayTabs() {
