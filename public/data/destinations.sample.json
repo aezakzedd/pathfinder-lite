@@ -1,0 +1,84 @@
+{
+  "destinations": [
+    {
+      "id": "puraran-beach",
+      "name": "Puraran Beach",
+      "category": "Water",
+      "municipality": "Baras",
+      "coordinates": [124.25, 13.70],
+      "description": "Famous surfing destination with powerful waves",
+      "estimatedTime": "2-3 hours",
+      "budget": "P50-300"
+    },
+    {
+      "id": "binurong-point",
+      "name": "Binurong Point",
+      "category": "Views",
+      "municipality": "Bato",
+      "coordinates": [124.30, 13.65],
+      "description": "Scenic cliff overlooking the Pacific Ocean",
+      "estimatedTime": "1-2 hours",
+      "budget": "Free"
+    },
+    {
+      "id": "twin-rock",
+      "name": "Twin Rock Beach Resort",
+      "category": "Water",
+      "municipality": "Virac",
+      "coordinates": [124.23, 13.58],
+      "description": "Popular beach resort with twin rock formations",
+      "estimatedTime": "3-4 hours",
+      "budget": "P100-500"
+    },
+    {
+      "id": "mamangsal",
+      "name": "Mamangsal Falls",
+      "category": "Water",
+      "municipality": "Gigmoto",
+      "coordinates": [124.40, 13.75],
+      "description": "Hidden waterfall in the mountains",
+      "estimatedTime": "2-3 hours",
+      "budget": "Free"
+    },
+    {
+      "id": "caramoran-beach",
+      "name": "Caramoran Beach",
+      "category": "Water",
+      "municipality": "Caramoran",
+      "coordinates": [124.15, 13.55],
+      "description": "Pristine beach in the western coast",
+      "estimatedTime": "2-3 hours",
+      "budget": "P50-200"
+    },
+    {
+      "id": "bato-church",
+      "name": "Bato Church",
+      "category": "Heritage",
+      "municipality": "Bato",
+      "coordinates": [124.28, 13.63],
+      "description": "Historic Spanish-era church",
+      "estimatedTime": "1 hour",
+      "budget": "Free"
+    },
+    {
+      "id": "vira-church",
+      "name": "Virac Cathedral",
+      "category": "Heritage",
+      "municipality": "Virac",
+      "coordinates": [124.23, 13.58],
+      "description": "Main cathedral of Catanduanes",
+      "estimatedTime": "1 hour",
+      "budget": "Free"
+    },
+    {
+      "id": "luyang-cave",
+      "name": "Luyang Cave",
+      "category": "Outdoor",
+      "municipality": "San Andres",
+      "coordinates": [124.10, 13.60],
+      "description": "Natural cave with unique rock formations",
+      "estimatedTime": "1-2 hours",
+      "budget": "P50-100"
+    }
+  ]
+}

@@ -1,4 +1,8 @@
 // Itinerary page module
+import { initMap, zoomIn, zoomOut, resetView, destroyMap } from '../map/leafletMap.js';
+
+let mapInitialized = false;
+
 export function renderItinerary(container) {
   container.innerHTML = `
     <div class="page page-itinerary">
@@ -72,31 +76,12 @@ export function renderItinerary(container) {
             <p class="map-description">Explore the island of happiness with AI-powered travel guidance</p>
           </div>
           
-          <!-- Map Placeholder -->
-          <div class="map-placeholder">
-            <div class="map-canvas">
-              <div class="map-marker marker-1" style="top: 30%; left: 40%;">
-                <div class="marker-pin"></div>
-                <span class="marker-label">Puraran</span>
-              </div>
-              <div class="map-marker marker-2" style="top: 45%; left: 55%;">
-                <div class="marker-pin"></div>
-                <span class="marker-label">Binurong</span>
-              </div>
-              <div class="map-marker marker-3" style="top: 60%; left: 35%;">
-                <div class="marker-pin"></div>
-                <span class="marker-label">Twin Rock</span>
-              </div>
-              <div class="map-marker marker-4" style="top: 25%; left: 65%;">
-                <div class="marker-pin"></div>
-                <span class="marker-label">Caramoran</span>
-              </div>
-            </div>
-          </div>
+          <!-- Real Leaflet Map -->
+          <div id="pathfinder-map" class="map-placeholder"></div>
           
           <!-- Map Controls -->
           <div class="map-controls">
-            <button class="map-control-btn" aria-label="Zoom in">
+            <button class="map-control-btn" id="zoom-in-btn" aria-label="Zoom in">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
@@ -104,25 +89,25 @@ export function renderItinerary(container) {
                 <path d="M8 11h6" />
               </svg>
             </button>
-            <button class="map-control-btn" aria-label="Zoom out">
+            <button class="map-control-btn" id="zoom-out-btn" aria-label="Zoom out">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
                 <path d="M8 11h6" />
               </svg>
             </button>
-            <button class="map-control-btn" aria-label="Locate me">
+            <button class="map-control-btn" id="locate-btn" aria-label="Locate me">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
             </button>
-            <button class="map-control-btn" aria-label="Filter">
+            <button class="map-control-btn" id="filter-btn" aria-label="Filter">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
               </svg>
             </button>
-            <button class="map-control-btn" aria-label="Reset view">
+            <button class="map-control-btn" id="reset-btn" aria-label="Reset view">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                 <path d="M3 3v5h5" />
@@ -291,4 +276,69 @@ export function renderItinerary(container) {
       </div>
     </div>
   `;
+
+  // Initialize map after DOM is updated
+  setTimeout(() => {
+    if (!mapInitialized) {
+      // Load destination data
+      fetch('/data/destinations.sample.json')
+        .then(response => response.json())
+        .then(data => {
+          initMap('pathfinder-map', data.destinations);
+          mapInitialized = true;
+          
+          // Setup control button handlers
+          setupMapControls();
+        })
+        .catch(error => {
+          console.error('Failed to load destination data:', error);
+          // Initialize map without data
+          initMap('pathfinder-map', []);
+          mapInitialized = true;
+          setupMapControls();
+        });
+    }
+  }, 100);
+}
+
+function setupMapControls() {
+  const zoomInBtn = document.getElementById('zoom-in-btn');
+  const zoomOutBtn = document.getElementById('zoom-out-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  const locateBtn = document.getElementById('locate-btn');
+  const filterBtn = document.getElementById('filter-btn');
+
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', () => zoomIn());
+  }
+
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', () => zoomOut());
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => resetView());
+  }
+
+  if (locateBtn) {
+    locateBtn.addEventListener('click', () => {
+      // Placeholder for locate functionality
+      console.log('Locate me - to be implemented');
+    });
+  }
+
+  if (filterBtn) {
+    filterBtn.addEventListener('click', () => {
+      // Placeholder for filter functionality
+      console.log('Filter - to be implemented');
+    });
+  }
+}
+
+// Cleanup function to be called when leaving the page
+export function cleanupItinerary() {
+  if (mapInitialized) {
+    destroyMap();
+    mapInitialized = false;
+  }
 }
