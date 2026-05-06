@@ -592,8 +592,8 @@ body[data-route="itinerary"] .page-container {
 
 .page-itinerary.setup-active .itinerary-container {
   grid-template-columns: 1fr;
-  padding: 4px;
-  background: #f8fafc;
+  padding: 0;
+  background: transparent;
 }
 
 .page-itinerary.setup-active .map-header,

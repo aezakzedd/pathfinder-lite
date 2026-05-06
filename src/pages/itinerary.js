@@ -200,9 +200,11 @@ export function renderItinerary(container) {
               </svg>
               Setup
             </button>
-            <button class="setup-icon-btn setup-home-control" type="button" data-navigate="#/" aria-label="Go to home">
+            <button class="setup-icon-btn setup-info-control" type="button" id="map-info-btn" aria-label="Map information">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3V10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8" />
+                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
               </svg>
             </button>
           </div>
@@ -215,11 +217,10 @@ export function renderItinerary(container) {
             <div class="trip-setup-content">
               <div class="form-group">
                 <label class="form-label">Start Point</label>
-                <select class="form-select">
-                  <option value="">Select starting hub</option>
+                <select class="form-select" id="start-point-select">
+                  <option value="" disabled selected>Select starting hub</option>
                   <option value="virac">Virac</option>
                   <option value="san-andres">San Andres</option>
-                  <option value="caramoran">Caramoran</option>
                 </select>
               </div>
               <div class="form-group">
@@ -287,7 +288,7 @@ export function renderItinerary(container) {
                     </svg>
                   </span>
                   <select id="setup-start-point" class="setup-input setup-select" aria-label="Start point">
-                    <option value="">Set start point here</option>
+                    <option value="" disabled selected>Set start point here</option>
                     <option value="Virac">Virac</option>
                     <option value="San Andres">San Andres</option>
                   </select>
@@ -468,6 +469,7 @@ function setupMapControls() {
   const locateBtn = document.getElementById('locate-btn');
   const filterBtn = document.getElementById('filter-btn');
   const openSetupBtn = document.getElementById('open-setup-btn');
+  const mapInfoBtn = document.getElementById('map-info-btn');
 
   if (zoomInBtn) {
     const clickHandler = () => zoomIn();
@@ -504,9 +506,19 @@ function setupMapControls() {
   }
 
   if (openSetupBtn) {
-    const clickHandler = () => openTripSetup();
+    const clickHandler = () => {
+      openTripSetup();
+    };
     openSetupBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: openSetupBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (mapInfoBtn) {
+    const clickHandler = () => {
+      showMapInfo();
+    };
+    mapInfoBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: mapInfoBtn, event: 'click', handler: clickHandler });
   }
 }
 
@@ -580,6 +592,12 @@ function setupTripSetupHandlers() {
 function openTripSetup() {
   setupOverlayOpen = true;
   renderTripSetup();
+}
+
+function showMapInfo() {
+  // Placeholder for map information display
+  // For now, show a simple alert with map info
+  alert('Catanduanes Map\n\nLocation: Bicol Region, Philippines\nCoordinates: 13.7°N, 124.2°E\n\nMap shows tourism destinations across the island including beaches, waterfalls, heritage sites, and dining options.');
 }
 
 function renderTripSetup() {
