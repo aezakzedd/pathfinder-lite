@@ -1,5 +1,5 @@
 // Itinerary page module
-import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize } from '../map/leafletMap.js';
+import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize } from '../map/liteMap.js';
 import { askPathfinder } from '../api.js';
 import { getState as getAppState, setState as setAppState } from '../state.js';
 import {
@@ -77,8 +77,7 @@ const destinationImages = {
   'binurong-point': '/images/binurong_point.webp',
   'twin-rock': '/images/twin_rock.webp',
   'mamangsal': '/images/mamangal.webp',
-  'bato-church': '/images/st_john_church.webp',
-  'maribina-falls': '/images/maribina.webp'
+  'bato-church': '/images/st_john_church.webp'
 };
 
 export function renderItinerary(container) {
@@ -205,7 +204,7 @@ export function renderItinerary(container) {
             <p class="map-description">Explore the island of happiness with AI-powered travel guidance</p>
           </div>
           
-          <!-- Real Leaflet Map -->
+          <!-- Local GeoJSON Map -->
           <div id="pathfinder-map" class="map-placeholder"></div>
           <div class="setup-map-dim" id="setup-map-dim" aria-hidden="true"></div>
           
@@ -403,9 +402,6 @@ export function renderItinerary(container) {
               <p class="destination-empty">Select a destination from the map</p>
             </div>
           </div>
-          
-          <!-- Itinerary Preview Card (hidden - now in chat panel) -->
-          <div class="itinerary-preview-card" style="display: none;"></div>
         </main>
       </div>
     </div>
@@ -460,9 +456,6 @@ function initializeUI() {
   renderTimeWallet();
   updateDayTabs();
   renderChatMessages();
-  
-  // Setup day tab handlers
-  setupDayTabs();
   
   // Setup chat handlers
   setupChatHandlers();
@@ -586,11 +579,6 @@ function applyItineraryTheme(theme) {
   const isDark = theme === 'dark';
   themeToggle.classList.toggle('theme-night', isDark);
   themeToggle.setAttribute('aria-label', isDark ? 'Switch to day mode' : 'Switch to night mode');
-}
-
-function setupMapMarkerHandlers() {
-  // Marker click events are handled by markers.js which dispatch custom events
-  // No additional setup needed here
 }
 
 function setupTripSetupHandlers() {
@@ -869,18 +857,6 @@ function toIsoDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-function setupDayTabs() {
-  const dayTabs = document.querySelectorAll('#chat-day-tabs .day-tab');
-  dayTabs.forEach(tab => {
-    const clickHandler = () => {
-      const day = parseInt(tab.dataset.day);
-      setActiveDay(day);
-    };
-    tab.addEventListener('click', clickHandler);
-    eventListeners.push({ element: tab, event: 'click', handler: clickHandler });
-  });
-}
-
 function setupChatHandlers() {
   const chatForm = document.getElementById('chatbot-form');
   const chatInput = document.getElementById('chatbot-input');
@@ -1037,8 +1013,6 @@ function setupExportHandlers() {
   const chatNextBtn = document.getElementById('chat-next-btn');
   const checkItineraryBtn = document.getElementById('check-itinerary-btn');
   const minimizeBtn = document.getElementById('itinerary-minimize-btn');
-  const dayNavPrev = document.getElementById('day-nav-prev');
-  const dayNavNext = document.getElementById('day-nav-next');
   
   const handleExport = () => {
     // Prepare export payload
@@ -1132,28 +1106,6 @@ function setupExportHandlers() {
     };
     minimizeBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: minimizeBtn, event: 'click', handler: clickHandler });
-  }
-
-  if (dayNavPrev) {
-    const clickHandler = () => {
-      const activeDay = getActiveDay();
-      if (activeDay > 1) {
-        setActiveDay(activeDay - 1);
-      }
-    };
-    dayNavPrev.addEventListener('click', clickHandler);
-    eventListeners.push({ element: dayNavPrev, event: 'click', handler: clickHandler });
-  }
-
-  if (dayNavNext) {
-    const clickHandler = () => {
-      const activeDay = getActiveDay();
-      if (activeDay < 3) {
-        setActiveDay(activeDay + 1);
-      }
-    };
-    dayNavNext.addEventListener('click', clickHandler);
-    eventListeners.push({ element: dayNavNext, event: 'click', handler: clickHandler });
   }
 
   if (chatBackBtn) {
@@ -1432,22 +1384,11 @@ function updateBudgetSliderVisual(slider) {
 }
 
 function renderTimeWallet() {
-  const walletLabel = document.getElementById('chat-wallet-label');
-  const walletPercent = document.getElementById('chat-wallet-percent');
-  const walletFill = document.getElementById('chat-wallet-fill');
   const paceText = document.getElementById('pace-text');
   const paceFill = document.getElementById('pace-fill');
   
   const walletInfo = getTimeWalletInfo();
-  
-  // Old time wallet elements (hidden now)
-  if (walletLabel && walletPercent && walletFill) {
-    walletLabel.textContent = `Schedule: ${walletInfo.pace} pace`;
-    walletPercent.textContent = `${Math.round(walletInfo.percentage)}%`;
-    walletFill.style.width = `${walletInfo.percentage}%`;
-  }
-  
-  // New pace indicator in header
+
   if (paceText && paceFill) {
     paceText.textContent = `${walletInfo.pace} pace`;
     paceFill.style.width = `${walletInfo.percentage}%`;
@@ -1456,29 +1397,14 @@ function renderTimeWallet() {
 
 function updateDayTabs() {
   const activeDay = getActiveDay();
-  const dayNavText = document.getElementById('day-nav-text');
   const dayIndicatorText = document.getElementById('day-indicator-text');
-  const dayNavPrev = document.getElementById('day-nav-prev');
-  const dayNavNext = document.getElementById('day-nav-next');
   const chatSaveBtn = document.getElementById('chat-save-btn');
   const chatGenerateBtn = document.getElementById('chat-generate-btn');
   const chatBackBtn = document.getElementById('chat-back-btn');
   const chatNextBtn = document.getElementById('chat-next-btn');
   
-  if (dayNavText) {
-    dayNavText.textContent = `Day ${activeDay} of 3`;
-  }
-  
   if (dayIndicatorText) {
     dayIndicatorText.textContent = `Day ${activeDay} of 3`;
-  }
-  
-  if (dayNavPrev) {
-    dayNavPrev.disabled = activeDay <= 1;
-  }
-  
-  if (dayNavNext) {
-    dayNavNext.disabled = activeDay >= 3;
   }
   
   // Handle action button visibility based on day

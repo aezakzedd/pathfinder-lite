@@ -16,7 +16,7 @@
 - **JavaScript:** Vanilla JavaScript ES modules (no frameworks)
 - **Styling:** Plain CSS with CSS variables (no Tailwind)
 - **Routing:** Hash-based router (custom implementation)
-- **Map:** Leaflet (no MapLibre)
+- **Map:** Local SVG/GeoJSON renderer (no Leaflet or MapLibre)
 - **State Management:** localStorage/sessionStorage with custom state modules
 - **Backend:** External FastAPI backend on localhost (not modified in this project)
 - **PDF Generation:** Backend-generated only (no frontend PDF rendering)
@@ -127,7 +127,7 @@
 
 **Focused Phase: Original Pathfinder Itinerary Setup Design Match**
 - Added setup-first itinerary behavior with persistent localStorage setup state
-- Added original-inspired floating setup overlay over the visible Leaflet map
+- Added original-inspired floating setup overlay over the visible map
 - Added top-right Setup control to reopen setup anytime
 - Added Virac and San Andres start point selector
 - Added native date input styled as the setup date field
@@ -180,12 +180,20 @@
 - Chatbot panel, itinerary card, map area, and control buttons now respect light/dark theme
 - Preserved all existing functionality (setup, map, markers, Add to Trip, chat, export, cleanup)
 
+**Focused Phase: Lightweight GeoJSON Map and Bundle Trim**
+- Replaced the Leaflet/OpenStreetMap tile renderer with a local SVG renderer backed by `public/data/catanduanes_datafile.geojson`
+- Preserved itinerary map API compatibility for marker selection, Add to Trip, zoom controls, setup blur, and cleanup behavior
+- Removed the Leaflet dependency and deleted the old marker helper module
+- Lazy-loaded About, Contact, Creators, and Final page modules/styles so the itinerary bundle stays smaller
+- Removed unused hidden itinerary preview, day-tab, and time-wallet UI remnants
+- Trimmed unused destination imagery from the public image set
+
 ## Current Known Implementation
 
 **Working Features:**
 - Home page with full layout and animations
 - About, Contact, and Creators pages are polished with kiosk-consistent styling
-- Itinerary page with real Leaflet map
+- Itinerary page with local SVG/GeoJSON Catanduanes map
 - First visit to itinerary opens setup overlay until setup is completed
 - Setup completion persists in localStorage and can be reopened from the top-right Setup control
 - Setup overlay validates start point, trip date, and activities before enabling Done
@@ -210,7 +218,7 @@
 ## Current Dependency State
 
 **Production Dependencies:**
-- `leaflet` (^1.9.4) - Map rendering
+- None
 
 **Dev Dependencies:**
 - `vite` (^8.0.10) - Build tool
@@ -220,13 +228,15 @@
 
 ## Current Bundle Size
 
-Latest build (Original Pathfinder UI Fidelity Fixes):
+Latest build (Lightweight GeoJSON map and lazy routes):
 - HTML: 0.56 kB
-- CSS: 84.62 kB
-- JS: 222.90 kB
-- Total: ~308.08 kB
+- Main CSS: 72.16 kB
+- Main JS: 66.23 kB
+- Lazy route CSS chunks: 13.21 kB total
+- Lazy route JS chunks: 18.55 kB total
+- Full built assets: ~170.71 kB
 
-Still acceptable for lightweight Raspberry Pi target.
+Initial itinerary payload is significantly smaller than the previous ~308.08 kB bundle.
 
 ## Important Technical Notes
 
@@ -238,10 +248,10 @@ Still acceptable for lightweight Raspberry Pi target.
 - Itinerary setup state is stored inside `pathfinder-lite-itinerary-state` under `setup`
 
 **Map Implementation:**
-- Leaflet map logic is in `src/map/leafletMap.js`
-- Marker logic is in `src/map/markers.js`
-- Current map uses OpenStreetMap tiles as temporary development fallback only
-- Final kiosk deployment should use local/offline tiles, local image overlay, or local GeoJSON base
+- Lightweight map logic is in `src/map/liteMap.js`
+- Local map geometry is in `public/data/catanduanes_datafile.geojson`
+- The map no longer requests external tiles and no longer depends on Leaflet
+- The renderer preserves the same itinerary events for destination selection and Add to Trip
 
 **Event Listener Management:**
 - All event listeners must be tracked in `eventListeners` array

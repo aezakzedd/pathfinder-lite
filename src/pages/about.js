@@ -24,7 +24,7 @@ export function renderAbout(container) {
         <div class="info-snapshot" aria-label="Pathfinder project highlights">
           <span class="snapshot-label">Current build focus</span>
           <strong>Raspberry Pi 4B kiosk frontend</strong>
-          <p>Vanilla Vite, hash routing, Leaflet maps, local state, and restrained CSS built for Chromium kiosk mode.</p>
+          <p>Vanilla Vite, hash routing, local GeoJSON maps, local state, and restrained CSS built for Chromium kiosk mode.</p>
         </div>
       </section>
 

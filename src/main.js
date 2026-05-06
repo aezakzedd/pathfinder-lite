@@ -4,10 +4,6 @@ import { renderNavbar } from './components/navbar.js';
 import { renderThemeToggle } from './components/theme-toggle.js';
 import { renderHome } from './pages/home.js';
 import { renderItinerary, cleanupItinerary } from './pages/itinerary.js';
-import { renderLast } from './pages/last.js';
-import { renderAbout } from './pages/about.js';
-import { renderContact } from './pages/contact.js';
-import { renderCreators } from './pages/creators.js';
 
 // Import CSS
 import './styles/tokens.css';
@@ -15,43 +11,55 @@ import './styles/base.css';
 import './styles/components.css';
 import './styles/home.css';
 import './styles/itinerary.css';
-import './styles/last.css';
-import './styles/about.css';
-import './styles/contact.css';
-import './styles/creators.css';
 import './styles/kiosk.css';
 
-// Page renderers map
-const pageRenderers = {
-  home: renderHome,
-  itinerary: renderItinerary,
-  last: renderLast,
-  about: renderAbout,
-  contact: renderContact,
-  creators: renderCreators
-};
-
-// Page cleanup functions map
-const pageCleanup = {
-  home: null,
-  itinerary: cleanupItinerary,
-  last: null,
-  about: null,
-  contact: null,
-  creators: null
+const routeLoaders = {
+  home: async () => ({ render: renderHome, cleanup: null }),
+  itinerary: async () => ({ render: renderItinerary, cleanup: cleanupItinerary }),
+  last: async () => {
+    const [page] = await Promise.all([
+      import('./pages/last.js'),
+      import('./styles/last.css')
+    ]);
+    return { render: page.renderLast, cleanup: null };
+  },
+  about: async () => {
+    const [page] = await Promise.all([
+      import('./pages/about.js'),
+      import('./styles/about.css')
+    ]);
+    return { render: page.renderAbout, cleanup: null };
+  },
+  contact: async () => {
+    const [page] = await Promise.all([
+      import('./pages/contact.js'),
+      import('./styles/contact.css')
+    ]);
+    return { render: page.renderContact, cleanup: null };
+  },
+  creators: async () => {
+    const [page] = await Promise.all([
+      import('./pages/creators.js'),
+      import('./styles/creators.css')
+    ]);
+    return { render: page.renderCreators, cleanup: null };
+  }
 };
 
 // Main app container
 const app = document.getElementById('app');
 
-// Track current route for cleanup
-let currentRoute = null;
+let currentCleanup = null;
+let renderVersion = 0;
 
 // Render the app
-function renderApp(routeName) {
+async function renderApp(routeName) {
+  const version = ++renderVersion;
+
   // Cleanup previous page if needed
-  if (currentRoute && pageCleanup[currentRoute]) {
-    pageCleanup[currentRoute]();
+  if (currentCleanup) {
+    currentCleanup();
+    currentCleanup = null;
   }
   
   // Clear app
@@ -69,9 +77,13 @@ function renderApp(routeName) {
   
   // Append to DOM before rendering so DOM queries work
   app.appendChild(pageContainer);
-  
-  const renderer = pageRenderers[routeName] || pageRenderers.home;
-  renderer(pageContainer);
+
+  const loader = routeLoaders[routeName] || routeLoaders.home;
+  const { render, cleanup } = await loader();
+  if (version !== renderVersion) return;
+
+  render(pageContainer);
+  currentCleanup = cleanup;
   
   // Render theme toggle in navbar
   const themeToggleContainer = document.getElementById('theme-toggle-container');
@@ -90,8 +102,6 @@ function renderApp(routeName) {
     pageContainer.style.transform = 'translateY(0)';
   });
   
-  // Update current route after rendering
-  currentRoute = routeName;
 }
 
 // Initialize router
