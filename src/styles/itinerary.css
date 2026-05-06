@@ -280,6 +280,7 @@ body[data-route="itinerary"] .page-container {
   transition: max-height 0.3s ease, opacity 0.3s ease;
 }
 
+.chat-itinerary-card.minimized .itinerary-day-summary,
 .chat-itinerary-card.minimized .itinerary-spots,
 .chat-itinerary-card.minimized .time-wallet,
 .chat-itinerary-card.minimized .itinerary-actions {
@@ -1514,6 +1515,17 @@ body[data-route="itinerary"] .page-container {
   border-color: rgba(255, 255, 255, 0.16);
   box-shadow: none;
   overflow: hidden;
+  transition: min-height 180ms ease, max-height 180ms ease;
+}
+
+.page-itinerary .chat-itinerary-card.minimized {
+  min-height: 0;
+  max-height: 60px;
+  padding: 0;
+}
+
+.page-itinerary .chat-itinerary-card.minimized .itinerary-header {
+  border-bottom-color: transparent;
 }
 
 .page-itinerary .chat-itinerary-card .itinerary-header {
@@ -1752,25 +1764,10 @@ body[data-route="itinerary"] .page-container {
   background: rgba(255, 255, 255, 0.075);
 }
 
-.page-itinerary .chatbot-form::before {
-  content: "Solong Falls  x";
-  display: inline-flex;
-  align-items: center;
-  max-width: 126px;
-  min-height: 31px;
-  padding: 0 11px;
-  border: 1px solid rgba(132, 170, 232, 0.58);
-  border-radius: 999px;
-  background: rgba(49, 71, 103, 0.82);
-  color: #8fb8f8;
-  font-size: 13px;
-  white-space: nowrap;
-}
-
 .page-itinerary .chatbot-input {
   min-width: 0;
   min-height: 38px;
-  padding: 0 4px;
+  padding: 0 10px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -2350,12 +2347,6 @@ body[data-route="itinerary"] .page-container {
 
 [data-theme='light'] .page-itinerary .chatbot-input::placeholder {
   color: rgba(15, 23, 42, 0.5);
-}
-
-[data-theme='light'] .page-itinerary .chatbot-form::before {
-  background: rgba(219, 234, 254, 0.92);
-  border-color: rgba(37, 99, 235, 0.36);
-  color: #2454dc;
 }
 
 [data-theme='light'] .page-itinerary .send-btn {

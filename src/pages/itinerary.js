@@ -1126,7 +1126,8 @@ function setupExportHandlers() {
     const clickHandler = () => {
       const itineraryCard = document.getElementById('chat-itinerary-card');
       if (itineraryCard) {
-        itineraryCard.classList.toggle('minimized');
+        const isMinimized = itineraryCard.classList.toggle('minimized');
+        minimizeBtn.setAttribute('aria-label', isMinimized ? 'Expand itinerary' : 'Minimize itinerary');
       }
     };
     minimizeBtn.addEventListener('click', clickHandler);
