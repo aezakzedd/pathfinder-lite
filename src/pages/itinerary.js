@@ -1,7 +1,35 @@
 // Itinerary page module
 import { initMap, zoomIn, zoomOut, resetView, destroyMap } from '../map/leafletMap.js';
+import {
+  getSelectedDestination,
+  setSelectedDestination,
+  clearSelectedDestination,
+  getActiveDay,
+  setActiveDay,
+  getDayStops,
+  addStopToDay,
+  removeStopFromDay,
+  moveStopUp,
+  moveStopDown,
+  getTimeWalletInfo,
+  isDestinationInDay,
+  getStopCount,
+  subscribe
+} from '../state/itineraryStore.js';
 
 let mapInitialized = false;
+let stateUnsubscribe = null;
+let eventListeners = [];
+
+// Category emoji mapping
+const categoryEmojis = {
+  'Water': '🌊',
+  'Views': '🏔️',
+  'Outdoor': '🥾',
+  'Heritage': '🏛️',
+  'Dining': '🍽️',
+  'Stay': '🏨'
+};
 
 export function renderItinerary(container) {
   container.innerHTML = `
@@ -183,31 +211,12 @@ export function renderItinerary(container) {
           </div>
           
           <!-- Destination Preview Card -->
-          <div class="destination-preview-card">
+          <div class="destination-preview-card" id="destination-preview">
             <div class="destination-image">
-              <div class="destination-placeholder">🏄</div>
+              <div class="destination-placeholder">📍</div>
             </div>
             <div class="destination-content">
-              <div class="destination-badge">Surf · P50-300</div>
-              <h3 class="destination-name">Puraran Beach</h3>
-              <p class="destination-location">Baras, Catanduanes</p>
-              <div class="destination-meta">
-                <span class="meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  2-3 hours
-                </span>
-                <span class="meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  Outdoor
-                </span>
-              </div>
-              <button class="btn-add-trip">Add to Trip</button>
+              <p class="destination-empty">Select a destination from the map</p>
             </div>
           </div>
           
@@ -215,55 +224,23 @@ export function renderItinerary(container) {
           <div class="itinerary-preview-card">
             <div class="itinerary-header">
               <h3>Itinerary Preview</h3>
-              <span class="spot-count">3 spots</span>
+              <span class="spot-count" id="spot-count">0 spots</span>
             </div>
-            <div class="day-tabs">
-              <button class="day-tab day-tab-active">Day 1</button>
-              <button class="day-tab">Day 2</button>
-              <button class="day-tab">Day 3</button>
+            <div class="day-tabs" id="day-tabs">
+              <button class="day-tab day-tab-active" data-day="1">Day 1</button>
+              <button class="day-tab" data-day="2">Day 2</button>
+              <button class="day-tab" data-day="3">Day 3</button>
             </div>
-            <div class="itinerary-spots">
-              <div class="itinerary-spot">
-                <div class="spot-info">
-                  <span class="spot-name">Puraran Beach</span>
-                  <span class="spot-time">9:00 AM</span>
-                </div>
-                <div class="spot-actions">
-                  <button class="spot-action-btn" aria-label="Move up">↑</button>
-                  <button class="spot-action-btn" aria-label="Move down">↓</button>
-                  <button class="spot-action-btn spot-remove" aria-label="Remove">×</button>
-                </div>
-              </div>
-              <div class="itinerary-spot">
-                <div class="spot-info">
-                  <span class="spot-name">Binurong Point</span>
-                  <span class="spot-time">11:30 AM</span>
-                </div>
-                <div class="spot-actions">
-                  <button class="spot-action-btn" aria-label="Move up">↑</button>
-                  <button class="spot-action-btn" aria-label="Move down">↓</button>
-                  <button class="spot-action-btn spot-remove" aria-label="Remove">×</button>
-                </div>
-              </div>
-              <div class="itinerary-spot">
-                <div class="spot-info">
-                  <span class="spot-name">Twin Rock</span>
-                  <span class="spot-time">2:00 PM</span>
-                </div>
-                <div class="spot-actions">
-                  <button class="spot-action-btn" aria-label="Move up">↑</button>
-                  <button class="spot-action-btn" aria-label="Move down">↓</button>
-                  <button class="spot-action-btn spot-remove" aria-label="Remove">×</button>
-                </div>
-              </div>
+            <div class="itinerary-spots" id="itinerary-spots">
+              <div class="itinerary-empty">No stops added yet</div>
             </div>
             <div class="time-wallet">
               <div class="wallet-header">
-                <span class="wallet-label">Schedule: Relaxed pace</span>
-                <span class="wallet-percent">65%</span>
+                <span class="wallet-label" id="wallet-label">Schedule: Relaxed pace</span>
+                <span class="wallet-percent" id="wallet-percent">0%</span>
               </div>
               <div class="wallet-bar">
-                <div class="wallet-fill" style="width: 65%;"></div>
+                <div class="wallet-fill" id="wallet-fill" style="width: 0%;"></div>
               </div>
             </div>
             <div class="itinerary-actions">
@@ -277,6 +254,9 @@ export function renderItinerary(container) {
     </div>
   `;
 
+  // Initialize UI and state
+  initializeUI();
+  
   // Initialize map after DOM is updated
   setTimeout(() => {
     if (!mapInitialized) {
@@ -289,6 +269,9 @@ export function renderItinerary(container) {
           
           // Setup control button handlers
           setupMapControls();
+          
+          // Setup map marker click handlers
+          setupMapMarkerHandlers();
         })
         .catch(error => {
           console.error('Failed to load destination data:', error);
@@ -299,6 +282,43 @@ export function renderItinerary(container) {
         });
     }
   }, 100);
+}
+
+function initializeUI() {
+  // Subscribe to state changes
+  stateUnsubscribe = subscribe(() => {
+    renderDestinationPreview();
+    renderItinerarySpots();
+    renderTimeWallet();
+    updateDayTabs();
+  });
+  
+  // Initial render
+  renderDestinationPreview();
+  renderItinerarySpots();
+  renderTimeWallet();
+  updateDayTabs();
+  
+  // Setup day tab handlers
+  setupDayTabs();
+  
+  // Setup custom event listener for select-destination from map markers
+  const selectDestinationHandler = (e) => {
+    if (e.detail && e.detail.destination) {
+      setSelectedDestination(e.detail.destination);
+    }
+  };
+  document.addEventListener('select-destination', selectDestinationHandler);
+  eventListeners.push({ element: document, event: 'select-destination', handler: selectDestinationHandler });
+  
+  // Setup custom event listener for add-to-trip from map popups
+  const addToTripHandler = (e) => {
+    if (e.detail && e.detail.destination) {
+      handleAddToTrip(e.detail.destination);
+    }
+  };
+  document.addEventListener('add-to-trip', addToTripHandler);
+  eventListeners.push({ element: document, event: 'add-to-trip', handler: addToTripHandler });
 }
 
 function setupMapControls() {
@@ -322,23 +342,198 @@ function setupMapControls() {
 
   if (locateBtn) {
     locateBtn.addEventListener('click', () => {
-      // Placeholder for locate functionality
       console.log('Locate me - to be implemented');
     });
   }
 
   if (filterBtn) {
     filterBtn.addEventListener('click', () => {
-      // Placeholder for filter functionality
       console.log('Filter - to be implemented');
     });
   }
 }
 
+function setupMapMarkerHandlers() {
+  // Listen for marker clicks to select destination
+  const mapContainer = document.getElementById('pathfinder-map');
+  if (mapContainer) {
+    // This will be handled by the marker click events in markers.js
+    // which dispatch custom events
+  }
+}
+
+function setupDayTabs() {
+  const dayTabs = document.querySelectorAll('.day-tab');
+  dayTabs.forEach(tab => {
+    const clickHandler = () => {
+      const day = parseInt(tab.dataset.day);
+      setActiveDay(day);
+    };
+    tab.addEventListener('click', clickHandler);
+    eventListeners.push({ element: tab, event: 'click', handler: clickHandler });
+  });
+}
+
+function renderDestinationPreview() {
+  const previewContainer = document.getElementById('destination-preview');
+  const destination = getSelectedDestination();
+  
+  if (!destination) {
+    previewContainer.innerHTML = `
+      <div class="destination-image">
+        <div class="destination-placeholder">📍</div>
+      </div>
+      <div class="destination-content">
+        <p class="destination-empty">Select a destination from the map</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const emoji = categoryEmojis[destination.category] || '📍';
+  const isAdded = isDestinationInDay(destination.id);
+  
+  previewContainer.innerHTML = `
+    <div class="destination-image">
+      <div class="destination-placeholder">${emoji}</div>
+    </div>
+    <div class="destination-content">
+      <div class="destination-badge">${destination.category} · ${destination.budget}</div>
+      <h3 class="destination-name">${destination.name}</h3>
+      <p class="destination-location">${destination.municipality}, Catanduanes</p>
+      <div class="destination-meta">
+        <span class="meta-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          ${destination.estimatedTime}
+        </span>
+        <span class="meta-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          ${destination.category}
+        </span>
+      </div>
+      <button class="btn-add-trip ${isAdded ? 'btn-disabled' : ''}" id="add-trip-btn" ${isAdded ? 'disabled' : ''}>
+        ${isAdded ? 'Already Added' : 'Add to Trip'}
+      </button>
+    </div>
+  `;
+  
+  // Setup add to trip button
+  const addBtn = document.getElementById('add-trip-btn');
+  if (addBtn && !isAdded) {
+    const clickHandler = () => handleAddToTrip(destination);
+    addBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: addBtn, event: 'click', handler: clickHandler });
+  }
+}
+
+function handleAddToTrip(destination) {
+  const result = addStopToDay(destination);
+  if (result.success) {
+    // Show success feedback
+    renderDestinationPreview();
+  } else {
+    console.log(result.message);
+  }
+}
+
+function renderItinerarySpots() {
+  const spotsContainer = document.getElementById('itinerary-spots');
+  const spotCountEl = document.getElementById('spot-count');
+  const stops = getDayStops();
+  
+  spotCountEl.textContent = `${stops.length} spot${stops.length !== 1 ? 's' : ''}`;
+  
+  if (stops.length === 0) {
+    spotsContainer.innerHTML = '<div class="itinerary-empty">No stops added yet</div>';
+    return;
+  }
+  
+  spotsContainer.innerHTML = stops.map((stop, index) => `
+    <div class="itinerary-spot" data-stop-id="${stop.stopId}">
+      <div class="spot-info">
+        <span class="spot-name">${stop.name}</span>
+        <span class="spot-time">${stop.time}</span>
+      </div>
+      <div class="spot-actions">
+        <button class="spot-action-btn" data-action="up" ${index === 0 ? 'disabled' : ''} aria-label="Move up">↑</button>
+        <button class="spot-action-btn" data-action="down" ${index === stops.length - 1 ? 'disabled' : ''} aria-label="Move down">↓</button>
+        <button class="spot-action-btn spot-remove" data-action="remove" aria-label="Remove">×</button>
+      </div>
+    </div>
+  `).join('');
+  
+  // Setup stop action handlers
+  spotsContainer.querySelectorAll('.spot-action-btn').forEach(btn => {
+    const stopId = btn.closest('.itinerary-spot').dataset.stopId;
+    const action = btn.dataset.action;
+    
+    const clickHandler = () => {
+      if (action === 'up') {
+        moveStopUp(stopId);
+      } else if (action === 'down') {
+        moveStopDown(stopId);
+      } else if (action === 'remove') {
+        removeStopFromDay(stopId);
+      }
+    };
+    
+    btn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: btn, event: 'click', handler: clickHandler });
+  });
+}
+
+function renderTimeWallet() {
+  const walletLabel = document.getElementById('wallet-label');
+  const walletPercent = document.getElementById('wallet-percent');
+  const walletFill = document.getElementById('wallet-fill');
+  
+  const walletInfo = getTimeWalletInfo();
+  
+  walletLabel.textContent = `Schedule: ${walletInfo.pace} pace`;
+  walletPercent.textContent = `${Math.round(walletInfo.percentage)}%`;
+  walletFill.style.width = `${walletInfo.percentage}%`;
+}
+
+function updateDayTabs() {
+  const activeDay = getActiveDay();
+  const dayTabs = document.querySelectorAll('.day-tab');
+  
+  dayTabs.forEach(tab => {
+    const tabDay = parseInt(tab.dataset.day);
+    if (tabDay === activeDay) {
+      tab.classList.add('day-tab-active');
+    } else {
+      tab.classList.remove('day-tab-active');
+    }
+  });
+}
+
 // Cleanup function to be called when leaving the page
 export function cleanupItinerary() {
+  // Unsubscribe from state changes
+  if (stateUnsubscribe) {
+    stateUnsubscribe();
+    stateUnsubscribe = null;
+  }
+  
+  // Remove all event listeners
+  eventListeners.forEach(({ element, event, handler }) => {
+    element.removeEventListener(event, handler);
+  });
+  eventListeners = [];
+  
+  // Destroy map
   if (mapInitialized) {
     destroyMap();
     mapInitialized = false;
   }
+  
+  // Clear selected destination
+  clearSelectedDestination();
 }

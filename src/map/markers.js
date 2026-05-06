@@ -91,6 +91,15 @@ export function createMarkers(destinations) {
       maxWidth: 280
     });
 
+    // Add click handler to select destination
+    marker.on('click', () => {
+      // Dispatch custom event for destination selection
+      const event = new CustomEvent('select-destination', {
+        detail: { destination }
+      });
+      document.dispatchEvent(event);
+    });
+
     // Add click handler for Add to Trip button
     marker.on('popupopen', () => {
       const addBtn = document.querySelector(`[data-destination-id="${destination.id}"]`);

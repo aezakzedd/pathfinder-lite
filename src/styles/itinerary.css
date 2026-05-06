@@ -389,6 +389,44 @@
   border: none;
 }
 
+/* Destination preview empty state */
+.destination-empty {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* Itinerary empty state */
+.itinerary-empty {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* Disabled button state */
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Disabled spot action buttons */
+.spot-action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.spot-action-btn:disabled:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+}
+
 .map-controls {
   position: absolute;
   top: 32px;
