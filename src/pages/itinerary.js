@@ -20,6 +20,7 @@ import {
 import {
   addMessage,
   getMessages,
+  removeMessage,
   subscribe as subscribeChat
 } from '../state/chatStore.js';
 
@@ -461,8 +462,7 @@ async function sendMessage(message) {
     const response = await askPathfinder(message);
     
     // Remove loading message
-    const messages = getMessages();
-    const updatedMessages = messages.filter(m => m.id !== loadingId);
+    removeMessage(loadingId);
     
     // Add actual response
     let responseText = '';
@@ -483,8 +483,7 @@ async function sendMessage(message) {
     
   } catch (error) {
     // Remove loading message
-    const messages = getMessages();
-    const updatedMessages = messages.filter(m => m.id !== loadingId);
+    removeMessage(loadingId);
     
     // Add error message
     addMessage({

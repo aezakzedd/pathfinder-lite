@@ -69,6 +69,13 @@ function getMessageCount() {
   return messages.length;
 }
 
+// Remove a message by id
+function removeMessage(id) {
+  messages = messages.filter(m => m.id !== id);
+  saveMessages();
+  notifyListeners();
+}
+
 // Subscribe to message changes
 function subscribe(listener) {
   listeners.push(listener);
@@ -91,5 +98,6 @@ export {
   getMessages,
   clearMessages,
   getMessageCount,
+  removeMessage,
   subscribe
 };
