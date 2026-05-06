@@ -216,6 +216,22 @@ function resetItinerary() {
   notifyListeners();
 }
 
+// Clear itinerary (alias for reset)
+function clearItinerary() {
+  resetItinerary();
+}
+
+// Get all stops across all days
+function getAllStops() {
+  const allStops = [];
+  Object.keys(state.days).forEach(day => {
+    state.days[day].forEach(stop => {
+      allStops.push({ ...stop, day: parseInt(day) });
+    });
+  });
+  return allStops;
+}
+
 // Subscribe to state changes
 function subscribe(listener) {
   listeners.push(listener);
@@ -266,6 +282,8 @@ export {
   isDestinationInDay,
   getStopCount,
   resetItinerary,
+  clearItinerary,
+  getAllStops,
   subscribe,
   getState
 };

@@ -80,4 +80,24 @@ async function getHealth() {
   return get('/health');
 }
 
-export { get, post, put, del, askChatbot, askPathfinder, getPdfCache, createPdfShare, finishSession, getHealth };
+// Placeholder for PDF generation request
+async function requestPdfGeneration(payload) {
+  try {
+    return post('/api/pdf/generate', payload);
+  } catch (error) {
+    console.error('PDF generation request failed:', error);
+    throw new Error('PDF generation requires backend support');
+  }
+}
+
+// Placeholder for share link creation
+async function createShareLink(pdfId) {
+  try {
+    return post(`/api/share/${pdfId}`);
+  } catch (error) {
+    console.error('Share link creation failed:', error);
+    throw new Error('Share link generation requires backend support');
+  }
+}
+
+export { get, post, put, del, askChatbot, askPathfinder, getPdfCache, createPdfShare, finishSession, getHealth, requestPdfGeneration, createShareLink };

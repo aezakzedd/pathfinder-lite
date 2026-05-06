@@ -15,7 +15,9 @@ import {
   getTimeWalletInfo,
   isDestinationInDay,
   getStopCount,
-  subscribe
+  subscribe,
+  getAllStops,
+  clearItinerary
 } from '../state/itineraryStore.js';
 import {
   addMessage,
@@ -253,9 +255,9 @@ export function renderItinerary(container) {
               </div>
             </div>
             <div class="itinerary-actions">
-              <button class="btn-secondary">Back</button>
-              <button class="btn-primary">Generate PDF</button>
-              <button class="btn-primary">Save</button>
+              <button class="btn-secondary" data-navigate="#/">Back</button>
+              <button class="btn-primary" id="generate-pdf-btn">Generate PDF</button>
+              <button class="btn-primary" id="save-btn">Save</button>
             </div>
           </div>
         </main>
@@ -319,6 +321,9 @@ function initializeUI() {
   
   // Setup chat handlers
   setupChatHandlers();
+  
+  // Setup export handlers
+  setupExportHandlers();
   
   // Setup custom event listener for select-destination from map markers
   const selectDestinationHandler = (e) => {
@@ -537,6 +542,41 @@ function renderChatMessages() {
   
   // Scroll to bottom
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function setupExportHandlers() {
+  const generatePdfBtn = document.getElementById('generate-pdf-btn');
+  const saveBtn = document.getElementById('save-btn');
+  
+  const handleExport = () => {
+    // Prepare export payload
+    const exportPayload = {
+      days: getAllDays(),
+      allStops: getAllStops(),
+      totalStops: getAllStops().length,
+      activeDay: getActiveDay(),
+      timeWallet: getTimeWalletInfo(),
+      exportedAt: new Date().toISOString()
+    };
+    
+    // Store in localStorage
+    localStorage.setItem('pathfinder-lite-export-payload', JSON.stringify(exportPayload));
+    
+    // Navigate to last page
+    window.location.hash = '#/last';
+  };
+  
+  if (generatePdfBtn) {
+    const clickHandler = () => handleExport();
+    generatePdfBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: generatePdfBtn, event: 'click', handler: clickHandler });
+  }
+  
+  if (saveBtn) {
+    const clickHandler = () => handleExport();
+    saveBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: saveBtn, event: 'click', handler: clickHandler });
+  }
 }
 
 function renderDestinationPreview() {
