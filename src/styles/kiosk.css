@@ -1,0 +1,41 @@
+/* Kiosk-specific styles - cursor lock, etc. */
+
+/* Cursor lock for kiosk mode */
+html.kiosk-mode,
+html.kiosk-mode body,
+html.kiosk-mode #app,
+html.kiosk-mode #app * {
+  cursor: none !important;
+}
+
+/* Ensure cursor lock persists on all elements */
+html.kiosk-mode *::before,
+html.kiosk-mode *::after {
+  cursor: none !important;
+}
+
+/* Touch-friendly sizing for kiosk */
+@media (pointer: coarse) {
+  button,
+  a,
+  input {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Prevent text selection in kiosk mode */
+html.kiosk-mode {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Allow text selection in specific areas if needed */
+html.kiosk-mode .allow-select {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}

@@ -1,0 +1,93 @@
+/* CSS Variables / Design Tokens */
+/* Extracted from existing index.css and simplified */
+
+:root {
+  /* Base colors - Light theme */
+  --color-white: #ffffff;
+  --app-bg: #f8fafc;
+  --app-text: #0b0b0b;
+
+  /* Home page colors */
+  --home-bg: #eee7ef;
+  --home-surface: #ffffff;
+  --home-surface-subtle: rgba(102, 102, 102, 0.75);
+  --home-text: #0b0b0b;
+  --home-muted: #475569;
+  --home-border: #e2e8f0;
+  --home-shadow: rgba(15, 23, 42, 0.15);
+  --home-glass: rgba(255, 255, 255, 0.75);
+
+  /* Navbar colors */
+  --navbar-glass: rgba(255, 255, 255, 0.6);
+  --navbar-border: rgba(15, 23, 42, 0.06);
+  --navbar-text: #0b0b0b;
+  --navbar-muted: #475569;
+  --navbar-cta-bg: #0f172a;
+  --navbar-cta-text: #ffffff;
+
+  /* Itinerary colors */
+  --itinerary-bg: #e8efe5;
+  --itinerary-surface: #ffffff;
+  --itinerary-text: #0b0b0b;
+  --itinerary-muted: #475569;
+  --itinerary-glass: rgba(255, 255, 255, 0.75);
+
+  /* Accent colors */
+  --accent-green: #10B981;
+  --accent-red: #EF4444;
+  --accent-amber: #F59E0B;
+  --accent-blue: #2563EB;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+  --transition-slow: 500ms ease;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+[data-theme='dark'] {
+  /* Base colors - Dark theme */
+  --app-bg: #0a0a0a;
+  --app-text: #ffffff;
+
+  /* Home page colors */
+  --home-bg: #0a0a0a;
+  --home-surface: #111111;
+  --home-surface-subtle: #1a1a1a;
+  --home-text: #ffffff;
+  --home-muted: #94a3b8;
+  --home-border: rgba(255, 255, 255, 0.12);
+  --home-shadow: rgba(0, 0, 0, 0.5);
+  --home-glass: rgba(10, 10, 10, 0.45);
+
+  /* Navbar colors */
+  --navbar-glass: rgba(10, 10, 10, 0.7);
+  --navbar-border: rgba(255, 255, 255, 0.06);
+  --navbar-text: #ffffff;
+  --navbar-muted: #94a3b8;
+  --navbar-cta-bg: #ffffff;
+  --navbar-cta-text: #0a0a0a;
+
+  /* Itinerary colors */
+  --itinerary-bg: #0a0a0a;
+  --itinerary-surface: #111111;
+  --itinerary-text: #ffffff;
+  --itinerary-muted: #94a3b8;
+  --itinerary-glass: rgba(10, 10, 10, 0.45);
+}

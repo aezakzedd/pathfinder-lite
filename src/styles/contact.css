@@ -1,0 +1,80 @@
+/* Contact page styles */
+
+.page-contact {
+  min-height: 100vh;
+  padding-top: 80px;
+  background: var(--home-bg);
+}
+
+.page-contact .hero {
+  max-width: 800px;
+  margin: 0 auto var(--spacing-2xl);
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  text-align: center;
+}
+
+.channels {
+  max-width: 600px;
+  margin: 0 auto;
+  list-style: none;
+}
+
+.channel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--home-surface);
+  border: 1px solid var(--home-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-md);
+  transition: all var(--transition-fast);
+}
+
+.channel:hover {
+  border-color: var(--accent-blue);
+  transform: translateX(4px);
+}
+
+.channel-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--home-surface-subtle);
+  border-radius: var(--radius-md);
+  color: var(--home-text);
+  flex-shrink: 0;
+}
+
+.channel-body {
+  flex: 1;
+}
+
+.channel-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--home-muted);
+  margin-bottom: var(--spacing-xs);
+}
+
+.channel-value {
+  display: block;
+  font-weight: 600;
+  color: var(--home-text);
+  margin-bottom: var(--spacing-xs);
+  transition: color var(--transition-fast);
+}
+
+.channel-value:hover {
+  color: var(--accent-blue);
+}
+
+.channel-desc {
+  font-size: 0.875rem;
+  color: var(--home-muted);
+}

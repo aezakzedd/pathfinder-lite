@@ -1,0 +1,42 @@
+/* About page styles */
+
+.page-about {
+  min-height: 100vh;
+  padding-top: 80px;
+  background: var(--home-bg);
+}
+
+.page-about .hero {
+  max-width: 800px;
+  margin: 0 auto var(--spacing-2xl);
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  text-align: center;
+}
+
+.page-about .stats-strip {
+  max-width: 1000px;
+}
+
+.section {
+  max-width: 800px;
+  margin: 0 auto var(--spacing-2xl);
+  padding: var(--spacing-xl);
+  background: var(--home-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--home-border);
+}
+
+.section-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-blue);
+  margin-bottom: var(--spacing-md);
+}
+
+.section-content p {
+  color: var(--home-muted);
+  line-height: 1.7;
+}

@@ -1,0 +1,115 @@
+/* Itinerary page styles */
+
+.page-itinerary {
+  min-height: 100vh;
+  background: var(--itinerary-bg);
+  padding-top: 0;
+}
+
+.itinerary-layout {
+  display: flex;
+  height: 100vh;
+}
+
+.itinerary-sidebar {
+  width: 400px;
+  background: var(--itinerary-glass);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid var(--home-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chatbot-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chatbot-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--home-border);
+}
+
+.chatbot-header h2 {
+  font-size: 1.25rem;
+  color: var(--itinerary-text);
+}
+
+.chatbot-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+}
+
+.message {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  max-width: 90%;
+}
+
+.message-bot {
+  background: var(--home-surface);
+  color: var(--itinerary-text);
+  border: 1px solid var(--home-border);
+}
+
+.message-user {
+  background: var(--accent-blue);
+  color: white;
+  margin-left: auto;
+}
+
+.chatbot-input {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--home-border);
+}
+
+.chatbot-input input {
+  flex: 1;
+  padding: var(--spacing-md);
+  border: 1px solid var(--home-border);
+  border-radius: var(--radius-md);
+  background: var(--home-surface);
+  color: var(--itinerary-text);
+  font-size: 1rem;
+}
+
+.chatbot-input input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--accent-blue);
+  color: white;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.send-btn:hover {
+  opacity: 0.9;
+}
+
+.itinerary-main {
+  flex: 1;
+  position: relative;
+}
+
+.map-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--itinerary-muted);
+  font-size: 1.25rem;
+}
