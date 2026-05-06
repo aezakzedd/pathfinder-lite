@@ -65,6 +65,15 @@ const categoryEmojis = {
   'Stay': '🏨'
 };
 
+const destinationImages = {
+  'puraran-beach': '/images/puraran_beach.webp',
+  'binurong-point': '/images/binurong_point.webp',
+  'twin-rock': '/images/twin_rock.webp',
+  'mamangsal': '/images/mamangal.webp',
+  'bato-church': '/images/st_john_church.webp',
+  'maribina-falls': '/images/maribina.webp'
+};
+
 export function renderItinerary(container) {
   const setup = getTripSetup();
   setupOverlayOpen = !setup.completed || !isTripSetupComplete(setup);
@@ -86,6 +95,10 @@ export function renderItinerary(container) {
               <span>PATHFINDER</span>
             </a>
             <button class="check-itinerary-btn" id="check-itinerary-btn" type="button" aria-label="Check Itinerary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 6.5c2.4-1.4 4.8-1.4 7.2 0v11c-2.4-1.4-4.8-1.4-7.2 0v-11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M12.8 6.5c2.4-1.4 4.8-1.4 7.2 0v11c-2.4-1.4-4.8-1.4-7.2 0v-11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              </svg>
               Check Itinerary
             </button>
           </div>
@@ -122,15 +135,7 @@ export function renderItinerary(container) {
                     <span class="spot-count" id="chat-spot-count">0 spots</span>
                   </div>
                   <div class="itinerary-header-right">
-                    <div class="day-indicator" id="day-indicator">
-                      <span class="day-indicator-text" id="day-indicator-text">Day 1 of 3</span>
-                    </div>
-                    <div class="pace-indicator" id="pace-indicator">
-                      <span class="pace-text" id="pace-text">Relaxed pace</span>
-                      <div class="pace-bar">
-                        <div class="pace-fill" id="pace-fill" style="width: 0%;"></div>
-                      </div>
-                    </div>
+                    <span class="itinerary-spark" aria-hidden="true">+</span>
                     <button class="itinerary-minimize-btn" id="itinerary-minimize-btn" type="button" aria-label="Minimize itinerary">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 15l-6-6-6 6" />
@@ -138,12 +143,33 @@ export function renderItinerary(container) {
                     </button>
                   </div>
                 </div>
+                <div class="itinerary-day-summary">
+                  <div class="day-indicator" id="day-indicator">
+                    <span class="day-indicator-text" id="day-indicator-text">Day 1 of 3</span>
+                  </div>
+                  <div class="pace-indicator" id="pace-indicator">
+                    <span class="pace-text" id="pace-text">Relaxed pace</span>
+                    <div class="pace-bar">
+                      <div class="pace-fill" id="pace-fill" style="width: 0%;"></div>
+                    </div>
+                  </div>
+                </div>
                 <div class="itinerary-spots" id="chat-itinerary-spots">
                   <div class="itinerary-empty">No stops added yet</div>
                 </div>
                 <div class="itinerary-actions">
-                  <button class="btn-secondary" id="chat-back-btn">Back</button>
-                  <button class="btn-primary" id="chat-generate-btn">Generate</button>
+                  <button class="btn-secondary chat-back-btn" id="chat-back-btn" aria-label="Previous day">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </button>
+                  <button class="btn-primary chat-generate-btn" id="chat-generate-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="m14 4 6 6M4 20l9.5-9.5M13 5l6 6-2 2-6-6 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M5 5v4M3 7h4M19 17v4M17 19h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                    Generate
+                  </button>
                   <button class="btn-primary" id="chat-next-btn" style="display: none;">Next</button>
                   <button class="btn-primary" id="chat-save-btn" style="display: none;">Save</button>
                 </div>
@@ -221,15 +247,13 @@ export function renderItinerary(container) {
             </button>
             <button class="setup-icon-btn" type="button" aria-label="Map display">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
-                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
               </svg>
             </button>
             <button class="setup-open-btn" id="open-setup-btn" type="button">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
-              Setup
             </button>
             <button class="setup-icon-btn setup-info-control" type="button" id="map-info-btn" aria-label="Show Info">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1002,7 +1026,7 @@ function renderDestinationPreview() {
   
   if (!destination) {
     previewContainer.innerHTML = `
-      <div class="destination-image">
+      <div class="destination-image destination-image-empty">
         <div class="destination-placeholder">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -1019,33 +1043,19 @@ function renderDestinationPreview() {
     return;
   }
   
-  const emoji = categoryEmojis[destination.category] || '📍';
   const isAdded = isDestinationInDay(destination.id);
+  const imageSrc = destinationImages[destination.id];
+  const distanceText = destination.distanceFromHub || '10 km from hub';
+  const description = destination.description || 'Explore this destination and add it to your Catanduanes itinerary.';
   
   previewContainer.innerHTML = `
     <div class="destination-image">
-      <div class="destination-placeholder">${emoji}</div>
+      ${imageSrc ? `<img src="${imageSrc}" alt="${destination.name}" />` : `<div class="destination-placeholder">${categoryEmojis[destination.category] || '📍'}</div>`}
+      <span class="destination-distance">${distanceText}</span>
     </div>
     <div class="destination-content">
-      <div class="destination-badge">${destination.category} · ${destination.budget}</div>
       <h3 class="destination-name">${destination.name}</h3>
-      <p class="destination-location">${destination.municipality}, Catanduanes</p>
-      <div class="destination-meta">
-        <span class="meta-item">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          ${destination.estimatedTime}
-        </span>
-        <span class="meta-item">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-          ${destination.category}
-        </span>
-      </div>
+      <p class="destination-description">${description}</p>
       <button class="btn-add-trip ${isAdded ? 'btn-disabled' : ''}" id="add-trip-btn" ${isAdded ? 'disabled' : ''}>
         ${isAdded ? 'Already Added' : 'Add Spot'}
       </button>
@@ -1088,14 +1098,21 @@ function renderItinerarySpots() {
   
   spotsContainer.innerHTML = stops.map((stop, index) => `
     <div class="itinerary-spot" data-stop-id="${stop.stopId}">
+      ${index > 0 ? `
+        <div class="spot-drive-row">
+          <span class="spot-timeline-dot"></span>
+          <span class="spot-drive-icon">↝</span>
+          <span>21 min drive</span>
+        </div>
+      ` : ''}
       <div class="spot-info">
+        <span class="spot-handle" aria-hidden="true">⋮⋮</span>
         <span class="spot-name">${stop.name}</span>
-        <span class="spot-time">${stop.time}</span>
+        <button class="spot-action-btn spot-remove" data-action="remove" aria-label="Remove">×</button>
       </div>
       <div class="spot-actions">
         <button class="spot-action-btn" data-action="up" ${index === 0 ? 'disabled' : ''} aria-label="Move up">↑</button>
         <button class="spot-action-btn" data-action="down" ${index === stops.length - 1 ? 'disabled' : ''} aria-label="Move down">↓</button>
-        <button class="spot-action-btn spot-remove" data-action="remove" aria-label="Remove">×</button>
       </div>
     </div>
   `).join('');
