@@ -117,42 +117,34 @@ export function renderItinerary(container) {
               <!-- Itinerary Preview as Chat Card -->
               <div class="chat-itinerary-card" id="chat-itinerary-card">
                 <div class="itinerary-header">
-                  <h3>Itinerary Preview</h3>
-                  <span class="spot-count" id="chat-spot-count">0 spots</span>
-                  <button class="itinerary-minimize-btn" id="itinerary-minimize-btn" type="button" aria-label="Minimize itinerary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M18 15l-6-6-6 6" />
-                    </svg>
-                  </button>
-                </div>
-                <div class="day-navigation" id="day-navigation">
-                  <button class="day-nav-btn day-nav-prev" id="day-nav-prev" type="button" aria-label="Previous day" disabled>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M15 18l-6-6 6-6" />
-                    </svg>
-                  </button>
-                  <span class="day-nav-text" id="day-nav-text">Day 1 of 3</span>
-                  <button class="day-nav-btn day-nav-next" id="day-nav-next" type="button" aria-label="Next day">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
-                  </button>
+                  <div class="itinerary-header-left">
+                    <h3>Itinerary Preview</h3>
+                    <span class="spot-count" id="chat-spot-count">0 spots</span>
+                  </div>
+                  <div class="itinerary-header-right">
+                    <div class="day-indicator" id="day-indicator">
+                      <span class="day-indicator-text" id="day-indicator-text">Day 1 of 3</span>
+                    </div>
+                    <div class="pace-indicator" id="pace-indicator">
+                      <span class="pace-text" id="pace-text">Relaxed pace</span>
+                      <div class="pace-bar">
+                        <div class="pace-fill" id="pace-fill" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                    <button class="itinerary-minimize-btn" id="itinerary-minimize-btn" type="button" aria-label="Minimize itinerary">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 15l-6-6-6 6" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <div class="itinerary-spots" id="chat-itinerary-spots">
                   <div class="itinerary-empty">No stops added yet</div>
                 </div>
-                <div class="time-wallet">
-                  <div class="wallet-header">
-                    <span class="wallet-label" id="chat-wallet-label">Schedule: Relaxed pace</span>
-                    <span class="wallet-percent" id="chat-wallet-percent">0%</span>
-                  </div>
-                  <div class="wallet-bar">
-                    <div class="wallet-fill" id="chat-wallet-fill" style="width: 0%;"></div>
-                  </div>
-                </div>
                 <div class="itinerary-actions">
-                  <button class="btn-secondary" data-navigate="#/">Back</button>
+                  <button class="btn-secondary" id="chat-back-btn">Back</button>
                   <button class="btn-primary" id="chat-generate-btn">Generate</button>
+                  <button class="btn-primary" id="chat-next-btn" style="display: none;">Next</button>
                   <button class="btn-primary" id="chat-save-btn" style="display: none;">Save</button>
                 </div>
               </div>
@@ -239,12 +231,13 @@ export function renderItinerary(container) {
               </svg>
               Setup
             </button>
-            <button class="setup-icon-btn setup-info-control" type="button" id="map-info-btn" aria-label="Map information">
+            <button class="setup-icon-btn setup-info-control" type="button" id="map-info-btn" aria-label="Show Info">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8" />
                 <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                 <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
               </svg>
+              <span class="info-btn-text">Show Info</span>
             </button>
           </div>
           
@@ -619,6 +612,7 @@ function openTripSetup() {
 function showMapInfo() {
   const previewCard = document.getElementById('destination-preview');
   const infoBtn = document.getElementById('map-info-btn');
+  const infoBtnText = infoBtn?.querySelector('.info-btn-text');
 
   if (!previewCard || !infoBtn) return;
 
@@ -627,9 +621,11 @@ function showMapInfo() {
   if (isHidden) {
     previewCard.classList.remove('hidden');
     infoBtn.setAttribute('aria-label', 'Hide Info');
+    if (infoBtnText) infoBtnText.textContent = 'Hide Info';
   } else {
     previewCard.classList.add('hidden');
     infoBtn.setAttribute('aria-label', 'Show Info');
+    if (infoBtnText) infoBtnText.textContent = 'Show Info';
   }
 }
 
@@ -853,6 +849,8 @@ function setupExportHandlers() {
   const saveBtn = document.getElementById('save-btn');
   const chatGenerateBtn = document.getElementById('chat-generate-btn');
   const chatSaveBtn = document.getElementById('chat-save-btn');
+  const chatBackBtn = document.getElementById('chat-back-btn');
+  const chatNextBtn = document.getElementById('chat-next-btn');
   const checkItineraryBtn = document.getElementById('check-itinerary-btn');
   const minimizeBtn = document.getElementById('itinerary-minimize-btn');
   const dayNavPrev = document.getElementById('day-nav-prev');
@@ -971,6 +969,28 @@ function setupExportHandlers() {
     };
     dayNavNext.addEventListener('click', clickHandler);
     eventListeners.push({ element: dayNavNext, event: 'click', handler: clickHandler });
+  }
+
+  if (chatBackBtn) {
+    const clickHandler = () => {
+      const activeDay = getActiveDay();
+      if (activeDay > 1) {
+        setActiveDay(activeDay - 1);
+      }
+    };
+    chatBackBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatBackBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (chatNextBtn) {
+    const clickHandler = () => {
+      const activeDay = getActiveDay();
+      if (activeDay < 3) {
+        setActiveDay(activeDay + 1);
+      }
+    };
+    chatNextBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatNextBtn, event: 'click', handler: clickHandler });
   }
 }
 
@@ -1104,26 +1124,42 @@ function renderTimeWallet() {
   const walletLabel = document.getElementById('chat-wallet-label');
   const walletPercent = document.getElementById('chat-wallet-percent');
   const walletFill = document.getElementById('chat-wallet-fill');
-  
-  if (!walletLabel || !walletPercent || !walletFill) return;
+  const paceText = document.getElementById('pace-text');
+  const paceFill = document.getElementById('pace-fill');
   
   const walletInfo = getTimeWalletInfo();
   
-  walletLabel.textContent = `Schedule: ${walletInfo.pace} pace`;
-  walletPercent.textContent = `${Math.round(walletInfo.percentage)}%`;
-  walletFill.style.width = `${walletInfo.percentage}%`;
+  // Old time wallet elements (hidden now)
+  if (walletLabel && walletPercent && walletFill) {
+    walletLabel.textContent = `Schedule: ${walletInfo.pace} pace`;
+    walletPercent.textContent = `${Math.round(walletInfo.percentage)}%`;
+    walletFill.style.width = `${walletInfo.percentage}%`;
+  }
+  
+  // New pace indicator in header
+  if (paceText && paceFill) {
+    paceText.textContent = `${walletInfo.pace} pace`;
+    paceFill.style.width = `${walletInfo.percentage}%`;
+  }
 }
 
 function updateDayTabs() {
   const activeDay = getActiveDay();
   const dayNavText = document.getElementById('day-nav-text');
+  const dayIndicatorText = document.getElementById('day-indicator-text');
   const dayNavPrev = document.getElementById('day-nav-prev');
   const dayNavNext = document.getElementById('day-nav-next');
   const chatSaveBtn = document.getElementById('chat-save-btn');
   const chatGenerateBtn = document.getElementById('chat-generate-btn');
+  const chatBackBtn = document.getElementById('chat-back-btn');
+  const chatNextBtn = document.getElementById('chat-next-btn');
   
   if (dayNavText) {
     dayNavText.textContent = `Day ${activeDay} of 3`;
+  }
+  
+  if (dayIndicatorText) {
+    dayIndicatorText.textContent = `Day ${activeDay} of 3`;
   }
   
   if (dayNavPrev) {
@@ -1134,15 +1170,22 @@ function updateDayTabs() {
     dayNavNext.disabled = activeDay >= 3;
   }
   
-  // Show Save button only on final day (Day 3)
-  if (chatSaveBtn && chatGenerateBtn) {
-    if (activeDay === 3) {
-      chatSaveBtn.style.display = 'block';
-      chatGenerateBtn.style.display = 'none';
-    } else {
+  // Handle action button visibility based on day
+  if (chatBackBtn && chatGenerateBtn && chatNextBtn && chatSaveBtn) {
+    // Back button: disabled on Day 1, enabled on Day 2+
+    chatBackBtn.disabled = activeDay <= 1;
+    
+    // Next button: visible on Day 1-2, hidden on Day 3
+    if (activeDay < 3) {
+      chatNextBtn.style.display = 'block';
       chatSaveBtn.style.display = 'none';
-      chatGenerateBtn.style.display = 'block';
+    } else {
+      chatNextBtn.style.display = 'none';
+      chatSaveBtn.style.display = 'block';
     }
+    
+    // Generate button: visible on all days
+    chatGenerateBtn.style.display = 'block';
   }
 }
 

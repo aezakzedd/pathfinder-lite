@@ -165,6 +165,21 @@
 - Suggestion chips visible when no chat messages exist
 - Preserved all existing functionality (setup, map, markers, Add Spot, chat, export, cleanup)
 
+**Focused Phase: Original Pathfinder UI Fidelity Fixes**
+- Increased chatbot panel width from 320px to 360px to keep Check Itinerary on one line
+- Added flex-shrink: 0 to Check Itinerary button to prevent text wrapping
+- Tied location details card toggle to info button beside Setup with visible "Hide Info"/"Show Info" text
+- Changed Back button to navigate to previous day instead of going home
+- Back button disabled on Day 1, enabled on Days 2-3
+- Removed duplicate top day navigation buttons from itinerary card
+- Added pace indicator beside day counter in itinerary card header
+- Removed duplicate time wallet section (now using pace indicator in header)
+- Corrected action buttons: Day 1 (disabled Back, Generate, Next), Middle (Back, Generate, Next), Final (Back, Generate, Save)
+- Added CSS variables for light theme in tokens.css
+- Updated itinerary.css to use CSS variables for theme consistency
+- Chatbot panel, itinerary card, map area, and control buttons now respect light/dark theme
+- Preserved all existing functionality (setup, map, markers, Add to Trip, chat, export, cleanup)
+
 ## Current Known Implementation
 
 **Working Features:**
@@ -205,11 +220,11 @@
 
 ## Current Bundle Size
 
-Latest build (Original Pathfinder Chat Panel Behavior Match):
+Latest build (Original Pathfinder UI Fidelity Fixes):
 - HTML: 0.56 kB
-- CSS: 79.85 kB
-- JS: 222.59 kB
-- Total: ~303.00 kB
+- CSS: 84.62 kB
+- JS: 222.90 kB
+- Total: ~308.08 kB
 
 Still acceptable for lightweight Raspberry Pi target.
 
