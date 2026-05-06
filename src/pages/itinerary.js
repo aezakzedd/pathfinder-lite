@@ -376,6 +376,8 @@ function setupDayTabs() {
 
 function renderDestinationPreview() {
   const previewContainer = document.getElementById('destination-preview');
+  if (!previewContainer) return;
+  
   const destination = getSelectedDestination();
   
   if (!destination) {
@@ -445,6 +447,9 @@ function handleAddToTrip(destination) {
 function renderItinerarySpots() {
   const spotsContainer = document.getElementById('itinerary-spots');
   const spotCountEl = document.getElementById('spot-count');
+  
+  if (!spotsContainer || !spotCountEl) return;
+  
   const stops = getDayStops();
   
   spotCountEl.textContent = `${stops.length} spot${stops.length !== 1 ? 's' : ''}`;
@@ -493,6 +498,8 @@ function renderTimeWallet() {
   const walletPercent = document.getElementById('wallet-percent');
   const walletFill = document.getElementById('wallet-fill');
   
+  if (!walletLabel || !walletPercent || !walletFill) return;
+  
   const walletInfo = getTimeWalletInfo();
   
   walletLabel.textContent = `Schedule: ${walletInfo.pace} pace`;
@@ -503,6 +510,8 @@ function renderTimeWallet() {
 function updateDayTabs() {
   const activeDay = getActiveDay();
   const dayTabs = document.querySelectorAll('.day-tab');
+  
+  if (dayTabs.length === 0) return;
   
   dayTabs.forEach(tab => {
     const tabDay = parseInt(tab.dataset.day);

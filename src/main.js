@@ -49,10 +49,11 @@ function renderApp(routeName) {
   const pageContainer = document.createElement('div');
   pageContainer.className = 'page-container';
   
+  // Append to DOM before rendering so DOM queries work
+  app.appendChild(pageContainer);
+  
   const renderer = pageRenderers[routeName] || pageRenderers.home;
   renderer(pageContainer);
-  
-  app.appendChild(pageContainer);
   
   // Render theme toggle in navbar
   const themeToggleContainer = document.getElementById('theme-toggle-container');
