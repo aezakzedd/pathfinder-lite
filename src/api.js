@@ -1,10 +1,10 @@
 // API client for pathfinder-lite
 // Wrapper around fetch for backend communication
 
-const API_BASE = 'http://localhost:8000';
+import { apiUrl } from './config/apiConfig.js';
 
 async function request(endpoint, options = {}) {
-  const url = `${API_BASE}${endpoint}`;
+  const url = apiUrl(endpoint);
   const config = {
     headers: {
       'Content-Type': 'application/json',

@@ -18,7 +18,7 @@
 - **Routing:** Hash-based router (custom implementation)
 - **Map:** Leaflet offline renderer with local GeoJSON fallback (no online tiles or MapLibre)
 - **State Management:** localStorage/sessionStorage with custom state modules
-- **Backend:** External FastAPI backend on localhost (not modified in this project)
+- **Backend:** Lightweight local FastAPI service under `backend/` for route rendering and future kiosk services
 - **PDF Generation:** Backend-generated only (no frontend PDF rendering)
 
 ## Strict Rules
@@ -225,6 +225,14 @@
 - Added dynamic date-range day counts from 1 to 7 days across itinerary state, Generate, Back/Next/Save actions, and final/share export payload
 - Updated pace calculation to combine visit time with route travel time, using `/api/route` duration when available and fallback estimates otherwise
 - Inspected the original Pathfinder route utilities: the original frontend used Turf, geojson-path-finder, and `catanduanes_optimized.json`; Lite does not port those heavy dependencies
+
+**Phase 11A: Real Road-Routing Integration**
+- Added shared frontend API base config via `VITE_API_URL` with `http://localhost:8000` fallback
+- Pointed `src/api.js` and `src/utils/routeService.js` at the configured backend base instead of the frontend origin
+- Added a minimal local FastAPI backend under `backend/` with `POST /api/route`
+- Implemented a pure-Python local road-corridor router that returns `[lng, lat]` geometry, distance, duration, and `source: "local-road-router"`
+- Kept `src/utils/offlineRouting.js` as browser fallback only when the backend is unavailable
+- Kept routing logic out of the frontend bundle and avoided online routing services or heavy frontend pathfinding dependencies
 
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`

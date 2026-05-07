@@ -1,5 +1,6 @@
 import { estimateDriveMinutes, isValidCoordinates } from './distance.js';
 import { buildOfflineRouteGeometry } from './offlineRouting.js';
+import { apiUrl } from '../config/apiConfig.js';
 
 const ROUTE_ENDPOINT = '/api/route';
 const ROUTE_TIMEOUT_MS = 1400;
@@ -71,7 +72,7 @@ function createEmptyRoute(coordinates) {
 }
 
 async function tryBackendRoute(waypoints, fetchImpl, options) {
-  const endpoint = options.endpoint || ROUTE_ENDPOINT;
+  const endpoint = resolveRouteEndpoint(options.endpoint);
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeoutId = controller && typeof setTimeout === 'function'
     ? setTimeout(() => controller.abort(), options.timeoutMs || ROUTE_TIMEOUT_MS)
@@ -97,6 +98,12 @@ async function tryBackendRoute(waypoints, fetchImpl, options) {
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
+}
+
+function resolveRouteEndpoint(endpoint = ROUTE_ENDPOINT) {
+  const value = String(endpoint || ROUTE_ENDPOINT);
+  if (/^https?:\/\//i.test(value)) return value;
+  return apiUrl(value);
 }
 
 function normalizeWaypoints(waypoints = []) {

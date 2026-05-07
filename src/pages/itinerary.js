@@ -1560,8 +1560,9 @@ function updateDayTabs() {
   
   // Handle action button visibility based on day
   if (chatBackBtn && chatGenerateBtn && chatNextBtn && chatSaveBtn) {
-    // Back button: disabled on Day 1, enabled on Day 2+
+    // Back button: hidden on Day 1, visible from Day 2 onward
     chatBackBtn.disabled = activeDay <= 1;
+    chatBackBtn.style.display = activeDay <= 1 ? 'none' : 'inline-flex';
     
     // Next button: visible until final day, Save button only on final day
     if (activeDay < dayCount) {
