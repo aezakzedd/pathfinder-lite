@@ -86,6 +86,7 @@ Returns a deterministic local response:
 Supported intents:
 
 - `greeting`
+- `faq`
 - `place_info`
 - `recommendation`
 - `itinerary_request`
@@ -95,6 +96,36 @@ Supported intents:
 - `fallback`
 
 The chatbot is offline-capable and uses `public/data/catanduanes_datafile.geojson`. It does not use an online LLM, embeddings, vector databases, or external APIs.
+
+### Chatbot Data Files
+
+The GeoJSON remains the base source of truth for places. Small JSON seed files under `backend/data/chatbot/` enrich the deterministic chatbot without adding runtime-heavy AI components:
+
+- `aliases.json` maps common user wording, such as `Binurong`, `Twin Rock`, `Bato Church`, `Puraran`, `Mamangal`, `Maribina`, `Balacay`, `Virac Airport`, and `Virac Port`, to local place records.
+- `place_facts.json` adds concise structured facts for important places: best time, accessibility, travel tips, budget notes, family notes, visit duration, and cautions.
+- `faqs.json` stores general Catanduanes tourism answers for weather, budget, transport, safety, beaches, viewpoints, food, rainy days, family-friendly picks, and what to bring.
+- `recommendation_rules.json` ranks local recommendations for beaches, viewpoints, food, heritage, budget-friendly stops, family-friendly stops, low-walking stops, and outdoor/nature stops.
+
+Example enriched ask:
+
+```json
+{
+  "question": "is Binurong hard to access?"
+}
+```
+
+Example response:
+
+```json
+{
+  "answer": "Binurong Point is a outdoor stop in Baras. ... Requires an uphill walk on grass and uneven ground. Wear comfortable footwear, bring water, and start early.",
+  "locations": [{ "id": "13", "name": "Binurong Point" }],
+  "follow_up": "Ask for nearby food, another option, or add it.",
+  "actions": [],
+  "intent": "place_info",
+  "source": "local-chatbot"
+}
+```
 
 Run smoke checks:
 

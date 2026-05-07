@@ -1,0 +1,42 @@
+{
+  "beaches": {
+    "keywords": ["beach", "beaches", "swim", "swimming", "sea", "surf"],
+    "categories": ["beach", "beach_resort", "swimming"],
+    "boost_place_ids": ["15", "16", "413", "71", "89"]
+  },
+  "viewpoints": {
+    "keywords": ["view", "views", "viewpoint", "overlooking", "scenic", "photo"],
+    "categories": ["viewpoint", "hike", "nature"],
+    "boost_place_ids": ["13", "412", "71", "94"]
+  },
+  "food": {
+    "keywords": ["food", "eat", "dining", "restaurant", "cafe", "lunch", "dinner"],
+    "categories": ["food"]
+  },
+  "heritage": {
+    "keywords": ["heritage", "church", "history", "culture", "religious"],
+    "categories": ["religious", "history", "culture", "indoor"],
+    "boost_place_ids": ["185", "38", "409"]
+  },
+  "budget_friendly": {
+    "keywords": ["budget", "cheap", "cheaper", "affordable", "low cost", "free"],
+    "budget": "low",
+    "boost_place_ids": ["13", "14", "15", "71", "185"]
+  },
+  "family_friendly": {
+    "keywords": ["family", "kids", "children", "senior", "easy"],
+    "accessibility": "light",
+    "boost_place_ids": ["16", "185", "38", "15", "45"]
+  },
+  "low_walking": {
+    "keywords": ["low walking", "less walking", "easy access", "not hard", "accessible"],
+    "accessibility": "light",
+    "categories": ["beach_resort", "religious", "indoor", "food", "accommodation"],
+    "boost_place_ids": ["16", "185", "38"]
+  },
+  "outdoor_nature": {
+    "keywords": ["outdoor", "nature", "falls", "waterfall", "hike", "adventure"],
+    "categories": ["hike", "nature", "falls", "viewpoint"],
+    "boost_place_ids": ["13", "14", "402", "94", "99"]
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "binurong-point": {
+    "best_time": "Best visited early in the morning for cooler weather and clearer views.",
+    "accessibility": "Requires an uphill walk on grass and uneven ground.",
+    "travel_tip": "Wear comfortable footwear, bring water, and start early.",
+    "budget_note": "Usually budget-friendly, but bring cash for local fees or guides if required.",
+    "family_note": "Better for older children and adults who are comfortable walking.",
+    "visit_duration_note": "Plan around 1.5 to 2 hours including the walk and photo stops.",
+    "caution_note": "Avoid the cliff edges and be careful after rain because paths can be slippery."
+  },
+  "twin-rock-beach-resort": {
+    "best_time": "Good in the afternoon when the beach light is softer.",
+    "accessibility": "Resort-style access is easier than remote beach stops.",
+    "travel_tip": "Bring swimwear and confirm entrance or cottage fees before settling in.",
+    "budget_note": "Usually needs a medium budget compared with open public beaches.",
+    "family_note": "A practical family beach choice because facilities are nearby.",
+    "visit_duration_note": "Plan 1.5 to 3 hours if swimming or eating there."
+  },
+  "st-john-the-baptist-church": {
+    "best_time": "Afternoon works well for a calm heritage stop.",
+    "accessibility": "Easy access with minimal walking.",
+    "travel_tip": "Keep voices low and dress modestly when visiting.",
+    "budget_note": "Good for budget itineraries because visits are usually free.",
+    "family_note": "Suitable for families and older visitors.",
+    "visit_duration_note": "Plan 20 to 45 minutes."
+  },
+  "puraran-beach": {
+    "best_time": "Morning is best for beach time and surf watching.",
+    "accessibility": "Generally accessible by road, with short walking near the beach area.",
+    "travel_tip": "Check surf conditions if you plan to swim or surf.",
+    "budget_note": "Expect a medium budget if using resort facilities.",
+    "family_note": "Good for families, but watch waves and currents.",
+    "visit_duration_note": "Plan 2 to 3 hours for beach time.",
+    "caution_note": "Strong waves can happen, so avoid unsafe swimming conditions."
+  },
+  "mamangal-beach": {
+    "best_time": "Midday to afternoon is good for relaxed beach time.",
+    "accessibility": "Usually light walking from the access area to the beach.",
+    "travel_tip": "Bring sun protection and water.",
+    "budget_note": "Budget-friendly compared with resort stops.",
+    "family_note": "A relaxed option for families if sea conditions are calm.",
+    "visit_duration_note": "Plan 1.5 to 2.5 hours."
+  },
+  "maribina-falls": {
+    "best_time": "Midday is useful for a cooling stop.",
+    "accessibility": "Short walk from the access area, but surfaces may be wet.",
+    "travel_tip": "Wear footwear that can handle slippery ground.",
+    "budget_note": "Usually budget-friendly.",
+    "family_note": "Family-friendly with supervision near wet rocks.",
+    "visit_duration_note": "Plan 1 to 1.5 hours.",
+    "caution_note": "Rocks around the falls can be slippery."
+  },
+  "balacay-point": {
+    "best_time": "Sunrise or early morning is the strongest time for views.",
+    "accessibility": "Requires some road travel and light walking.",
+    "travel_tip": "Go early and bring water because shade can be limited.",
+    "budget_note": "Budget-friendly if paired with nearby Baras stops.",
+    "family_note": "Better for visitors comfortable with a viewpoint stop.",
+    "visit_duration_note": "Plan around 45 to 75 minutes."
+  },
+  "virac-airport": {
+    "best_time": "Use as an arrival or departure point.",
+    "accessibility": "Easy access by vehicle.",
+    "travel_tip": "Use Virac Airport as the most practical starting point for Virac-side itineraries.",
+    "budget_note": "Transport costs depend on the vehicle or tricycle arrangement.",
+    "family_note": "Easy for families and luggage transfers.",
+    "visit_duration_note": "Not a tourist stop; use it as a route hub."
+  },
+  "ba-haw-falls": {
+    "best_time": "Morning is best before the day gets hot.",
+    "accessibility": "Expect outdoor walking and uneven terrain.",
+    "travel_tip": "Bring water and footwear with grip.",
+    "budget_note": "Good for low-budget outdoor itineraries.",
+    "family_note": "Better for active visitors than very young children.",
+    "visit_duration_note": "Plan around 1.5 hours.",
+    "caution_note": "Trail and rocks may be slippery after rain."
+  },
+  "nahulugan-falls": {
+    "best_time": "Midday is useful for a falls stop.",
+    "accessibility": "Outdoor access with wet or uneven areas possible.",
+    "travel_tip": "Pack light and protect electronics from water.",
+    "budget_note": "Usually budget-friendly.",
+    "family_note": "Good with supervision near water.",
+    "visit_duration_note": "Plan around 1 to 1.5 hours."
+  },
+  "tuwad-tuwadan-blue-lagoon": {
+    "best_time": "Morning gives cooler conditions and better light.",
+    "accessibility": "Requires outdoor walking and may be tiring for some visitors.",
+    "travel_tip": "Wear proper footwear and bring drinking water.",
+    "budget_note": "Budget-friendly but may require local transport arrangements.",
+    "family_note": "Better for active groups.",
+    "visit_duration_note": "Plan 1.5 to 2 hours.",
+    "caution_note": "Avoid visiting in poor weather."
+  },
+  "tampad-beach": {
+    "best_time": "Morning is good for cooler beach views.",
+    "accessibility": "Light walking near the beach.",
+    "travel_tip": "Bring sun protection and check tide or wave conditions.",
+    "budget_note": "Budget-friendly.",
+    "family_note": "Good for a simple family beach stop.",
+    "visit_duration_note": "Plan 1 to 2 hours."
+  }
+}

@@ -61,6 +61,7 @@ let pointerDrag = null;
 let allDestinations = [];
 let allSpotsGeoJson = null;
 let currentRouteSummary = null;
+const CHAT_SESSION_ID = 'pathfinder-lite-kiosk';
 
 const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
 const budgetOptions = [
@@ -979,7 +980,9 @@ async function sendMessage(message) {
   try {
     const response = await askPathfinder({
       question: message,
-      active_pin: getActivePinPayload()
+      active_pin: getActivePinPayload(),
+      session_id: CHAT_SESSION_ID,
+      preferences: getChatPreferencePayload()
     });
     
     // Remove loading message
@@ -1002,7 +1005,8 @@ async function sendMessage(message) {
       content: responseText
     });
 
-    handleChatLocations(response);
+    const selectedMatch = handleChatLocations(response);
+    handleChatActions(response, selectedMatch, responseText);
     
   } catch (error) {
     // Remove loading message
@@ -1022,10 +1026,10 @@ async function sendMessage(message) {
 
 function handleChatLocations(response) {
   const locations = Array.isArray(response?.locations) ? response.locations : [];
-  if (locations.length === 0 || allDestinations.length === 0) return;
+  if (locations.length === 0 || allDestinations.length === 0) return null;
 
   const matches = findDestinationsByLocations(allDestinations, locations);
-  if (matches.length === 0) return;
+  if (matches.length === 0) return null;
 
   setSelectedDestination(matches[0]);
 
@@ -1035,6 +1039,32 @@ function handleChatLocations(response) {
       content: `I found ${matches.length} matching places and selected ${matches[0].name}.`
     });
   }
+
+  return matches[0];
+}
+
+function handleChatActions(response, selectedMatch, responseText = '') {
+  const actions = Array.isArray(response?.actions) ? response.actions : [];
+  const addAction = actions.find(action => action?.type === 'add_to_trip');
+  if (!addAction) return;
+
+  const destinationName = selectedMatch?.name || addAction.location?.name || 'that place';
+  if (String(responseText).toLowerCase().includes('add spot')) return;
+
+  addMessage({
+    role: 'system',
+    content: `I selected ${destinationName}. Use Add Spot on the destination card to add it to Day ${getActiveDay()}.`
+  });
+}
+
+function getChatPreferencePayload() {
+  const setup = getTripSetup();
+  return {
+    startPoint: setup.startPoint,
+    budget: setup.budget,
+    activities: setup.activities,
+    dayCount: getTripDayCount(setup)
+  };
 }
 
 function renderChatMessages() {

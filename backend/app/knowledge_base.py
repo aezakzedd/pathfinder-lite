@@ -11,6 +11,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 GEOJSON_PATH = ROOT / "public" / "data" / "catanduanes_datafile.geojson"
+CHATBOT_DATA_DIR = ROOT / "backend" / "data" / "chatbot"
+ALIASES_PATH = CHATBOT_DATA_DIR / "aliases.json"
+PLACE_FACTS_PATH = CHATBOT_DATA_DIR / "place_facts.json"
+FAQS_PATH = CHATBOT_DATA_DIR / "faqs.json"
+RECOMMENDATION_RULES_PATH = CHATBOT_DATA_DIR / "recommendation_rules.json"
 
 CATEGORY_GROUPS = {
     "Water": {"beach", "swimming", "falls", "beach_resort"},
@@ -42,6 +47,8 @@ class Place:
     is_top_10: bool
     search_text: str
     slug: str
+    aliases: tuple[str, ...] = ()
+    facts: dict[str, Any] | None = None
 
     def to_location(self) -> dict[str, Any]:
         return {
@@ -49,6 +56,7 @@ class Place:
             "name": self.name,
             "municipality": self.municipality,
             "category": self.category,
+            "category_group": self.category_group,
             "type": self.type,
             "coordinates": [self.coordinates[0], self.coordinates[1]],
         }
@@ -57,14 +65,57 @@ class Place:
 class KnowledgeBase:
     def __init__(self, geojson_path: Path = GEOJSON_PATH):
         self.geojson_path = geojson_path
+        self.alias_map = load_json(ALIASES_PATH, {})
+        self.place_facts = load_json(PLACE_FACTS_PATH, {})
+        self.faqs = load_json(FAQS_PATH, [])
+        self.recommendation_rules = load_json(RECOMMENDATION_RULES_PATH, {})
         self.places = self._load_places()
         self.by_id = {place.id: place for place in self.places}
         self.by_slug = {place.slug: place for place in self.places}
+        self.alias_to_place = self._build_alias_index()
         self.municipalities = sorted({place.municipality for place in self.places if place.municipality})
 
     def match_place(self, query: str, active_pin: dict[str, Any] | None = None) -> Place | None:
+        alias_match = self.match_alias(query)
+        if alias_match:
+            return alias_match
         matches = self.search_places(query, active_pin=active_pin, limit=1)
         return matches[0] if matches else None
+
+    def match_alias(self, query: str) -> Place | None:
+        normalized_query = normalize_text(query)
+        query_slug = slugify(normalized_query)
+        if query_slug in self.alias_to_place:
+            return self.alias_to_place[query_slug]
+
+        for alias_slug, place in self.alias_to_place.items():
+            alias_text = normalize_text(alias_slug)
+            if alias_text and (alias_text in normalized_query or normalized_query in alias_text):
+                return place
+        return None
+
+    def match_faq(self, query: str) -> dict[str, Any] | None:
+        query_text = normalize_text(query)
+        if not query_text:
+            return None
+
+        best_score = 0
+        best_faq = None
+        for faq in self.faqs:
+            score = 0
+            for trigger in faq.get("triggers", []):
+                trigger_text = normalize_text(trigger)
+                if not trigger_text:
+                    continue
+                if trigger_text == query_text:
+                    score = max(score, 100)
+                elif trigger_text in query_text:
+                    score = max(score, len(trigger_text.split()) * 8)
+            if score > best_score:
+                best_score = score
+                best_faq = faq
+
+        return best_faq if best_score >= 16 else None
 
     def search_places(
         self,
@@ -75,6 +126,7 @@ class KnowledgeBase:
         categories: set[str] | None = None,
         municipality: str | None = None,
         budget: str | None = None,
+        min_score: int = 8,
     ) -> list[Place]:
         normalized_query = normalize_text(query)
         query_tokens = set(tokenize(query))
@@ -92,11 +144,14 @@ class KnowledgeBase:
             score = score_place(place, normalized_query, query_tokens)
             if active_place and active_place.id == place.id:
                 score += 8
-            if score >= 8:
+            if score >= min_score:
                 results.append((score, place))
 
         results.sort(key=lambda item: (-item[0], not item[1].is_top_10, item[1].name))
         return [place for _, place in results[:limit]]
+
+    def suggest_places(self, query: str, *, limit: int = 3) -> list[Place]:
+        return self.search_places(query, limit=limit, min_score=2)
 
     def recommend(
         self,
@@ -111,10 +166,15 @@ class KnowledgeBase:
     ) -> list[Place]:
         query_text = normalize_text(query)
         categories = categories or infer_categories(query_text, activities)
+        matched_rules = self.match_recommendation_rules(query_text)
+        if not categories:
+            categories = categories_from_rules(matched_rules)
         municipality = infer_municipality(query_text, self.municipalities)
-        resolved_budget = infer_budget(query_text) or budget
+        resolved_budget = infer_budget(query_text) or budget_from_rules(matched_rules) or budget
         active_place = self.resolve_active_pin(active_pin)
         exclude_ids = exclude_ids or set()
+        boosted_ids = boost_ids_from_rules(matched_rules)
+        light_access = any(rule.get("accessibility") == "light" for rule in matched_rules)
 
         candidates = []
         for place in self.places:
@@ -126,8 +186,12 @@ class KnowledgeBase:
                 continue
             if resolved_budget and BUDGET_ORDER.get(place.min_budget, 0) > BUDGET_ORDER.get(normalize_budget(resolved_budget), 0):
                 continue
+            if light_access and not is_light_access_place(place):
+                continue
 
             score = 0.0
+            if place.id in boosted_ids:
+                score += 8
             if place.is_top_10:
                 score += 4
             if categories:
@@ -145,6 +209,14 @@ class KnowledgeBase:
 
         candidates.sort(key=lambda item: (-item[0], not item[1].is_top_10, item[1].name))
         return [place for _, place in candidates[:limit]]
+
+    def match_recommendation_rules(self, query_text: str) -> list[dict[str, Any]]:
+        matches = []
+        for rule in self.recommendation_rules.values():
+            keywords = rule.get("keywords") or []
+            if any(normalize_text(keyword) in query_text for keyword in keywords):
+                matches.append(rule)
+        return matches
 
     def nearby(
         self,
@@ -179,8 +251,17 @@ class KnowledgeBase:
             return self.by_id[str(pin_id)]
         pin_name = active_pin.get("name")
         if pin_name:
-            return self.by_slug.get(slugify(pin_name)) or self.match_place(str(pin_name))
+            return self.by_slug.get(slugify(pin_name)) or self.match_alias(str(pin_name)) or self.match_place(str(pin_name))
         return None
+
+    def _build_alias_index(self) -> dict[str, Place]:
+        alias_index = {}
+        for alias, target in self.alias_map.items():
+            target_text = str(target)
+            place = self.by_id.get(target_text) or self.by_slug.get(slugify(target_text))
+            if place:
+                alias_index[slugify(alias)] = place
+        return alias_index
 
     def _load_places(self) -> list[Place]:
         data = json.loads(self.geojson_path.read_text(encoding="utf-8"))
@@ -209,13 +290,21 @@ class KnowledgeBase:
             min_budget = normalize_budget(properties.get("min_budget"))
             visit_minutes = normalize_visit_minutes(properties.get("visit_time_minutes"))
             image = str(properties.get("image") or "").strip()
+            slug = slugify(name)
+            aliases = tuple(sorted(
+                alias for alias, target in self.alias_map.items()
+                if slugify(target) == slug or str(target) == place_id
+            ))
+            facts = dict(self.place_facts.get(slug) or self.place_facts.get(place_id) or {})
             search_text = normalize_text(" ".join([
                 name,
+                " ".join(aliases),
                 municipality,
                 place_type,
                 category,
                 category_group,
                 description,
+                " ".join(str(value) for value in facts.values()),
             ]))
 
             places.append(Place(
@@ -234,7 +323,9 @@ class KnowledgeBase:
                 visit_time_minutes=visit_minutes,
                 is_top_10=bool(properties.get("is_top_10")),
                 search_text=search_text,
-                slug=slugify(name),
+                slug=slug,
+                aliases=aliases,
+                facts=facts,
             ))
         return places
 
@@ -252,11 +343,16 @@ def score_place(place: Place, normalized_query: str, query_tokens: set[str]) -> 
     municipality = normalize_text(place.municipality)
     category = normalize_text(place.category)
     category_group = normalize_text(place.category_group)
+    alias_texts = [normalize_text(alias) for alias in place.aliases]
 
     if normalized_query == name_text or slugify(normalized_query) == place.slug:
         score += 100
+    if normalized_query in alias_texts or slugify(normalized_query) in {slugify(alias) for alias in place.aliases}:
+        score += 95
     if normalized_query in name_text or name_text in normalized_query:
         score += 40
+    if any(alias and (alias in normalized_query or normalized_query in alias) for alias in alias_texts):
+        score += 35
     if query_tokens:
         name_tokens = set(tokenize(place.name))
         overlap = query_tokens & name_tokens
@@ -270,6 +366,43 @@ def score_place(place: Place, normalized_query: str, query_tokens: set[str]) -> 
     if place.is_top_10:
         score += 2
     return score
+
+
+def load_json(path: Path, default: Any) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return default
+    except json.JSONDecodeError:
+        return default
+
+
+def categories_from_rules(rules: list[dict[str, Any]]) -> set[str]:
+    categories: set[str] = set()
+    for rule in rules:
+        categories.update(normalize_category(category) for category in rule.get("categories", []))
+    return categories
+
+
+def budget_from_rules(rules: list[dict[str, Any]]) -> str | None:
+    for rule in rules:
+        if rule.get("budget"):
+            return normalize_budget(rule.get("budget"))
+    return None
+
+
+def boost_ids_from_rules(rules: list[dict[str, Any]]) -> set[str]:
+    ids: set[str] = set()
+    for rule in rules:
+        ids.update(str(place_id) for place_id in rule.get("boost_place_ids", []))
+    return ids
+
+
+def is_light_access_place(place: Place) -> bool:
+    fact_text = normalize_text(" ".join(str(value) for value in (place.facts or {}).values()))
+    if any(word in fact_text for word in ("easy access", "minimal walking", "light walking", "resort style")):
+        return True
+    return place.category in {"food", "religious", "indoor", "accommodation", "beach_resort", "shopping", "transport"}
 
 
 def infer_categories(query_text: str, activities: list[str] | None = None) -> set[str]:

@@ -5,6 +5,7 @@ from typing import Any
 from .dialogue_state import DialogueMemory, dialogue_store
 from .knowledge_base import (
     Place,
+    categories_from_rules,
     calculate_distance,
     get_knowledge_base,
     infer_budget,
@@ -30,7 +31,8 @@ def answer_question(
 
     text = normalize_text(question)
     active_place = kb.resolve_active_pin(active_pin)
-    intent = detect_intent(text, active_place, memory)
+    matched_faq = kb.match_faq(question)
+    intent = detect_intent(text, active_place, memory, matched_faq)
 
     if active_place and is_contextual_place_question(text):
         memory.active_place_id = active_place.id
@@ -43,10 +45,18 @@ def answer_question(
             memory=memory,
         )
 
+    if intent == "faq":
+        return respond(
+            matched_faq["answer"],
+            intent=intent,
+            follow_up="Ask for a specific place or a recommendation if you want map picks.",
+            memory=memory,
+        )
+
     if intent == "place_info":
         place = resolve_place_for_question(kb, question, active_pin, memory)
         if not place:
-            return fallback_response(memory, "Which place in Catanduanes should I describe?")
+            return place_suggestion_response(kb, question, memory)
         return place_info_response(place, memory, concise=False)
 
     if intent == "followup_more":
@@ -84,13 +94,20 @@ def answer_question(
 
     if intent == "budget_question":
         memory.preferences["budget"] = "low"
+        rule_categories = categories_from_rules(kb.match_recommendation_rules(text))
+        categories = infer_categories(text, memory.preferences.get("activities")) or rule_categories
+        if not categories and "make it cheaper" in text:
+            categories = set(memory.preferences.get("last_recommendation_categories") or [])
         places = kb.recommend(
             question,
             active_pin=active_pin,
             budget="low",
             activities=memory.preferences.get("activities"),
+            categories=categories,
             limit=4,
         )
+        if categories:
+            memory.preferences["last_recommendation_categories"] = sorted(categories)
         return recommendation_response(
             places,
             memory,
@@ -102,6 +119,14 @@ def answer_question(
     if intent == "recommendation":
         exclude_ids = set()
         categories = infer_categories(text, memory.preferences.get("activities"))
+        if not categories:
+            categories = categories_from_rules(kb.match_recommendation_rules(text))
+        if is_unclear_recommendation(text, categories, memory):
+            return fallback_response(
+                memory,
+                "What kind of place should I look for: beaches, viewpoints, food, heritage, outdoor spots, or budget-friendly stops?",
+                intent=intent,
+            )
         if "another" in text:
             exclude_ids.update(memory.last_recommended_place_ids)
             categories = set(memory.preferences.get("last_recommendation_categories") or categories)
@@ -114,7 +139,8 @@ def answer_question(
             limit=4,
             exclude_ids=exclude_ids,
         )
-        memory.preferences["last_recommendation_categories"] = sorted(categories)
+        if categories:
+            memory.preferences["last_recommendation_categories"] = sorted(categories)
         return recommendation_response(
             places,
             memory,
@@ -124,11 +150,13 @@ def answer_question(
         )
 
     if intent == "itinerary_request":
+        categories = categories_from_rules(kb.match_recommendation_rules(text))
         places = kb.recommend(
             question,
             active_pin=active_pin,
             budget=memory.preferences.get("budget"),
             activities=memory.preferences.get("activities"),
+            categories=categories,
             limit=5,
         )
         return recommendation_response(
@@ -159,18 +187,20 @@ def answer_question(
     return fallback_response(memory, "I can help with places, nearby food, budget picks, routes, or simple itinerary ideas.")
 
 
-def detect_intent(text: str, active_place: Place | None, memory: DialogueMemory) -> str:
+def detect_intent(text: str, active_place: Place | None, memory: DialogueMemory, matched_faq: dict[str, Any] | None = None) -> str:
     if not text:
         return "fallback"
     if any(word in text.split() for word in ("hi", "hello", "hey")) or text in {"good morning", "good afternoon"}:
         return "greeting"
+    if matched_faq and should_prefer_faq(text, matched_faq):
+        return "faq"
     if text in {"tell me more", "more", "details"} or "tell me more" in text:
         return "followup_more"
     if text in {"add it", "add this", "add this place"} or "add it" in text:
         return "add_it"
     if "nearby" in text or "near me" in text or "close to" in text:
         return "nearby_question"
-    if any(phrase in text for phrase in ("make it cheaper", "cheap", "cheaper", "budget friendly", "affordable", "low budget")):
+    if any(phrase in text for phrase in ("make it cheaper", "cheap", "cheaper", "budget", "budget friendly", "affordable", "low budget")):
         return "budget_question"
     if any(word in text for word in ("route", "drive", "road", "how far", "distance", "travel time")):
         return "route_question"
@@ -203,19 +233,16 @@ def resolve_context_place(kb, active_pin: dict[str, Any] | None, memory: Dialogu
 
 
 def place_info_response(place: Place, memory: DialogueMemory, *, concise: bool) -> dict[str, Any]:
-    details = []
-    if place.municipality:
-        details.append(place.municipality)
-    details.append(place.category_group)
-    details.append(format_budget(place.min_budget))
-    if place.best_time_of_day and place.best_time_of_day != "any":
-        details.append(f"best {place.best_time_of_day}")
+    description = summarize_place_intro(place)
+    facts = place.facts or {}
+    fact_parts = []
+    for key in ("best_time", "accessibility", "travel_tip", "budget_note", "family_note", "visit_duration_note", "caution_note"):
+        if facts.get(key):
+            fact_parts.append(str(facts[key]))
 
-    description = place.description or "The local data has basic map details for this place, but no long description yet."
-    if concise and len(description) > 120:
-        description = f"{description[:117].rstrip()}..."
+    fact_parts = fact_parts[:2] if concise else fact_parts[:3]
 
-    answer = f"{place.name}: {description} ({', '.join(details)}.)"
+    answer = " ".join([description, *fact_parts]).strip()
     return respond(
         answer,
         locations=[place],
@@ -224,6 +251,15 @@ def place_info_response(place: Place, memory: DialogueMemory, *, concise: bool) 
         memory=memory,
         active_place=place,
     )
+
+
+def summarize_place_intro(place: Place) -> str:
+    category = place.category_group.lower()
+    municipality = f" in {place.municipality}" if place.municipality else ""
+    description = place.description.strip()
+    if description:
+        return f"{place.name} is a {category} stop{municipality}. {description}"
+    return f"{place.name} is a {category} stop{municipality}."
 
 
 def recommendation_response(
@@ -259,6 +295,53 @@ def fallback_response(memory: DialogueMemory, message: str, *, intent: str = "fa
         follow_up="Try asking for beaches, food, budget places, or a specific destination.",
         memory=memory,
     )
+
+
+def place_suggestion_response(kb, question: str, memory: DialogueMemory) -> dict[str, Any]:
+    suggestions = kb.suggest_places(question, limit=3)
+    if suggestions:
+        names = ", ".join(place.name for place in suggestions)
+        return respond(
+            f"I could not find an exact place match. Did you mean {names}?",
+            locations=suggestions,
+            intent="fallback",
+            follow_up="Select one on the map, or ask using the full place name.",
+            memory=memory,
+            recommended_places=suggestions,
+        )
+    return fallback_response(memory, "Which place in Catanduanes should I describe?")
+
+
+def is_unclear_recommendation(text: str, categories: set[str], memory: DialogueMemory) -> bool:
+    if categories or infer_budget(text) or memory.preferences.get("activities"):
+        return False
+    vague_phrases = ("recommend", "where should", "where can", "best places", "places to go", "spots to visit")
+    return any(phrase in text for phrase in vague_phrases)
+
+
+def should_prefer_faq(text: str, matched_faq: dict[str, Any]) -> bool:
+    faq_phrases = (
+        "best time",
+        "when to visit",
+        "what to bring",
+        "transport",
+        "transportation",
+        "safety",
+        "safe",
+        "rain",
+        "rainy",
+        "weather",
+        "budget tips",
+        "save money",
+    )
+    if any(phrase in text for phrase in faq_phrases):
+        return True
+
+    recommendation_words = ("recommend", "places", "spots", "where", "beaches", "viewpoints", "family")
+    if any(word in text for word in recommendation_words):
+        return False
+
+    return bool(matched_faq)
 
 
 def respond(

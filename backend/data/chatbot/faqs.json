@@ -1,0 +1,52 @@
+[
+  {
+    "id": "best_time_to_visit",
+    "triggers": ["best time to visit", "when to visit", "best month", "dry season", "weather"],
+    "answer": "The easiest time to visit Catanduanes is during drier months, often around March to May. Weather can still change quickly, so keep outdoor stops flexible."
+  },
+  {
+    "id": "budget_tips",
+    "triggers": ["budget tips", "cheap trip", "save money", "affordable", "low budget"],
+    "answer": "For a budget trip, choose low-cost beaches, churches, viewpoints, and falls, then group nearby stops by municipality to reduce transport time and fare."
+  },
+  {
+    "id": "transportation",
+    "triggers": ["transportation", "transport", "tricycle", "getting around", "how to get around"],
+    "answer": "For local movement, plan around tricycles, vans, or private vehicle arrangements. Confirm fares before leaving and group nearby places together."
+  },
+  {
+    "id": "safety",
+    "triggers": ["safety", "safe", "danger", "dangerous"],
+    "answer": "Most common tourist stops are manageable with normal caution. Be careful near cliffs, waves, wet rocks, and trails after rain."
+  },
+  {
+    "id": "beaches",
+    "triggers": ["catanduanes beaches", "beach tips", "beach safety"],
+    "answer": "Popular beach picks include Mamangal Beach, Puraran Beach, Twin Rock Beach Resort, and Tampad Beach. Choose Puraran for surf scenery and Mamangal for a simpler beach stop."
+  },
+  {
+    "id": "viewpoints",
+    "triggers": ["viewpoints", "views", "overlooking", "scenic"],
+    "answer": "For viewpoints, start with Binurong Point, Balacay Point, Tampad Beach, and Tuwad-Tuwadan Blue Lagoon. Morning is usually the safer and cooler choice."
+  },
+  {
+    "id": "food",
+    "triggers": ["food", "where to eat", "restaurant", "cafes", "local food"],
+    "answer": "For food, use the map around your selected place. Virac has the widest choices, while smaller municipalities may have simple eateries closer to tourist stops."
+  },
+  {
+    "id": "rainy_weather",
+    "triggers": ["rainy", "rain", "bad weather", "storm"],
+    "answer": "On rainy days, avoid cliff edges, rough surf, and slippery falls trails. Safer choices are heritage stops, town centers, cafes, or short low-exposure stops."
+  },
+  {
+    "id": "family_friendly",
+    "triggers": ["family friendly", "kids", "children", "senior", "elderly"],
+    "answer": "For families, choose easier-access stops like Twin Rock Beach Resort, St. John the Baptist Church, Museo De Catanduanes, Mamangal Beach, and nearby food stops."
+  },
+  {
+    "id": "what_to_bring",
+    "triggers": ["what to bring", "bring", "pack", "packing"],
+    "answer": "Bring water, sun protection, cash, comfortable footwear, a small towel, and a waterproof pouch if visiting beaches or falls."
+  }
+]

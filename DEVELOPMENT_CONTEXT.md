@@ -248,6 +248,19 @@
 - Added `backend/tools/chatbot_smoke.py` for deterministic backend smoke checks
 - Kept chatbot logic out of the frontend bundle and avoided online LLMs, embeddings, vector DBs, or external APIs
 
+**Phase 12B: Chatbot Data Quality and Frontend Action Integration**
+- Restored `.env.example` with `VITE_API_URL=http://localhost:8000`
+- Added lightweight chatbot seed files under `backend/data/chatbot/` for aliases, enriched place facts, FAQs, and recommendation rules
+- Enriched GeoJSON-backed places with common aliases such as Binurong, Twin Rock, Bato Church, Puraran, Mamangal, Maribina, Balacay, Virac Airport, and Virac Port
+- Added structured fact snippets for important places including best time, accessibility, travel tips, budget notes, family notes, visit duration, and caution notes
+- Added deterministic FAQ routing for general Catanduanes questions such as best time to visit, budget tips, transport, safety, food, rainy weather, family-friendly stops, and packing
+- Improved recommendation ranking for beaches, viewpoints, food, heritage, budget-friendly stops, family-friendly stops, low-walking stops, and outdoor/nature stops
+- Improved follow-up memory so `tell me more`, `nearby food`, `another one`, `make it cheaper`, and `add it` preserve context better
+- Improved fallback behavior to suggest possible place matches instead of giving random recommendations
+- Updated the frontend chat flow to send setup preferences with `/ask`, select/highlight returned locations, show multiple-match status, and treat `add_to_trip` actions as guidance to use the existing Add Spot UI
+- Expanded `backend/tools/chatbot_smoke.py` to cover alias lookup, FAQ, enriched facts, budget beaches, follow-ups, active pin, and nearby food behavior
+- Kept the chatbot deterministic and offline-capable without LLMs, embeddings, vector databases, or online APIs
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
@@ -266,6 +279,8 @@
 - Itinerary map shows selected start hub, current-day route, preview route, selected marker highlight, and featured markers
 - Route rendering first tries local `/api/route`, which serves a small precomputed SQLite road-route cache, and falls back to an approximate local road graph only when unavailable or uncached
 - Chatbot `/ask` works offline from the local GeoJSON knowledge base and can return locations for map highlighting
+- Chatbot `/ask` is enriched by local alias, place fact, FAQ, and recommendation-rule seed files
+- Frontend chat sends active pin and setup preferences to `/ask`, highlights returned locations, reports multiple matches, and guides structured `add_to_trip` actions through the existing Add Spot UI
 - Setup calendar supports start and end date range selection, and itinerary days are derived from the selected range up to 7 days
 - First visit to itinerary opens setup overlay until setup is completed
 - Setup completion persists in localStorage and can be reopened from the top-right Setup control
@@ -301,14 +316,14 @@
 
 ## Current Bundle Size
 
-Latest build (Map Parity Fixes):
+Latest build (Phase 12B):
 - HTML: 0.56 kB
-- Main CSS: 95.62 kB
-- Main JS: 97.59 kB
+- Main CSS: 93.31 kB
+- Main JS: 94.46 kB
 - Leaflet async JS chunk: 149.47 kB
 - Lazy route CSS chunks: 13.21 kB total
 - Lazy route JS chunks: 18.90 kB total
-- Full built JS/CSS assets: ~374.79 kB
+- Full built JS/CSS assets: ~369.35 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
@@ -330,6 +345,7 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
 - Backend precomputed route cache is in `backend/data/route_cache.sqlite`
 - Backend route cache generator is `backend/tools/build_route_cache.py`
 - Backend chatbot logic is in `backend/app/chatbot.py`, `backend/app/knowledge_base.py`, and `backend/app/dialogue_state.py`
+- Backend chatbot seed data is in `backend/data/chatbot/aliases.json`, `place_facts.json`, `faqs.json`, and `recommendation_rules.json`
 - The map checks local `/tiles/{z}/{x}/{y}.png` candidates and only enables tiles when the response is an actual image
 - If no local tiles are present, Leaflet renders the local GeoJSON polygon/line layer over a local sea-colored base
 - The renderer preserves the same itinerary events for destination selection and Add to Trip
