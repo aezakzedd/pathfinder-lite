@@ -346,9 +346,9 @@ function fitToCatanduanes(instance) {
   const paddedMaxBounds = bounds.pad(0.28);
 
   instance.map.setMaxBounds(paddedMaxBounds);
-  instance.map.fitBounds(bounds.pad(0.08), {
+  instance.map.fitBounds(bounds.pad(0.015), {
     animate: false,
-    padding: [24, 24]
+    padding: [10, 10]
   });
 }
 
@@ -513,7 +513,7 @@ function renderMarkerLayer() {
 
 function createDestinationIcon(instance, destination, state) {
   const category = destination.categoryGroup || destination.displayCategory || destination.category;
-  const color = state.isFeatured ? '#ef4444' : '#2563eb';
+  const color = state.isFeatured ? '#ef4444' : 'var(--offline-poi-color)';
   const classNames = [
     'offline-destination-marker',
     state.isFeatured ? 'featured' : '',
@@ -525,10 +525,10 @@ function createDestinationIcon(instance, destination, state) {
     className: classNames,
     html: state.isFeatured
       ? renderFeaturedMarker(destination, color)
-      : renderCompactMarker(category, color),
-    iconSize: state.isFeatured ? [78, 86] : [30, 30],
-    iconAnchor: state.isFeatured ? [39, 58] : [15, 15],
-    popupAnchor: [0, state.isFeatured ? -58 : -18]
+      : renderCompactMarker(destination, category, color, state),
+    iconSize: state.isFeatured ? [104, 70] : [22, 22],
+    iconAnchor: state.isFeatured ? [52, 45] : [11, 11],
+    popupAnchor: [0, state.isFeatured ? -46 : -18]
   });
 }
 
@@ -545,8 +545,11 @@ function renderFeaturedMarker(destination, color) {
   `;
 }
 
-function renderCompactMarker(category, color) {
+function renderCompactMarker(destination, category, color, state) {
   const iconPath = CATEGORY_ICONS[category] || CATEGORY_ICONS.Outdoor;
+  const label = state.isSelected || state.isAdded
+    ? `<span class="offline-marker-label">${escapeHtml(destination.name)}</span>`
+    : '';
   return `
     <span class="offline-marker-ring"></span>
     <span class="offline-marker-badge" style="--marker-color: ${color};">
@@ -554,6 +557,7 @@ function renderCompactMarker(category, color) {
         ${iconPath}
       </svg>
     </span>
+    ${label}
   `;
 }
 

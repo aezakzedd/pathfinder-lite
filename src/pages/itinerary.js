@@ -133,28 +133,6 @@ export function renderItinerary(container) {
           
           <div class="chatbot-body">
             <div class="chatbot-messages" id="chatbot-messages">
-              <div class="empty-state" id="chat-empty-state">
-                <div class="empty-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 8V4H8" />
-                    <rect width="16" height="12" x="4" y="8" rx="2" />
-                    <path d="M2 14h2" />
-                    <path d="M20 14h2" />
-                    <path d="M15 13v2" />
-                    <path d="M9 13v2" />
-                  </svg>
-                </div>
-                <p class="empty-title">Pathfinder AI</p>
-                <p class="empty-subtitle">Ask me about destinations, activities, or anything about Catanduanes</p>
-              </div>
-              
-              <div class="suggestion-chips" id="suggestion-chips">
-                <button class="suggestion-chip" data-prompt="Best beaches">Best beaches</button>
-                <button class="suggestion-chip" data-prompt="Hidden waterfalls">Hidden waterfalls</button>
-                <button class="suggestion-chip" data-prompt="Local food">Local food</button>
-                <button class="suggestion-chip" data-prompt="Budget tips">Budget tips</button>
-              </div>
-
               <!-- Itinerary Preview as Chat Card -->
               <div class="chat-itinerary-card" id="chat-itinerary-card">
                 <div class="itinerary-header">
@@ -183,7 +161,7 @@ export function renderItinerary(container) {
                   </div>
                 </div>
                 <div class="itinerary-spots" id="chat-itinerary-spots">
-                  <div class="itinerary-empty">No stops added yet</div>
+                  <div class="itinerary-empty">Day 1 is empty. Select a map pin or generate a plan to begin.</div>
                 </div>
                 <div class="itinerary-actions">
                   <button class="btn-secondary chat-back-btn" id="chat-back-btn" aria-label="Previous day">
@@ -280,73 +258,6 @@ export function renderItinerary(container) {
               <span class="info-btn-text">Show Info</span>
             </button>
           </div>
-          
-          <!-- Trip Setup Panel -->
-          <div class="trip-setup-panel">
-            <div class="trip-setup-header">
-              <h3>TRIP SETUP</h3>
-            </div>
-            <div class="trip-setup-content">
-              <div class="form-group">
-                <label class="form-label">Start Point</label>
-                <select class="form-select" id="start-point-select">
-                  <option value="" disabled selected>Select starting hub</option>
-                  <option value="virac">Virac</option>
-                  <option value="san-andres">San Andres</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Trip Dates</label>
-                <div class="date-inputs">
-                  <input type="date" class="form-input" />
-                  <span class="date-separator">to</span>
-                  <input type="date" class="form-input" />
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Interests</label>
-                <div class="interest-chips">
-                  <label class="interest-chip">
-                    <input type="checkbox" />
-                    <span>🌊 Water</span>
-                  </label>
-                  <label class="interest-chip">
-                    <input type="checkbox" />
-                    <span>🥾 Outdoor</span>
-                  </label>
-                  <label class="interest-chip">
-                    <input type="checkbox" />
-                    <span>🏔️ Views</span>
-                  </label>
-                  <label class="interest-chip">
-                    <input type="checkbox" />
-                    <span>🏛️ Heritage</span>
-                  </label>
-                  <label class="interest-chip">
-                    <input type="checkbox" />
-                    <span>🍽️ Dining</span>
-                  </label>
-                  <label class="interest-chip">
-                    <input type="checkbox" />
-                    <span>🏨 Stay</span>
-                  </label>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Budget Level</label>
-                <div class="budget-slider">
-                  <input type="range" min="0" max="100" value="50" class="range-input" />
-                  <div class="budget-labels">
-                    <span>Low</span>
-                    <span>Medium</span>
-                    <span>High</span>
-                  </div>
-                </div>
-              </div>
-              <button class="btn-primary">Apply Filters</button>
-            </div>
-          </div>
-
           <section class="trip-setup-overlay" id="trip-setup-overlay" aria-label="Trip setup">
             <div class="trip-setup-card" role="dialog" aria-modal="true" aria-labelledby="trip-setup-title">
               <div class="trip-setup-main">
@@ -1015,7 +926,6 @@ function toIsoDate(date) {
 function setupChatHandlers() {
   const chatForm = document.getElementById('chatbot-form');
   const chatInput = document.getElementById('chatbot-input');
-  const suggestionChips = document.querySelectorAll('.suggestion-chip');
   
   // Form submit handler
   if (chatForm) {
@@ -1046,18 +956,6 @@ function setupChatHandlers() {
     chatInput.addEventListener('keydown', keydownHandler);
     eventListeners.push({ element: chatInput, event: 'keydown', handler: keydownHandler });
   }
-  
-  // Suggestion chip handlers
-  suggestionChips.forEach(chip => {
-    const clickHandler = () => {
-      const prompt = chip.dataset.prompt;
-      if (prompt && !isSending) {
-        sendMessage(prompt);
-      }
-    };
-    chip.addEventListener('click', clickHandler);
-    eventListeners.push({ element: chip, event: 'click', handler: clickHandler });
-  });
 }
 
 async function sendMessage(message) {
@@ -1141,23 +1039,10 @@ function handleChatLocations(response) {
 
 function renderChatMessages() {
   const messagesContainer = document.getElementById('chatbot-messages');
-  const emptyState = document.getElementById('chat-empty-state');
-  const suggestionChips = document.getElementById('suggestion-chips');
   
   if (!messagesContainer) return;
   
   const messages = getMessages();
-  
-  // Show/hide empty state
-  if (emptyState && suggestionChips) {
-    if (messages.length === 0) {
-      emptyState.style.display = 'block';
-      suggestionChips.style.display = 'flex';
-    } else {
-      emptyState.style.display = 'none';
-      suggestionChips.style.display = 'none';
-    }
-  }
   
   // Render messages
   const existingMessages = messagesContainer.querySelectorAll('.chat-message');
@@ -1171,7 +1056,8 @@ function renderChatMessages() {
       messagesContainer.appendChild(loadingEl);
     } else {
       const messageEl = document.createElement('div');
-      messageEl.className = `chat-message chat-message-${message.role === 'user' ? 'user' : 'assistant'}`;
+      const roleClass = ['user', 'assistant', 'system'].includes(message.role) ? message.role : 'assistant';
+      messageEl.className = `chat-message chat-message-${roleClass}`;
       messageEl.textContent = message.content;
       messagesContainer.appendChild(messageEl);
     }
@@ -1283,20 +1169,9 @@ function setupExportHandlers() {
       const itineraryCard = document.getElementById('chat-itinerary-card');
       const messagesContainer = document.getElementById('chatbot-messages');
       if (itineraryCard && messagesContainer) {
-        // Check if card is minimized
         if (itineraryCard.classList.contains('minimized')) {
           itineraryCard.classList.remove('minimized');
         }
-        // Check if there are new messages after the itinerary card
-        const messages = getMessages();
-        const itineraryCardIndex = Array.from(messagesContainer.children).indexOf(itineraryCard);
-        const hasNewMessages = messages.length > 0 && itineraryCardIndex < messagesContainer.children.length - 1;
-        
-        if (hasNewMessages) {
-          // Move card to bottom
-          messagesContainer.appendChild(itineraryCard);
-        }
-        // Scroll the itinerary card into view
         itineraryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     };
@@ -1460,7 +1335,7 @@ function renderItinerarySpots() {
   spotCountEl.textContent = `${stops.length} spot${stops.length !== 1 ? 's' : ''}`;
   
   if (stops.length === 0) {
-    spotsContainer.innerHTML = '<div class="itinerary-empty">No stops added yet</div>';
+    spotsContainer.innerHTML = `<div class="itinerary-empty">Day ${getActiveDay()} is empty. Select a map pin or generate a plan to begin.</div>`;
     return;
   }
   
