@@ -52,6 +52,7 @@ let eventListeners = [];
 let isSending = false;
 let setupOverlayOpen = false;
 let setupCalendarOpen = false;
+let setupCalendarMonthDate = null;
 let setupOpenedFromCompleted = false;
 let draggedStopId = null;
 let pointerDrag = null;
@@ -664,6 +665,9 @@ function getActivePinPayload() {
 function applyItineraryTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const themeToggle = document.getElementById('itinerary-theme-toggle');
+  if (mapInitialized) {
+    window.requestAnimationFrame(() => invalidateSize());
+  }
   if (!themeToggle) return;
 
   const isDark = theme === 'dark';
@@ -692,6 +696,7 @@ function setupTripSetupHandlers() {
   if (dateInput) {
     const clickHandler = () => {
       setupCalendarOpen = true;
+      setupCalendarMonthDate = getCalendarMonthDate(getTripSetup().tripDate);
       renderTripSetup();
     };
     dateInput.addEventListener('click', clickHandler);
@@ -701,6 +706,7 @@ function setupTripSetupHandlers() {
   if (calendarTrigger) {
     const clickHandler = () => {
       setupCalendarOpen = !setupCalendarOpen;
+      setupCalendarMonthDate = getCalendarMonthDate(getTripSetup().tripDate);
       renderTripSetup();
     };
     calendarTrigger.addEventListener('click', clickHandler);
@@ -709,10 +715,16 @@ function setupTripSetupHandlers() {
 
   if (calendarPopover) {
     const clickHandler = (event) => {
+      const monthButton = event.target.closest('[data-calendar-month]');
+      if (monthButton) {
+        setupCalendarMonthDate = shiftCalendarMonth(setupCalendarMonthDate, Number(monthButton.dataset.calendarMonth));
+        renderTripSetup();
+        return;
+      }
+
       const dateButton = event.target.closest('[data-calendar-date]');
       if (!dateButton) return;
-      setupCalendarOpen = false;
-      updateTripSetup({ tripDate: dateButton.dataset.calendarDate });
+      applySetupDateSelection(dateButton.dataset.calendarDate);
     };
     calendarPopover.addEventListener('click', clickHandler);
     eventListeners.push({ element: calendarPopover, event: 'click', handler: clickHandler });
@@ -764,6 +776,30 @@ function openTripSetup() {
   setupOpenedFromCompleted = setup.completed && isTripSetupComplete(setup);
   setupOverlayOpen = true;
   renderTripSetup();
+}
+
+function applySetupDateSelection(selectedDate) {
+  const setup = getTripSetup();
+  const hasCompleteRange = Boolean(setup.tripDate && setup.tripEndDate);
+
+  if (!setup.tripDate || hasCompleteRange) {
+    setupCalendarOpen = true;
+    setupCalendarMonthDate = getCalendarMonthDate(selectedDate);
+    updateTripSetup({ tripDate: selectedDate, tripEndDate: '' });
+    return;
+  }
+
+  const start = new Date(`${setup.tripDate}T00:00:00`);
+  const selected = new Date(`${selectedDate}T00:00:00`);
+  if (selected < start) {
+    setupCalendarOpen = true;
+    setupCalendarMonthDate = getCalendarMonthDate(selectedDate);
+    updateTripSetup({ tripDate: selectedDate, tripEndDate: '' });
+    return;
+  }
+
+  setupCalendarOpen = false;
+  updateTripSetup({ tripEndDate: selectedDate });
 }
 
 function showMapInfo() {
@@ -826,7 +862,7 @@ function renderTripSetup() {
   }
 
   if (dateInput) {
-    const displayDate = formatSetupDateDisplay(setup.tripDate);
+    const displayDate = formatSetupDateDisplay(setup.tripDate, setup.tripEndDate);
     if (dateInput.value !== displayDate) {
       dateInput.value = displayDate;
     }
@@ -835,7 +871,7 @@ function renderTripSetup() {
   if (calendarPopover) {
     calendarPopover.classList.toggle('setup-calendar-open', setupCalendarOpen);
     calendarPopover.setAttribute('aria-hidden', setupCalendarOpen ? 'false' : 'true');
-    calendarPopover.innerHTML = renderSetupCalendar(setup.tripDate);
+    calendarPopover.innerHTML = renderSetupCalendar(setup.tripDate, setup.tripEndDate);
   }
 
   const budgetIndex = Math.max(0, budgetOptions.findIndex(option => option.value === setup.budget));
@@ -866,35 +902,41 @@ function renderTripSetup() {
   }
 }
 
-function formatSetupDateDisplay(dateValue) {
-  if (!dateValue) return '';
+function formatSetupDateDisplay(startValue, endValue) {
+  if (!startValue) return '';
 
-  const start = new Date(`${dateValue}T00:00:00`);
+  const start = new Date(`${startValue}T00:00:00`);
   if (Number.isNaN(start.getTime())) return '';
 
-  const end = new Date(start);
-  end.setDate(start.getDate() + 1);
-
   const month = start.toLocaleString('en-US', { month: 'short' });
-  const endMonth = end.toLocaleString('en-US', { month: 'short' });
   const startDay = start.getDate();
+
+  if (!endValue) {
+    return `${month} ${startDay} - Select end`;
+  }
+
+  const end = new Date(`${endValue}T00:00:00`);
+  if (Number.isNaN(end.getTime())) {
+    return `${month} ${startDay} - Select end`;
+  }
+
+  const endMonth = end.toLocaleString('en-US', { month: 'short' });
   const endDay = end.getDate();
 
   return `${month} ${startDay} - ${endMonth} ${endDay}`;
 }
 
-function renderSetupCalendar(dateValue) {
-  const selected = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
-  const year = selected.getFullYear();
-  const month = selected.getMonth();
+function renderSetupCalendar(startValue, endValue) {
+  const calendarMonth = setupCalendarMonthDate || getCalendarMonthDate(startValue);
+  const year = calendarMonth.getFullYear();
+  const month = calendarMonth.getMonth();
   const firstDay = new Date(year, month, 1);
   const startOffset = firstDay.getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
-  const monthLabel = selected.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-  const selectedDay = selected.getDate();
-  const rangeEnd = new Date(selected);
-  rangeEnd.setDate(selectedDay + 1);
+  const monthLabel = calendarMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const startTime = startValue ? new Date(`${startValue}T00:00:00`).getTime() : null;
+  const endTime = endValue ? new Date(`${endValue}T00:00:00`).getTime() : null;
   const weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   const cells = [];
 
@@ -918,9 +960,12 @@ function renderSetupCalendar(dateValue) {
     }
 
     const isoDate = toIsoDate(cellDate);
-    const inRange = isoDate === dateValue || isoDate === toIsoDate(rangeEnd);
+    const cellTime = cellDate.getTime();
+    const isStart = isoDate === startValue;
+    const isEnd = isoDate === endValue;
+    const inRange = Boolean(startTime && endTime && cellTime > startTime && cellTime < endTime);
     cells.push(`
-      <button class="setup-calendar-day ${muted ? 'muted' : ''} ${inRange ? 'selected' : ''}" type="button" data-calendar-date="${isoDate}">
+      <button class="setup-calendar-day ${muted ? 'muted' : ''} ${inRange ? 'in-range' : ''} ${isStart ? 'range-start selected' : ''} ${isEnd ? 'range-end selected' : ''}" type="button" data-calendar-date="${isoDate}">
         ${cellLabel}
       </button>
     `);
@@ -928,8 +973,9 @@ function renderSetupCalendar(dateValue) {
 
   return `
     <div class="setup-calendar-header">
+      <button class="setup-calendar-nav setup-calendar-prev" type="button" data-calendar-month="-1" aria-label="Previous month">&lsaquo;</button>
       <span>${monthLabel}</span>
-      <span class="setup-calendar-next" aria-hidden="true">›</span>
+      <button class="setup-calendar-nav setup-calendar-next" type="button" data-calendar-month="1" aria-label="Next month">&rsaquo;</button>
     </div>
     <div class="setup-calendar-weekdays">
       ${weekdayLabels.map(day => `<span>${day}</span>`).join('')}
@@ -940,6 +986,16 @@ function renderSetupCalendar(dateValue) {
   `;
 }
 
+function getCalendarMonthDate(dateValue) {
+  const date = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+  return new Date(safeDate.getFullYear(), safeDate.getMonth(), 1);
+}
+
+function shiftCalendarMonth(monthDate, offset) {
+  const baseDate = monthDate || getCalendarMonthDate(getTripSetup().tripDate);
+  return new Date(baseDate.getFullYear(), baseDate.getMonth() + offset, 1);
+}
 function toIsoDate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');

@@ -209,6 +209,14 @@
 - Added `requestRouteGeometry(waypoints)` placeholder for future local `POST /api/route` FastAPI integration; no public routing servers are called
 - Added minimal local Leaflet CSS in `itinerary.css` instead of loading any CDN stylesheet
 
+**Focused Phase: Leaflet Map Interaction Fixes**
+- Imported Leaflet's local package CSS to stabilize pan/zoom transforms without using a CDN
+- Reworked non-featured destination markers into compact category icon circles while keeping top-10 markers as larger pins with labels
+- Added two-click trip date range selection with start/end storage in itinerary setup state
+- Added theme-aware offline map colors: green map tone for light mode, light gray map tone for dark mode
+- Added `src/utils/offlineRouting.js`, a small local road-network router that snaps stops to offline road corridors and uses Dijkstra to draw multi-segment route/preview lines
+- Kept local GeoJSON fallback and confirmed no online tiles or public routing servers are used
+
 ## Current Known Implementation
 
 **Working Features:**
@@ -216,8 +224,10 @@
 - About, Contact, and Creators pages are polished with kiosk-consistent styling
 - Itinerary page with offline Leaflet Catanduanes map
 - Leaflet panning and zooming are restored
+- Non-featured markers use compact category icon circles; top-10 markers remain prominent pins
 - Itinerary map filters markers by selected activities and budget
-- Itinerary map shows selected start hub, current-day route, preview route, selected marker highlight, and featured markers
+- Itinerary map shows selected start hub, current-day road-following route, preview route, selected marker highlight, and featured markers
+- Setup calendar supports start and end date range selection
 - First visit to itinerary opens setup overlay until setup is completed
 - Setup completion persists in localStorage and can be reopened from the top-right Setup control
 - Setup overlay validates start point, trip date, and activities before enabling Done
@@ -252,14 +262,14 @@
 
 ## Current Bundle Size
 
-Latest build (Leaflet Offline Map Restoration):
+Latest build (Leaflet Map Interaction Fixes):
 - HTML: 0.56 kB
-- Main CSS: 79.54 kB
-- Main JS: 85.66 kB
+- Main CSS: 95.54 kB
+- Main JS: 92.17 kB
 - Leaflet async JS chunk: 149.47 kB
 - Lazy route CSS chunks: 13.21 kB total
 - Lazy route JS chunks: 18.55 kB total
-- Full built JS/CSS assets: ~346.43 kB
+- Full built JS/CSS assets: ~368.30 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
@@ -276,6 +286,7 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
 - Active offline Leaflet map logic is in `src/map/leafletOfflineMap.js`
 - Previous lightweight SVG map logic remains in `src/map/liteMap.js` as fallback/reference
 - Local map geometry is in `public/data/catanduanes_datafile.geojson`
+- Offline road routing logic is in `src/utils/offlineRouting.js`
 - The map checks local `/tiles/{z}/{x}/{y}.png` candidates and only enables tiles when the response is an actual image
 - If no local tiles are present, Leaflet renders the local GeoJSON polygon/line layer over a local sea-colored base
 - The renderer preserves the same itinerary events for destination selection and Add to Trip

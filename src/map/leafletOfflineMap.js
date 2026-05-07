@@ -1,3 +1,6 @@
+import 'leaflet/dist/leaflet.css';
+import { buildOfflineRouteGeometry } from '../utils/offlineRouting.js';
+
 const GEOJSON_URL = '/data/catanduanes_datafile.geojson';
 const LOCAL_TILE_URL = '/tiles/{z}/{x}/{y}.png';
 const DEFAULT_CENTER = [13.75, 124.25];
@@ -14,6 +17,15 @@ const CATEGORY_COLORS = {
   Heritage: '#f59e0b',
   Dining: '#ef4444',
   Stay: '#6366f1'
+};
+
+const CATEGORY_ICONS = {
+  Water: '<path d="M12 4c2.8 3.2 4.2 5.7 4.2 7.5A4.2 4.2 0 0 1 7.8 11.5C7.8 9.7 9.2 7.2 12 4Z" />',
+  Views: '<path d="M4 17.5 8.5 9l4 5.4 2.2-3.1 5.3 6.2H4Z" />',
+  Outdoor: '<path d="M4 18h16L12 5 4 18Zm8-6 2 3h-4l2-3Z" />',
+  Heritage: '<path d="M5 9h14v2H5V9Zm2 3h2v6H7v-6Zm4 0h2v6h-2v-6Zm4 0h2v6h-2v-6ZM4 19h16v2H4v-2ZM12 3l7 4H5l7-4Z" />',
+  Dining: '<path d="M7 3h1v7H7V3Zm3 0h1v7h-1V3ZM8.5 11h1v10h-1V11ZM15 3h2v18h-2V3Z" />',
+  Stay: '<path d="M4 20V9l8-5 8 5v11h-5v-6H9v6H4Z" />'
 };
 
 const MAP_LABELS = [
@@ -117,6 +129,7 @@ export function resetView() {
 
 export function invalidateSize() {
   if (!mapInstance?.map) return;
+  applyMapTheme(mapInstance);
   mapInstance.map.invalidateSize({ pan: false });
 }
 
@@ -147,24 +160,7 @@ export async function requestRouteGeometry(waypoints = []) {
     return null;
   }
 
-  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timeoutId = controller ? window.setTimeout(() => controller.abort(), 1200) : null;
-
-  try {
-    const response = await fetch('/api/route', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ waypoints }),
-      signal: controller?.signal
-    });
-
-    if (!response.ok) return null;
-    return await response.json();
-  } catch {
-    return null;
-  } finally {
-    if (timeoutId) window.clearTimeout(timeoutId);
-  }
+  return buildOfflineRouteGeometry(waypoints);
 }
 
 async function setupLeafletMap(instance, options) {
@@ -199,6 +195,7 @@ async function setupLeafletMap(instance, options) {
 
   instance.geojson = geojson;
   renderGeoJsonBase(instance, geojson);
+  applyMapTheme(instance);
   renderMunicipalityLabels(instance);
   fitToCatanduanes(instance);
   instance.ready = true;
@@ -293,10 +290,13 @@ function renderGeoJsonBase(instance, geojson) {
 function styleBaseFeature(feature) {
   const type = feature.geometry?.type;
   const isLine = type === 'LineString' || type === 'MultiLineString';
+  const landColor = getCssMapValue('--offline-map-land', '#dbead7');
+  const boundaryColor = getCssMapValue('--offline-map-boundary', 'rgba(15, 23, 42, 0.46)');
+  const lineColor = getCssMapValue('--offline-map-line', 'rgba(15, 23, 42, 0.32)');
 
   if (isLine) {
     return {
-      color: 'rgba(15, 23, 42, 0.35)',
+      color: lineColor,
       weight: 1.4,
       opacity: 0.75,
       dashArray: '5 7'
@@ -304,12 +304,25 @@ function styleBaseFeature(feature) {
   }
 
   return {
-    color: 'rgba(15, 23, 42, 0.58)',
+    color: boundaryColor,
     weight: 1.35,
     opacity: 0.95,
-    fillColor: '#edf3ed',
+    fillColor: landColor,
     fillOpacity: 0.92
   };
+}
+
+function applyMapTheme(instance) {
+  if (!instance?.container) return;
+  instance.container.style.background = getCssMapValue('--offline-map-sea', '#a9d7e0');
+  instance.boundaryLayer?.setStyle?.(feature => styleBaseFeature(feature));
+}
+
+function getCssMapValue(name, fallback) {
+  if (typeof getComputedStyle !== 'function') return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||
+    getComputedStyle(mapInstance?.container || document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
 }
 
 function renderMunicipalityLabels(instance) {
@@ -358,8 +371,19 @@ function renderRouteLayer() {
   const instance = mapInstance;
   instance.routeLayer.clearLayers();
 
-  const latLngs = coordinatesToLatLngs(instance.routeCoordinates);
+  const routed = buildOfflineRouteGeometry(instance.routeCoordinates);
+  const latLngs = coordinatesToLatLngs(routed.coordinates);
   if (latLngs.length < 2) return;
+
+  instance.L.polyline(latLngs, {
+    renderer: instance.routeRenderer,
+    className: 'offline-route-casing',
+    color: '#ffffff',
+    weight: 8,
+    opacity: 0.86,
+    lineCap: 'round',
+    lineJoin: 'round'
+  }).addTo(instance.routeLayer);
 
   instance.L.polyline(latLngs, {
     renderer: instance.routeRenderer,
@@ -376,8 +400,20 @@ function renderPreviewLayer() {
   const instance = mapInstance;
   instance.previewLayer.clearLayers();
 
-  const latLngs = coordinatesToLatLngs(instance.previewCoordinates);
+  const routed = buildOfflineRouteGeometry(instance.previewCoordinates);
+  const latLngs = coordinatesToLatLngs(routed.coordinates);
   if (latLngs.length < 2) return;
+
+  instance.L.polyline(latLngs, {
+    renderer: instance.routeRenderer,
+    className: 'offline-preview-casing',
+    color: '#ffffff',
+    weight: 7,
+    opacity: 0.72,
+    dashArray: '10 10',
+    lineCap: 'round',
+    lineJoin: 'round'
+  }).addTo(instance.previewLayer);
 
   instance.L.polyline(latLngs, {
     renderer: instance.routeRenderer,
@@ -456,17 +492,35 @@ function createDestinationIcon(instance, destination, state) {
 
   return instance.L.divIcon({
     className: classNames,
-    html: `
-      <span class="offline-marker-ring"></span>
-      <span class="offline-marker-pin" style="--marker-color: ${color};">
-        <span class="offline-marker-core"></span>
-      </span>
-      ${state.isFeatured ? `<span class="offline-marker-label">${escapeHtml(destination.name)}</span>` : ''}
-    `,
-    iconSize: state.isFeatured ? [72, 82] : [54, 64],
-    iconAnchor: state.isFeatured ? [36, 58] : [27, 50],
-    popupAnchor: [0, state.isFeatured ? -58 : -50]
+    html: state.isFeatured
+      ? renderFeaturedMarker(destination, color)
+      : renderCompactMarker(category, color),
+    iconSize: state.isFeatured ? [72, 82] : [34, 34],
+    iconAnchor: state.isFeatured ? [36, 58] : [17, 17],
+    popupAnchor: [0, state.isFeatured ? -58 : -20]
   });
+}
+
+function renderFeaturedMarker(destination, color) {
+  return `
+    <span class="offline-marker-ring"></span>
+    <span class="offline-marker-pin" style="--marker-color: ${color};">
+      <span class="offline-marker-core"></span>
+    </span>
+    <span class="offline-marker-label">${escapeHtml(destination.name)}</span>
+  `;
+}
+
+function renderCompactMarker(category, color) {
+  const iconPath = CATEGORY_ICONS[category] || CATEGORY_ICONS.Outdoor;
+  return `
+    <span class="offline-marker-ring"></span>
+    <span class="offline-marker-badge" style="--marker-color: ${color};">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        ${iconPath}
+      </svg>
+    </span>
+  `;
 }
 
 function syncPopup() {

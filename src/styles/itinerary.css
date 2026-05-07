@@ -1,5 +1,19 @@
 /* Itinerary page styles */
 
+:root {
+  --offline-map-sea: #a7d7cc;
+  --offline-map-land: #dcefd6;
+  --offline-map-boundary: rgba(31, 77, 56, 0.5);
+  --offline-map-line: rgba(31, 77, 56, 0.32);
+}
+
+:root[data-theme='dark'] {
+  --offline-map-sea: #c2c8ca;
+  --offline-map-land: #e6e8e6;
+  --offline-map-boundary: rgba(15, 23, 42, 0.48);
+  --offline-map-line: rgba(15, 23, 42, 0.3);
+}
+
 /* Route-specific overrides for fullscreen itinerary */
 body[data-route="itinerary"] .page-container {
   padding-top: 0;
@@ -454,7 +468,7 @@ body[data-route="itinerary"] .page-container {
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background: #a9d7e0;
+  background: var(--offline-map-sea);
   outline: 0;
   overflow: hidden;
   font-family: inherit;
@@ -593,23 +607,16 @@ body[data-route="itinerary"] .page-container {
 }
 
 .offline-destination-marker {
-  width: 54px !important;
-  height: 64px !important;
   border: 0;
   background: transparent;
-}
-
-.offline-destination-marker.featured {
-  width: 72px !important;
-  height: 82px !important;
 }
 
 .offline-marker-ring {
   position: absolute;
   left: 50%;
-  top: 43%;
-  width: 52px;
-  height: 52px;
+  top: 50%;
+  width: 38px;
+  height: 38px;
   border-radius: 999px;
   border: 3px solid #22d3ee;
   background: rgba(20, 184, 166, 0.16);
@@ -621,6 +628,33 @@ body[data-route="itinerary"] .page-container {
 .offline-destination-marker.selected .offline-marker-ring {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
+}
+
+.offline-destination-marker.featured .offline-marker-ring {
+  top: 43%;
+  width: 52px;
+  height: 52px;
+}
+
+.offline-marker-badge {
+  position: absolute;
+  inset: 2px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--marker-color, #3b82f6);
+  border: 3px solid #ffffff;
+  box-shadow: 0 7px 12px rgba(15, 23, 42, 0.26);
+}
+
+.offline-marker-badge svg {
+  width: 16px;
+  height: 16px;
+  fill: #ffffff;
+}
+
+.offline-destination-marker.added .offline-marker-badge {
+  opacity: 0.76;
 }
 
 .offline-marker-pin {
@@ -732,7 +766,9 @@ body[data-route="itinerary"] .page-container {
 }
 
 .offline-route-line,
-.offline-preview-line {
+.offline-route-casing,
+.offline-preview-line,
+.offline-preview-casing {
   filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.18));
 }
 
@@ -2520,11 +2556,29 @@ body[data-route="itinerary"] .page-container {
   font-weight: 800;
 }
 
-.page-itinerary .setup-calendar-next {
+.page-itinerary .setup-calendar-nav {
   position: absolute;
-  right: 12px;
-  font-size: 34px;
+  top: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 31px;
+  height: 31px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 26px;
   line-height: 1;
+  cursor: pointer;
+}
+
+.page-itinerary .setup-calendar-prev {
+  left: 8px;
+}
+
+.page-itinerary .setup-calendar-next {
+  right: 8px;
 }
 
 .page-itinerary .setup-calendar-weekdays,
@@ -2567,6 +2621,12 @@ body[data-route="itinerary"] .page-container {
 
 .page-itinerary .setup-calendar-day.muted {
   color: #536076;
+}
+
+.page-itinerary .setup-calendar-day.in-range {
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.28);
+  color: #dbeafe;
 }
 
 .page-itinerary .setup-calendar-day.selected {

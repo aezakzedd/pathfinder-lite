@@ -6,6 +6,7 @@ const STORAGE_KEY = 'pathfinder-lite-itinerary-state';
 const DEFAULT_TRIP_SETUP = {
   startPoint: '',
   tripDate: '',
+  tripEndDate: '',
   activities: [],
   budget: 'low',
   completed: false,
@@ -64,6 +65,7 @@ function normalizeTripSetup(setup = {}) {
   return {
     ...DEFAULT_TRIP_SETUP,
     ...setup,
+    tripEndDate: setup.tripEndDate || setup.endDate || '',
     activities: Array.isArray(setup.activities) ? setup.activities : []
   };
 }
@@ -104,6 +106,7 @@ function isTripSetupComplete(setup = state.setup) {
   return Boolean(
     setup.startPoint &&
     setup.tripDate &&
+    setup.tripEndDate &&
     Array.isArray(setup.activities) &&
     setup.activities.length > 0
   );
