@@ -230,9 +230,12 @@
 - Added shared frontend API base config via `VITE_API_URL` with `http://localhost:8000` fallback
 - Pointed `src/api.js` and `src/utils/routeService.js` at the configured backend base instead of the frontend origin
 - Added a minimal local FastAPI backend under `backend/` with `POST /api/route`
-- Implemented a pure-Python local road-corridor router that returns `[lng, lat]` geometry, distance, duration, and `source: "local-road-router"`
+- Added a compressed SQLite route cache at `backend/data/route_cache.sqlite` for runtime-light road-following routes
+- Added `backend/tools/build_route_cache.py` to precompute hub-to-destination and nearest-neighbor destination route geometry from the original local road GeoJSON
+- Updated the route endpoint to serve cached `[lng, lat]` geometry, distance, duration, and `source: "local-road-router"` through simple SQLite lookups
 - Kept `src/utils/offlineRouting.js` as browser fallback only when the backend is unavailable
-- Kept routing logic out of the frontend bundle and avoided online routing services or heavy frontend pathfinding dependencies
+- Explicitly marks uncached/backend fallback routes as `fallback-approximate-road-network`
+- Kept routing data and pathfinding work out of the frontend bundle and avoided online routing services or heavy frontend pathfinding dependencies
 
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
@@ -250,7 +253,7 @@
 - Non-featured markers use compact category icon circles; top-10 markers remain prominent pins
 - Itinerary map filters markers by selected activities and budget
 - Itinerary map shows selected start hub, current-day route, preview route, selected marker highlight, and featured markers
-- Route rendering first tries local `/api/route` and falls back to an approximate local road graph only when unavailable
+- Route rendering first tries local `/api/route`, which serves a small precomputed SQLite road-route cache, and falls back to an approximate local road graph only when unavailable or uncached
 - Setup calendar supports start and end date range selection, and itinerary days are derived from the selected range up to 7 days
 - First visit to itinerary opens setup overlay until setup is completed
 - Setup completion persists in localStorage and can be reopened from the top-right Setup control
@@ -312,6 +315,8 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
 - Local map geometry is in `public/data/catanduanes_datafile.geojson`
 - Offline road routing logic is in `src/utils/offlineRouting.js`
 - Route API contract and fallback selection logic is in `src/utils/routeService.js`
+- Backend precomputed route cache is in `backend/data/route_cache.sqlite`
+- Backend route cache generator is `backend/tools/build_route_cache.py`
 - The map checks local `/tiles/{z}/{x}/{y}.png` candidates and only enables tiles when the response is an actual image
 - If no local tiles are present, Leaflet renders the local GeoJSON polygon/line layer over a local sea-colored base
 - The renderer preserves the same itinerary events for destination selection and Add to Trip

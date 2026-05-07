@@ -35,7 +35,7 @@ export function normalizeRouteResponse(response) {
     durationMin,
     duration_min: durationMin,
     source: response.source || 'local-route-api',
-    isFallback: false
+    isFallback: Boolean(response.is_fallback || response.isFallback || String(response.source || '').includes('fallback'))
   };
 }
 

@@ -11,6 +11,11 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+__pycache__/
+*.py[cod]
+backend/.venv/
+backend/data/catanduanes_optimized.json
 
 # Editor directories and files
 .vscode/*

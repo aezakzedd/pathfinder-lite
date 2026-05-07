@@ -5,6 +5,8 @@ import math
 from dataclasses import dataclass
 from typing import Iterable
 
+from .route_cache import build_cached_route_response
+
 
 Coordinate = tuple[float, float]
 
@@ -88,6 +90,10 @@ def build_route_response(raw_waypoints: Iterable[Iterable[float]]) -> dict:
     if len(waypoints) < 2:
         raise ValueError("At least two [lng, lat] waypoints are required.")
 
+    cached_response = build_cached_route_response(waypoints)
+    if cached_response:
+        return cached_response
+
     geometry: list[Coordinate] = []
     distance_km = 0.0
 
@@ -103,7 +109,8 @@ def build_route_response(raw_waypoints: Iterable[Iterable[float]]) -> dict:
         "geometry": [[round(lng, 6), round(lat, 6)] for lng, lat in geometry],
         "distance_km": distance_km,
         "duration_min": duration_min,
-        "source": "local-road-router",
+        "source": "fallback-approximate-road-network",
+        "is_fallback": True,
     }
 
 

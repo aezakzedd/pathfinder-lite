@@ -23,7 +23,7 @@ The frontend reads `VITE_API_URL` and falls back to `http://localhost:8000`.
 }
 ```
 
-Returns local road-network geometry in `[lng, lat]` order:
+Returns precomputed local road-network geometry in `[lng, lat]` order:
 
 ```json
 {
@@ -35,3 +35,19 @@ Returns local road-network geometry in `[lng, lat]` order:
 ```
 
 This is intentionally lightweight. It uses a local road corridor graph now and can later be swapped behind the same contract for precomputed route GeoJSON, local OSRM, Valhalla, or GraphHopper.
+
+## Route Cache
+
+Runtime routing uses `backend/data/route_cache.sqlite`. The cache is intentionally small and backend-only:
+
+- hub-to-destination routes for Virac and San Andres
+- nearest-neighbor destination routes for normal itinerary legs
+- compressed geometry blobs so the API can serve routes with simple SQLite lookups
+
+Regenerate it from the original local road GeoJSON:
+
+```bash
+python -m backend.tools.build_route_cache --nearest 18
+```
+
+The generator looks for `backend/data/catanduanes_optimized.json` first, then the old Pathfinder reference copy at `../src/frontend/data/catanduanes_optimized.json`. The source road JSON is not needed at runtime.
