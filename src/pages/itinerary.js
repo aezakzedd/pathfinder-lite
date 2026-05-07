@@ -927,6 +927,7 @@ function toIsoDate(date) {
 function setupChatHandlers() {
   const chatForm = document.getElementById('chatbot-form');
   const chatInput = document.getElementById('chatbot-input');
+  const messagesContainer = document.getElementById('chatbot-messages');
   
   // Form submit handler
   if (chatForm) {
@@ -956,6 +957,22 @@ function setupChatHandlers() {
     };
     chatInput.addEventListener('keydown', keydownHandler);
     eventListeners.push({ element: chatInput, event: 'keydown', handler: keydownHandler });
+  }
+
+  if (messagesContainer) {
+    const actionClickHandler = (event) => {
+      const button = event.target.closest('.chat-action-btn');
+      if (!button) return;
+
+      const message = getMessages().find(item => item.id === button.dataset.messageId);
+      const action = message?.actions?.[Number(button.dataset.actionIndex)];
+      if (!action) return;
+
+      button.disabled = true;
+      applyChatAction(action);
+    };
+    messagesContainer.addEventListener('click', actionClickHandler);
+    eventListeners.push({ element: messagesContainer, event: 'click', handler: actionClickHandler });
   }
 }
 
@@ -1002,7 +1019,8 @@ async function sendMessage(message) {
     
     addMessage({
       role: 'assistant',
-      content: responseText
+      content: responseText,
+      actions: getConfirmableChatActions(response)
     });
 
     const selectedMatch = handleChatLocations(response);
@@ -1057,14 +1075,210 @@ function handleChatActions(response, selectedMatch, responseText = '') {
   });
 }
 
+function getConfirmableChatActions(response) {
+  const actions = Array.isArray(response?.actions) ? response.actions : [];
+  const confirmableTypes = new Set([
+    'replace_itinerary',
+    'add_to_day',
+    'remove_place',
+    'replace_place',
+    'clear_itinerary_suggestion'
+  ]);
+  return actions.filter(action => action && confirmableTypes.has(action.type));
+}
+
+function applyChatAction(action) {
+  if (!action?.type) return;
+
+  if (action.type === 'replace_itinerary') {
+    applyReplaceItineraryAction(action);
+    return;
+  }
+
+  if (action.type === 'add_to_day') {
+    applyAddToDayAction(action);
+    return;
+  }
+
+  if (action.type === 'remove_place') {
+    applyRemovePlaceAction(action);
+    return;
+  }
+
+  if (action.type === 'replace_place') {
+    applyReplacePlaceAction(action);
+    return;
+  }
+
+  if (action.type === 'clear_itinerary_suggestion') {
+    replaceItineraryDays({}, getTripDayCount());
+    addMessage({ role: 'system', content: 'Cleared the itinerary suggestion.' });
+  }
+}
+
+function applyReplaceItineraryAction(action) {
+  const rawDays = action.days || {};
+  const dayEntries = Object.entries(rawDays);
+  const dayCount = Number(action.summary?.day_count) || dayEntries.length || getTripDayCount();
+  const resolvedDays = {};
+
+  dayEntries.forEach(([day, stops]) => {
+    resolvedDays[day] = (Array.isArray(stops) ? stops : [])
+      .map(resolveActionLocation)
+      .filter(Boolean);
+  });
+
+  if (!Object.values(resolvedDays).some(stops => stops.length > 0)) {
+    addMessage({ role: 'system', content: 'I could not match that plan to local map places.' });
+    return;
+  }
+
+  replaceItineraryDays(resolvedDays, dayCount);
+  const firstStop = Object.values(resolvedDays).flat()[0];
+  if (firstStop) setSelectedDestination(firstStop);
+  addMessage({
+    role: 'system',
+    content: `Applied the ${dayCount}-day chatbot plan to the itinerary card.`
+  });
+}
+
+function applyAddToDayAction(action) {
+  const destination = resolveActionLocation(action.location);
+  const day = Number(action.day) || getActiveDay();
+  const dayCount = getTripDayCount();
+
+  if (!destination) {
+    addMessage({ role: 'system', content: 'I could not match that place to the local map.' });
+    return;
+  }
+
+  if (day < 1 || day > dayCount) {
+    addMessage({ role: 'system', content: `Day ${day} is outside this ${dayCount}-day trip.` });
+    return;
+  }
+
+  if (isDestinationInDay(destination.id, day)) {
+    addMessage({ role: 'system', content: `${destination.name} is already in Day ${day}.` });
+    return;
+  }
+
+  setActiveDay(day);
+  const result = addStopToDay(destination);
+  setSelectedDestination(destination);
+  addMessage({
+    role: 'system',
+    content: result.success ? `Added ${destination.name} to Day ${day}.` : result.message
+  });
+}
+
+function applyRemovePlaceAction(action) {
+  const destination = resolveActionLocation(action.location);
+  if (!destination) {
+    addMessage({ role: 'system', content: 'I could not match that place to remove.' });
+    return;
+  }
+
+  const targetDay = Number(action.day) || findDayContainingDestination(destination.id);
+  if (!targetDay) {
+    addMessage({ role: 'system', content: `${destination.name} is not in the current itinerary.` });
+    return;
+  }
+
+  const result = removeDestinationFromDay(destination.id, targetDay);
+  addMessage({
+    role: 'system',
+    content: result.success ? `Removed ${destination.name} from Day ${targetDay}.` : result.message
+  });
+}
+
+function applyReplacePlaceAction(action) {
+  const target = resolveActionLocation(action.target_location);
+  const replacement = resolveActionLocation(action.replacement_location);
+  if (!target || !replacement) {
+    addMessage({ role: 'system', content: 'I could not match both places for that replacement.' });
+    return;
+  }
+
+  const targetDay = Number(action.day) || findDayContainingDestination(target.id);
+  if (!targetDay) {
+    addMessage({ role: 'system', content: `${target.name} is not in the current itinerary.` });
+    return;
+  }
+
+  if (isDestinationInDay(replacement.id, targetDay)) {
+    addMessage({ role: 'system', content: `${replacement.name} is already in Day ${targetDay}.` });
+    return;
+  }
+
+  removeDestinationFromDay(target.id, targetDay);
+  setActiveDay(targetDay);
+  const result = addStopToDay(replacement);
+  setSelectedDestination(replacement);
+  addMessage({
+    role: 'system',
+    content: result.success
+      ? `Replaced ${target.name} with ${replacement.name} in Day ${targetDay}.`
+      : result.message
+  });
+}
+
+function resolveActionLocation(location) {
+  if (!location) return null;
+  const matches = findDestinationsByLocations(allDestinations, [location]);
+  if (matches.length) return matches[0];
+  if (!location.id || !location.name) return null;
+
+  const coordinates = Array.isArray(location.coordinates)
+    ? location.coordinates
+    : location.geometry?.coordinates;
+
+  return {
+    ...location,
+    id: String(location.id),
+    coordinates: Array.isArray(coordinates) ? [...coordinates] : [],
+    geometry: location.geometry || (Array.isArray(coordinates) ? { type: 'Point', coordinates: [...coordinates] } : null),
+    categoryGroup: location.categoryGroup || location.category_group || location.displayCategory,
+    displayCategory: location.displayCategory || location.categoryGroup || location.category_group,
+    isTop10: Boolean(location.isTop10 || location.is_top_10)
+  };
+}
+
+function findDayContainingDestination(destinationId) {
+  const days = getAllDays();
+  const targetId = String(destinationId);
+  for (const [day, stops] of Object.entries(days)) {
+    if ((stops || []).some(stop => String(stop.id) === targetId)) {
+      return Number(day);
+    }
+  }
+  return null;
+}
+
 function getChatPreferencePayload() {
   const setup = getTripSetup();
   return {
     startPoint: setup.startPoint,
     budget: setup.budget,
     activities: setup.activities,
-    dayCount: getTripDayCount(setup)
+    dayCount: getTripDayCount(setup),
+    currentItinerary: getCurrentItineraryPayload()
   };
+}
+
+function getCurrentItineraryPayload() {
+  const days = getAllDays();
+  return Object.fromEntries(
+    Object.entries(days).map(([day, stops]) => [
+      day,
+      (stops || []).map(stop => ({
+        id: stop.id,
+        name: stop.name,
+        municipality: stop.municipality,
+        category: stop.category,
+        coordinates: stop.coordinates
+      }))
+    ])
+  );
 }
 
 function renderChatMessages() {
@@ -1088,13 +1302,40 @@ function renderChatMessages() {
       const messageEl = document.createElement('div');
       const roleClass = ['user', 'assistant', 'system'].includes(message.role) ? message.role : 'assistant';
       messageEl.className = `chat-message chat-message-${roleClass}`;
-      messageEl.textContent = message.content;
+      const contentEl = document.createElement('div');
+      contentEl.className = 'chat-message-content';
+      contentEl.textContent = message.content;
+      messageEl.appendChild(contentEl);
+
+      if (Array.isArray(message.actions) && message.actions.length > 0) {
+        const actionRow = document.createElement('div');
+        actionRow.className = 'chat-action-row';
+        message.actions.forEach((action, index) => {
+          const button = document.createElement('button');
+          button.className = 'chat-action-btn';
+          button.type = 'button';
+          button.dataset.messageId = message.id;
+          button.dataset.actionIndex = String(index);
+          button.textContent = getChatActionLabel(action);
+          actionRow.appendChild(button);
+        });
+        messageEl.appendChild(actionRow);
+      }
       messagesContainer.appendChild(messageEl);
     }
   });
   
   // Scroll to bottom
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function getChatActionLabel(action) {
+  if (action?.type === 'replace_itinerary') return 'Apply Plan';
+  if (action?.type === 'add_to_day') return `Add to Day ${action.day || getActiveDay()}`;
+  if (action?.type === 'remove_place') return 'Remove';
+  if (action?.type === 'replace_place') return 'Replace';
+  if (action?.type === 'clear_itinerary_suggestion') return 'Clear Plan';
+  return 'Apply';
 }
 
 function setupExportHandlers() {

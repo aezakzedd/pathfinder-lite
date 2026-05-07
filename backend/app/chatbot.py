@@ -13,6 +13,15 @@ from .knowledge_base import (
     normalize_budget,
     normalize_text,
 )
+from .itinerary_planner import (
+    build_add_to_day_action,
+    build_clear_itinerary_suggestion,
+    build_itinerary_plan,
+    build_remove_place_action,
+    build_replace_itinerary_action,
+    build_replace_place_action,
+    is_itinerary_request,
+)
 
 
 SOURCE = "local-chatbot"
@@ -64,6 +73,61 @@ def answer_question(
         if not place:
             return fallback_response(memory, "Which place do you want to know more about?")
         return place_info_response(place, memory, concise=False)
+
+    if intent == "add_to_day":
+        result = build_add_to_day_action(kb, question, active_pin=active_pin, memory=memory)
+        locations = result.get("locations") or []
+        active_location = locations[0] if locations else None
+        return respond(
+            result["answer"],
+            locations=locations,
+            actions=result.get("actions") or [],
+            intent=intent,
+            follow_up="Confirm the action in chat, or ask for another change.",
+            memory=memory,
+            active_place=active_location,
+            recommended_places=locations,
+        )
+
+    if intent == "replace_place":
+        result = build_replace_place_action(kb, question, active_pin=active_pin, memory=memory)
+        locations = result.get("locations") or []
+        active_location = locations[0] if locations else None
+        return respond(
+            result["answer"],
+            locations=locations,
+            actions=result.get("actions") or [],
+            intent=intent,
+            follow_up="Confirm the replacement in chat, or ask for another option.",
+            memory=memory,
+            active_place=active_location,
+            recommended_places=locations,
+        )
+
+    if intent == "remove_place":
+        result = build_remove_place_action(kb, question, active_pin=active_pin, memory=memory)
+        locations = result.get("locations") or []
+        active_location = locations[0] if locations else None
+        return respond(
+            result["answer"],
+            locations=locations,
+            actions=result.get("actions") or [],
+            intent=intent,
+            follow_up="Confirm the removal in chat if that is correct.",
+            memory=memory,
+            active_place=active_location,
+            recommended_places=locations,
+        )
+
+    if intent == "clear_itinerary_suggestion":
+        result = build_clear_itinerary_suggestion()
+        return respond(
+            result["answer"],
+            actions=result["actions"],
+            intent=intent,
+            follow_up="Confirm Clear Plan if you want to start over.",
+            memory=memory,
+        )
 
     if intent == "add_it":
         place = resolve_context_place(kb, active_pin, memory)
@@ -150,22 +214,37 @@ def answer_question(
         )
 
     if intent == "itinerary_request":
-        categories = categories_from_rules(kb.match_recommendation_rules(text))
-        places = kb.recommend(
-            question,
-            active_pin=active_pin,
-            budget=memory.preferences.get("budget"),
-            activities=memory.preferences.get("activities"),
-            categories=categories,
-            limit=5,
+        plan = build_itinerary_plan(kb, question, active_pin=active_pin, memory=memory)
+        memory.preferences["last_itinerary_constraints"] = {
+            "day_count": plan.summary["day_count"],
+            "start_point": plan.summary["start_point"],
+            "categories": plan.summary.get("categories", []),
+            "budget": plan.summary.get("budget"),
+            "pace": plan.summary.get("pace"),
+            "avoids": plan.summary.get("avoids", []),
+        }
+        memory.preferences["last_itinerary_days"] = plan.days
+        if not plan.places:
+            return fallback_response(
+                memory,
+                "I could not build a useful local itinerary from those constraints. Try beaches, viewpoints, heritage, or budget-friendly stops.",
+                intent=intent,
+            )
+        category_label = summarize_plan_categories(plan.summary.get("categories", []))
+        budget_label = "budget " if plan.summary.get("budget") == "low" else ""
+        answer = (
+            f"I made a {plan.summary['day_count']}-day {budget_label}{category_label}itinerary from {plan.summary['start_point']}. "
+            "Review it in the itinerary card, then adjust stops if needed."
         )
-        return recommendation_response(
-            places,
-            memory,
+        return respond(
+            answer,
+            locations=plan.places,
+            actions=[build_replace_itinerary_action(plan)],
             intent=intent,
-            prefix="For an itinerary start, I would shortlist",
-            actions=[{"type": "itinerary_suggestion", "day_count": memory.preferences.get("day_count")}],
-            empty="I need at least an activity or budget preference to suggest a useful itinerary.",
+            follow_up="Tap Apply Plan to replace the current itinerary, or ask me to make it cheaper.",
+            memory=memory,
+            active_place=plan.places[0],
+            recommended_places=plan.places,
         )
 
     if intent == "route_question":
@@ -196,16 +275,24 @@ def detect_intent(text: str, active_place: Place | None, memory: DialogueMemory,
         return "faq"
     if text in {"tell me more", "more", "details"} or "tell me more" in text:
         return "followup_more"
+    if "clear" in text and any(word in text for word in ("itinerary", "plan", "schedule")):
+        return "clear_itinerary_suggestion"
+    if "replace" in text and any(word in text for word in ("it", "this", "stop", "place", "beach", "view", "food")):
+        return "replace_place"
+    if any(word in text for word in ("remove", "delete")) and any(word in text for word in ("it", "this", "stop", "place", "day")):
+        return "remove_place"
+    if "add" in text and "day" in text:
+        return "add_to_day"
     if text in {"add it", "add this", "add this place"} or "add it" in text:
         return "add_it"
     if "nearby" in text or "near me" in text or "close to" in text:
         return "nearby_question"
-    if any(phrase in text for phrase in ("make it cheaper", "cheap", "cheaper", "budget", "budget friendly", "affordable", "low budget")):
-        return "budget_question"
+    if is_itinerary_request(text, memory):
+        return "itinerary_request"
     if any(word in text for word in ("route", "drive", "road", "how far", "distance", "travel time")):
         return "route_question"
-    if any(word in text for word in ("itinerary", "plan", "day trip", "schedule")):
-        return "itinerary_request"
+    if any(phrase in text for phrase in ("make it cheaper", "cheap", "cheaper", "budget", "budget friendly", "affordable", "low budget")):
+        return "budget_question"
     if "another" in text and memory.last_recommended_place_ids:
         return "recommendation"
     if any(word in text for word in ("recommend", "best", "where", "places", "spots", "beach", "falls", "food", "stay", "hotel", "view", "church")):
@@ -312,6 +399,21 @@ def place_suggestion_response(kb, question: str, memory: DialogueMemory) -> dict
     return fallback_response(memory, "Which place in Catanduanes should I describe?")
 
 
+def summarize_plan_categories(categories: list[str]) -> str:
+    category_set = set(categories or [])
+    if category_set & {"beach", "beach_resort", "swimming"}:
+        return "beach "
+    if category_set & {"viewpoint"}:
+        return "viewpoint "
+    if category_set & {"food"}:
+        return "food "
+    if category_set & {"religious", "history", "culture", "indoor"}:
+        return "heritage "
+    if category_set & {"hike", "nature", "falls"}:
+        return "outdoor "
+    return ""
+
+
 def is_unclear_recommendation(text: str, categories: set[str], memory: DialogueMemory) -> bool:
     if categories or infer_budget(text) or memory.preferences.get("activities"):
         return False
@@ -383,6 +485,8 @@ def apply_preferences(memory: DialogueMemory, preferences: dict[str, Any] | None
         memory.preferences["start_point"] = str(preferences.get("startPoint"))
     if preferences.get("dayCount"):
         memory.preferences["day_count"] = preferences.get("dayCount")
+    if isinstance(preferences.get("currentItinerary"), dict):
+        memory.preferences["current_itinerary"] = preferences.get("currentItinerary")
 
 
 def is_contextual_place_question(text: str) -> bool:

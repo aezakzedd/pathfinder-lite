@@ -90,6 +90,10 @@ Supported intents:
 - `place_info`
 - `recommendation`
 - `itinerary_request`
+- `add_to_day`
+- `remove_place`
+- `replace_place`
+- `clear_itinerary_suggestion`
 - `nearby_question`
 - `budget_question`
 - `route_question`
@@ -132,3 +136,60 @@ Run smoke checks:
 ```bash
 python -m backend.tools.chatbot_smoke
 ```
+
+### Itinerary Actions
+
+The deterministic chatbot can prepare itinerary edits, but the frontend must confirm before applying them. It never silently overwrites the itinerary.
+
+Example request:
+
+```json
+{
+  "question": "generate a 2 day beach itinerary",
+  "session_id": "kiosk",
+  "preferences": {
+    "startPoint": "Virac",
+    "budget": "low",
+    "activities": ["Water"],
+    "dayCount": 2
+  }
+}
+```
+
+Example response shape:
+
+```json
+{
+  "answer": "I made a 2-day beach itinerary from Virac. Review it in the itinerary card, then adjust stops if needed.",
+  "locations": [{ "id": "15", "name": "Mamangal Beach" }],
+  "actions": [
+    {
+      "type": "replace_itinerary",
+      "days": {
+        "1": [{ "id": "15", "name": "Mamangal Beach" }],
+        "2": [{ "id": "13", "name": "Binurong Point" }]
+      },
+      "summary": {
+        "day_count": 2,
+        "start_point": "Virac",
+        "pace": "balanced",
+        "budget": "low",
+        "estimated_total_minutes": 420
+      }
+    }
+  ],
+  "intent": "itinerary_request",
+  "source": "local-chatbot"
+}
+```
+
+Supported itinerary commands include:
+
+- `generate a 2 day beach itinerary`
+- `make me a budget itinerary`
+- `plan 3 days from Virac with beaches and viewpoints`
+- `make it cheaper`
+- `add this to day 2`
+- `remove this place`
+- `replace it with another beach`
+- `clear itinerary`

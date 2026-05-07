@@ -54,11 +54,22 @@ class Place:
         return {
             "id": self.id,
             "name": self.name,
+            "description": self.description,
             "municipality": self.municipality,
             "category": self.category,
             "category_group": self.category_group,
+            "categoryGroup": self.category_group,
+            "displayCategory": self.category_group,
             "type": self.type,
             "coordinates": [self.coordinates[0], self.coordinates[1]],
+            "geometry": {"type": "Point", "coordinates": [self.coordinates[0], self.coordinates[1]]},
+            "image": self.image,
+            "min_budget": self.min_budget,
+            "best_time_of_day": self.best_time_of_day,
+            "outdoor_exposure": self.outdoor_exposure,
+            "visit_time_minutes": self.visit_time_minutes,
+            "is_top_10": self.is_top_10,
+            "isTop10": self.is_top_10,
         }
 
 

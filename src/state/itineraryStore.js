@@ -20,6 +20,7 @@ const DEFAULT_STATE = {
   activeDay: 1,
   days: createDayMap(DEFAULT_DAY_COUNT),
   setup: { ...DEFAULT_TRIP_SETUP },
+  plannedDayCount: null,
   dayCapacity: 8 // 8 hours per day
 };
 
@@ -83,6 +84,7 @@ function updateTripSetup(updates = {}) {
     completed: false,
     completedAt: null
   });
+  state.plannedDayCount = null;
   ensureDayStructure();
   saveState();
   notifyListeners();
@@ -122,6 +124,7 @@ function completeTripSetup() {
     completed: true,
     completedAt: new Date().toISOString()
   });
+  state.plannedDayCount = null;
   ensureDayStructure();
   saveState();
   notifyListeners();
@@ -227,6 +230,7 @@ function removeDestinationFromDay(destinationId, day = null) {
 function replaceItineraryDays(days = {}, dayCount = getTripDayCount()) {
   const timestamp = Date.now();
   const safeDayCount = clampDayCount(dayCount);
+  state.plannedDayCount = safeDayCount;
   state.days = createDayMap(safeDayCount);
 
   Array.from({ length: safeDayCount }, (_, index) => index + 1).forEach(day => {
@@ -373,7 +377,8 @@ function resetItinerary() {
   state = {
     ...DEFAULT_STATE,
     days: createDayMap(DEFAULT_DAY_COUNT),
-    setup: { ...DEFAULT_TRIP_SETUP }
+    setup: { ...DEFAULT_TRIP_SETUP },
+    plannedDayCount: null
   };
   saveState();
   notifyListeners();
@@ -410,6 +415,7 @@ function getState() {
 }
 
 function getTripDayCount(setup = state.setup) {
+  if (state.plannedDayCount) return clampDayCount(state.plannedDayCount);
   return calculateTripDayCount(setup, Object.keys(state.days || {}).length || DEFAULT_DAY_COUNT);
 }
 

@@ -261,6 +261,18 @@
 - Expanded `backend/tools/chatbot_smoke.py` to cover alias lookup, FAQ, enriched facts, budget beaches, follow-ups, active pin, and nearby food behavior
 - Kept the chatbot deterministic and offline-capable without LLMs, embeddings, vector databases, or online APIs
 
+**Phase 12C: Chat-Driven Itinerary Generation and Safe Actions**
+- Added `backend/app/itinerary_planner.py` for deterministic local itinerary planning from GeoJSON places, setup preferences, recommendation rules, and route-cache travel estimates
+- Parsed day count, start point, activities/categories, budget, pace, and avoid terms such as hiking, rainy weather, far stops, and expensive stops
+- Generated day-by-day itinerary actions with `replace_itinerary`, including days, local destination objects, and summaries with day count, start point, pace, budget, route source, and estimated total minutes
+- Added safe smaller chatbot actions for `add_to_day`, `remove_place`, `replace_place`, and `clear_itinerary_suggestion`
+- Preserved duplicate prevention by sending the current itinerary from the frontend to `/ask`
+- Updated frontend chat messages to render confirmation buttons for structured actions such as Apply Plan, Add to Day, Remove, Replace, and Clear Plan
+- The frontend does not silently apply chatbot itinerary edits; it waits for the user to tap the action button before mutating itinerary state
+- Applying a chatbot plan uses the existing itinerary store, map selection, route updates, active-day behavior, and local destination data matching
+- Expanded backend smoke checks to cover generated beach itineraries, budget itineraries, 3-day Virac plans, cheaper follow-ups, add-to-day with active pin, and duplicate prevention
+- Kept Phase 12C deterministic and offline-capable without LLMs, embeddings, vector databases, online APIs, or new dependencies
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
@@ -280,7 +292,8 @@
 - Route rendering first tries local `/api/route`, which serves a small precomputed SQLite road-route cache, and falls back to an approximate local road graph only when unavailable or uncached
 - Chatbot `/ask` works offline from the local GeoJSON knowledge base and can return locations for map highlighting
 - Chatbot `/ask` is enriched by local alias, place fact, FAQ, and recommendation-rule seed files
-- Frontend chat sends active pin and setup preferences to `/ask`, highlights returned locations, reports multiple matches, and guides structured `add_to_trip` actions through the existing Add Spot UI
+- Chatbot `/ask` can generate simple local itinerary plans and safe itinerary edit actions without an LLM
+- Frontend chat sends active pin, setup preferences, and the current itinerary to `/ask`, highlights returned locations, reports multiple matches, and confirms structured itinerary actions before applying them
 - Setup calendar supports start and end date range selection, and itinerary days are derived from the selected range up to 7 days
 - First visit to itinerary opens setup overlay until setup is completed
 - Setup completion persists in localStorage and can be reopened from the top-right Setup control
@@ -316,14 +329,14 @@
 
 ## Current Bundle Size
 
-Latest build (Phase 12B):
+Latest build (Phase 12C):
 - HTML: 0.56 kB
-- Main CSS: 93.31 kB
-- Main JS: 94.46 kB
+- Main CSS: 93.98 kB
+- Main JS: 98.95 kB
 - Leaflet async JS chunk: 149.47 kB
 - Lazy route CSS chunks: 13.21 kB total
 - Lazy route JS chunks: 18.90 kB total
-- Full built JS/CSS assets: ~369.35 kB
+- Full built JS/CSS assets: ~374.51 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
@@ -345,6 +358,7 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
 - Backend precomputed route cache is in `backend/data/route_cache.sqlite`
 - Backend route cache generator is `backend/tools/build_route_cache.py`
 - Backend chatbot logic is in `backend/app/chatbot.py`, `backend/app/knowledge_base.py`, and `backend/app/dialogue_state.py`
+- Backend itinerary planning logic is in `backend/app/itinerary_planner.py`
 - Backend chatbot seed data is in `backend/data/chatbot/aliases.json`, `place_facts.json`, `faqs.json`, and `recommendation_rules.json`
 - The map checks local `/tiles/{z}/{x}/{y}.png` candidates and only enables tiles when the response is an actual image
 - If no local tiles are present, Leaflet renders the local GeoJSON polygon/line layer over a local sea-colored base
