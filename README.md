@@ -44,7 +44,13 @@ sudo reboot
 
 ## 2. Enable Console Auto Login
 
-Run:
+Use the non-interactive command:
+
+```bash
+sudo raspi-config nonint do_boot_behaviour B2
+```
+
+Interactive fallback:
 
 ```bash
 sudo raspi-config
@@ -74,14 +80,21 @@ sudo apt install -y \
   x11-xserver-utils \
   xinit \
   openbox \
-  chromium-browser \
+  chromium \
   unclutter
 ```
 
-If `chromium-browser` is not available on your image, install Chromium with:
+On this Raspberry Pi OS Lite setup, the browser binary is:
 
 ```bash
-sudo apt install -y chromium
+/usr/bin/chromium
+```
+
+On older images, you can check both names:
+
+```bash
+which chromium
+which chromium-browser
 ```
 
 Optional touchscreen keyboard:
@@ -147,7 +160,7 @@ This creates the production files in:
 /home/pi/pathfinder-lite/dist
 ```
 
-## 8. Test Manually
+## 8. Test the Frontend Server Manually
 
 Start the local preview server:
 
@@ -162,138 +175,114 @@ From another terminal or SSH session, test that it responds:
 curl http://127.0.0.1:4173/
 ```
 
-To test Chromium manually from the Pi console:
+Do not run `startx` from SSH. Raspberry Pi OS Lite normally allows Xorg only for the physical console user, so `startx` from SSH can fail even when the setup is correct.
 
-```bash
-startx /usr/bin/chromium-browser --kiosk --noerrdialogs --disable-infobars http://127.0.0.1:4173/#/
-```
+If you want to test Chromium manually, do it from the physical Pi console or tty, not from SSH.
 
-If your Chromium binary is named `chromium`, use:
-
-```bash
-startx /usr/bin/chromium --kiosk --noerrdialogs --disable-infobars http://127.0.0.1:4173/#/
-```
-
-## 9. Create the Kiosk Launch Script
+## 9. Create the Preview Server Systemd Service
 
 Create:
 
 ```bash
-nano /home/pi/start-pathfinder-lite.sh
-```
-
-Paste:
-
-```bash
-#!/usr/bin/env bash
-set -e
-
-APP_DIR="/home/pi/pathfinder-lite"
-APP_URL="http://127.0.0.1:4173/#/"
-LOG_DIR="$APP_DIR/logs"
-
-mkdir -p "$LOG_DIR"
-cd "$APP_DIR"
-
-if ! pgrep -f "vite preview.*4173" >/dev/null 2>&1; then
-  npm run preview -- --host 127.0.0.1 --port 4173 > "$LOG_DIR/preview.log" 2>&1 &
-fi
-
-for i in $(seq 1 30); do
-  if curl -fsS http://127.0.0.1:4173/ >/dev/null 2>&1; then
-    break
-  fi
-  sleep 1
-done
-
-xset s off || true
-xset -dpms || true
-xset s noblank || true
-
-openbox-session >/tmp/openbox.log 2>&1 &
-unclutter -idle 0.2 -root >/tmp/unclutter.log 2>&1 &
-
-CHROME="$(command -v chromium-browser || command -v chromium)"
-
-exec "$CHROME" \
-  --kiosk \
-  --noerrdialogs \
-  --disable-infobars \
-  --disable-session-crashed-bubble \
-  --disable-features=TranslateUI \
-  --check-for-update-interval=31536000 \
-  --overscroll-history-navigation=0 \
-  --disable-pinch \
-  "$APP_URL"
-```
-
-Make it executable:
-
-```bash
-chmod +x /home/pi/start-pathfinder-lite.sh
-```
-
-## 10. Create `.xinitrc`
-
-Create:
-
-```bash
-nano /home/pi/.xinitrc
-```
-
-Paste:
-
-```bash
-#!/usr/bin/env bash
-exec /home/pi/start-pathfinder-lite.sh
-```
-
-Make it executable:
-
-```bash
-chmod +x /home/pi/.xinitrc
-```
-
-## 11. Autorun the Frontend on Boot
-
-Create the user systemd folder:
-
-```bash
-mkdir -p /home/pi/.config/systemd/user
-```
-
-Create the service:
-
-```bash
-nano /home/pi/.config/systemd/user/pathfinder-lite-kiosk.service
+sudo nano /etc/systemd/system/pathfinder-preview.service
 ```
 
 Paste:
 
 ```ini
 [Unit]
-Description=Pathfinder Lite Chromium kiosk
+Description=Pathfinder Lite frontend preview server
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
-Environment=DISPLAY=:0
-ExecStart=/usr/bin/startx /home/pi/.xinitrc -- :0 -nocursor
+User=pi
+WorkingDirectory=/home/pi/pathfinder-lite
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm run preview -- --host 127.0.0.1 --port 4173
 Restart=always
 RestartSec=5
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 ```
 
-Enable it:
+Enable and start it:
 
 ```bash
-systemctl --user daemon-reload
-systemctl --user enable pathfinder-lite-kiosk.service
-loginctl enable-linger pi
+sudo systemctl daemon-reload
+sudo systemctl enable pathfinder-preview.service
+sudo systemctl start pathfinder-preview.service
+sudo systemctl status pathfinder-preview.service
 ```
+
+Test it:
+
+```bash
+curl http://127.0.0.1:4173/
+```
+
+## 10. Create `.xinitrc` for Chromium Kiosk
+
+Create:
+
+```bash
+nano ~/.xinitrc
+```
+
+Paste:
+
+```bash
+#!/bin/sh
+
+xset s off
+xset -dpms
+xset s noblank
+
+unclutter -idle 0.5 -root &
+
+openbox-session &
+
+sleep 6
+
+exec /usr/bin/chromium \
+  --kiosk \
+  --noerrdialogs \
+  --disable-infobars \
+  --no-first-run \
+  --disable-session-crashed-bubble \
+  --start-maximized \
+  http://127.0.0.1:4173/#/
+```
+
+Make it executable:
+
+```bash
+chmod +x ~/.xinitrc
+```
+
+## 11. Start X from Console Auto Login
+
+Create or edit:
+
+```bash
+nano ~/.bash_profile
+```
+
+Paste:
+
+```bash
+if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+  startx
+fi
+```
+
+This is the working Raspberry Pi OS Lite flow:
+
+- console autologin enters tty1
+- `.bash_profile` runs `startx`
+- `.xinitrc` starts Openbox, hides the pointer, and launches `/usr/bin/chromium`
+- `pathfinder-preview.service` serves the built frontend at `127.0.0.1:4173`
 
 Reboot:
 
@@ -303,12 +292,31 @@ sudo reboot
 
 Pathfinder Lite should now start automatically in Chromium kiosk mode.
 
-## 12. Hide the Mouse Pointer
+## 12. Verify After Reboot
+
+After reboot, SSH into the Pi and run:
+
+```bash
+systemctl status pathfinder-preview.service
+pgrep -a chromium
+ps -ef | grep -E "Xorg|openbox|chromium" | grep -v grep
+```
+
+Expected:
+
+- `pathfinder-preview.service` is active.
+- `Xorg` is running.
+- `openbox` is running.
+- `chromium` is running.
+
+If `echo $XDG_SESSION_TYPE` is blank over SSH, that is normal. SSH is not the graphical session.
+
+## 13. Hide the Mouse Pointer
 
 The setup above hides the pointer in two ways:
 
-- `unclutter -idle 0.2 -root` hides the cursor after a short idle delay.
-- `startx ... -nocursor` asks X11 to hide the cursor at the display server level.
+- `unclutter -idle 0.5 -root` hides the cursor after a short idle delay.
+- Kiosk mode should be started from the physical console through `startx`.
 
 If the pointer is still visible, check that `unclutter` is installed:
 
@@ -323,49 +331,58 @@ You can also install it again:
 sudo apt install -y unclutter
 ```
 
-## 13. Stop or Disable Kiosk Mode
+## 14. Stop, Start, or Disable the Preview Server
 
-Stop for the current session:
+Stop the frontend server:
 
 ```bash
-systemctl --user stop pathfinder-lite-kiosk.service
+sudo systemctl stop pathfinder-preview.service
 ```
 
-Disable autorun:
+Start it again:
 
 ```bash
-systemctl --user disable pathfinder-lite-kiosk.service
+sudo systemctl start pathfinder-preview.service
 ```
 
-Start again:
+Disable server autorun:
 
 ```bash
-systemctl --user start pathfinder-lite-kiosk.service
+sudo systemctl disable pathfinder-preview.service
 ```
 
 View logs:
 
 ```bash
-journalctl --user -u pathfinder-lite-kiosk.service -f
+journalctl -u pathfinder-preview.service -f
 ```
 
-Preview server log:
-
-```bash
-tail -f /home/pi/pathfinder-lite/logs/preview.log
-```
-
-## 14. Update the App Later
+## 15. Update the App Later
 
 ```bash
 cd /home/pi/pathfinder-lite
 git pull
 npm install
 npm run build
-systemctl --user restart pathfinder-lite-kiosk.service
+sudo systemctl restart pathfinder-preview.service
 ```
 
-## 15. Offline Map and Routing Notes
+If Chromium is already running, either reboot:
+
+```bash
+sudo reboot
+```
+
+Or restart Chromium from the physical Pi console:
+
+```bash
+pkill chromium
+startx
+```
+
+Do not run `startx` from SSH.
+
+## 16. Offline Map and Routing Notes
 
 Pathfinder Lite uses local map data and local assets. It must not depend on online map tiles or external CDNs.
 
@@ -396,19 +413,20 @@ Expected response:
 
 If the route backend is unavailable, the frontend may show an approximate fallback route. For accurate road-following routes, run a local/offline backend service such as precomputed local route GeoJSON, local OSRM, Valhalla, or GraphHopper.
 
-## 16. Troubleshooting
+## 17. Troubleshooting
 
 Chromium command not found:
 
 ```bash
-command -v chromium-browser || command -v chromium
+which chromium
+which chromium-browser
 ```
 
 Preview server not running:
 
 ```bash
-cd /home/pi/pathfinder-lite
-npm run preview -- --host 127.0.0.1 --port 4173
+sudo systemctl status pathfinder-preview.service
+journalctl -u pathfinder-preview.service -n 100
 ```
 
 Screen blanks after idle:
@@ -422,8 +440,21 @@ xset s noblank
 Kiosk service failed:
 
 ```bash
-journalctl --user -u pathfinder-lite-kiosk.service -n 100
+pgrep -a chromium
+ps -ef | grep -E "Xorg|openbox|chromium" | grep -v grep
 ```
+
+If the preview server is active but Chromium does not start, check `.bash_profile`, `.xinitrc`, and console autologin.
+
+If `pgrep -a chromium` shows nothing, the graphical kiosk did not start.
+
+If `echo $XDG_SESSION_TYPE` is blank over SSH, that is normal. SSH is not the graphical session.
+
+Do not use `~/.config/labwc/autostart` for Raspberry Pi OS Lite because no desktop or labwc session is running.
+
+Do not start Chromium as a normal systemd service unless a graphical session is already running.
+
+Do not run `startx` from SSH.
 
 Rebuild after dependency or source changes:
 
@@ -453,4 +484,3 @@ Preview production build:
 ```bash
 npm run preview
 ```
-
