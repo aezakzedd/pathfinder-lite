@@ -237,6 +237,17 @@
 - Explicitly marks uncached/backend fallback routes as `fallback-approximate-road-network`
 - Kept routing data and pathfinding work out of the frontend bundle and avoided online routing services or heavy frontend pathfinding dependencies
 
+**Phase 12A: Lightweight Offline Chatbot Backend Foundation**
+- Added backend `/ask` endpoint backed by deterministic local Python logic
+- Added `backend/app/knowledge_base.py` to load tourism/place data from `public/data/catanduanes_datafile.geojson`
+- Added exact, slug, partial, municipality/category, budget, and active-pin boosted place matching
+- Added `backend/app/dialogue_state.py` for lightweight in-memory kiosk session context
+- Added `backend/app/chatbot.py` with local intent routing for place info, recommendations, itinerary requests, nearby questions, budget questions, route questions, greetings, follow-ups, and fallback
+- Supported follow-ups such as `tell me more`, `add it`, `nearby food`, `make it cheaper`, `another one`, and active-pin `what about this place?`
+- Returned structured responses with `answer`, `locations`, `follow_up`, `actions`, `intent`, and `source: "local-chatbot"`
+- Added `backend/tools/chatbot_smoke.py` for deterministic backend smoke checks
+- Kept chatbot logic out of the frontend bundle and avoided online LLMs, embeddings, vector DBs, or external APIs
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
@@ -254,6 +265,7 @@
 - Itinerary map filters markers by selected activities and budget
 - Itinerary map shows selected start hub, current-day route, preview route, selected marker highlight, and featured markers
 - Route rendering first tries local `/api/route`, which serves a small precomputed SQLite road-route cache, and falls back to an approximate local road graph only when unavailable or uncached
+- Chatbot `/ask` works offline from the local GeoJSON knowledge base and can return locations for map highlighting
 - Setup calendar supports start and end date range selection, and itinerary days are derived from the selected range up to 7 days
 - First visit to itinerary opens setup overlay until setup is completed
 - Setup completion persists in localStorage and can be reopened from the top-right Setup control
@@ -317,6 +329,7 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
 - Route API contract and fallback selection logic is in `src/utils/routeService.js`
 - Backend precomputed route cache is in `backend/data/route_cache.sqlite`
 - Backend route cache generator is `backend/tools/build_route_cache.py`
+- Backend chatbot logic is in `backend/app/chatbot.py`, `backend/app/knowledge_base.py`, and `backend/app/dialogue_state.py`
 - The map checks local `/tiles/{z}/{x}/{y}.png` candidates and only enables tiles when the response is an actual image
 - If no local tiles are present, Leaflet renders the local GeoJSON polygon/line layer over a local sea-colored base
 - The renderer preserves the same itinerary events for destination selection and Add to Trip

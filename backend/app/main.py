@@ -2,11 +2,19 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from .chatbot import answer_question
 from .routing import build_route_response
 
 
 class RouteRequest(BaseModel):
     waypoints: list[list[float]]
+
+
+class AskRequest(BaseModel):
+    question: str
+    active_pin: dict | None = None
+    session_id: str | None = None
+    preferences: dict | None = None
 
 
 app = FastAPI(title="Pathfinder Lite Local API", version="0.1.0")
@@ -39,3 +47,13 @@ def route(request: RouteRequest):
         return build_route_response(request.waypoints)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.post("/ask")
+def ask(request: AskRequest):
+    return answer_question(
+        request.question,
+        active_pin=request.active_pin,
+        session_id=request.session_id,
+        preferences=request.preferences,
+    )

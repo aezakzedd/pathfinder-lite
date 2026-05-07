@@ -51,3 +51,53 @@ python -m backend.tools.build_route_cache --nearest 18
 ```
 
 The generator looks for `backend/data/catanduanes_optimized.json` first, then the old Pathfinder reference copy at `../src/frontend/data/catanduanes_optimized.json`. The source road JSON is not needed at runtime.
+
+## Chatbot Endpoint
+
+`POST /ask`
+
+```json
+{
+  "question": "best beaches",
+  "active_pin": {
+    "id": "13",
+    "name": "Binurong Point",
+    "category": "hike",
+    "municipality": "Baras",
+    "coordinates": [124.379584, 13.641908]
+  },
+  "session_id": "kiosk"
+}
+```
+
+Returns a deterministic local response:
+
+```json
+{
+  "answer": "Good local picks are: Mamangal Beach, Puraran Beach...",
+  "locations": [{ "id": "15", "name": "Mamangal Beach" }],
+  "follow_up": "Ask 'tell me more', 'another one', or 'nearby food'.",
+  "actions": [],
+  "intent": "recommendation",
+  "source": "local-chatbot"
+}
+```
+
+Supported intents:
+
+- `greeting`
+- `place_info`
+- `recommendation`
+- `itinerary_request`
+- `nearby_question`
+- `budget_question`
+- `route_question`
+- `fallback`
+
+The chatbot is offline-capable and uses `public/data/catanduanes_datafile.geojson`. It does not use an online LLM, embeddings, vector databases, or external APIs.
+
+Run smoke checks:
+
+```bash
+python -m backend.tools.chatbot_smoke
+```
