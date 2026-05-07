@@ -81,6 +81,36 @@ const ZONE_PLANS = {
     ['Virac', 'San Andres'],
     ['Bato', 'Baras', 'San Miguel', 'Gigmoto', 'Caramoran'],
     ['Bagamanoc', 'Panganiban', 'Viga', 'Pandan']
+  ],
+  4: [
+    ['Virac', 'San Andres'],
+    ['Bato', 'Baras', 'San Miguel'],
+    ['Gigmoto', 'Caramoran'],
+    ['Bagamanoc', 'Panganiban', 'Viga', 'Pandan']
+  ],
+  5: [
+    ['Virac'],
+    ['San Andres', 'Bato'],
+    ['Baras', 'San Miguel'],
+    ['Gigmoto', 'Caramoran'],
+    ['Bagamanoc', 'Panganiban', 'Viga', 'Pandan']
+  ],
+  6: [
+    ['Virac'],
+    ['San Andres', 'Bato'],
+    ['Baras', 'San Miguel'],
+    ['Gigmoto', 'Caramoran'],
+    ['Bagamanoc', 'Panganiban'],
+    ['Viga', 'Pandan']
+  ],
+  7: [
+    ['Virac'],
+    ['San Andres'],
+    ['Bato', 'Baras'],
+    ['San Miguel'],
+    ['Gigmoto', 'Caramoran'],
+    ['Bagamanoc', 'Panganiban'],
+    ['Viga', 'Pandan']
   ]
 };
 
@@ -384,8 +414,8 @@ function estimateIncrementMinutes(fromCoordinates, destination) {
 }
 
 function getZonePlan(dayCount) {
-  const clamped = Math.min(Math.max(Number(dayCount) || 1, 1), 3);
-  return ZONE_PLANS[clamped] || ZONE_PLANS[3];
+  const clamped = Math.min(Math.max(Number(dayCount) || 1, 1), 7);
+  return ZONE_PLANS[clamped] || ZONE_PLANS[7];
 }
 
 function clusterByZone(destinations, zonePlan) {

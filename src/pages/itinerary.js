@@ -9,6 +9,7 @@ import {
   getActiveDay,
   setActiveDay,
   getDayStops,
+  getAllDays,
   addStopToDay,
   removeStopFromDay,
   removeDestinationFromDay,
@@ -21,6 +22,7 @@ import {
   isDestinationInDay,
   getStopCount,
   getTripSetup,
+  getTripDayCount,
   updateTripSetup,
   toggleTripSetupActivity,
   setTripSetupBudget,
@@ -36,7 +38,7 @@ import {
   removeMessage,
   subscribe as subscribeChat
 } from '../state/chatStore.js';
-import { calculateDistance, calculateDriveTimes } from '../utils/distance.js';
+import { calculateDistance, calculateDriveTimes, calculateTimeUsage } from '../utils/distance.js';
 import {
   featureCollectionToDestinations,
   filterDestinationsForSetup,
@@ -58,6 +60,7 @@ let draggedStopId = null;
 let pointerDrag = null;
 let allDestinations = [];
 let allSpotsGeoJson = null;
+let currentRouteSummary = null;
 
 const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
 const budgetOptions = [
@@ -439,7 +442,7 @@ export function renderItinerary(container) {
           allSpotsGeoJson = geojson;
           allDestinations = featureCollectionToDestinations(geojson);
           const filteredDestinations = getFilteredMapDestinations();
-          initMap('pathfinder-map', filteredDestinations, { geojson });
+          initMap('pathfinder-map', filteredDestinations, { geojson, onRouteResult: handleMapRouteResult });
           mapInitialized = true;
           updateMapFeatures();
 
@@ -451,7 +454,7 @@ export function renderItinerary(container) {
           // Initialize map without data
           allSpotsGeoJson = null;
           allDestinations = [];
-          initMap('pathfinder-map', []);
+          initMap('pathfinder-map', [], { onRouteResult: handleMapRouteResult });
           mapInitialized = true;
           setupMapControls();
         });
@@ -462,6 +465,7 @@ export function renderItinerary(container) {
 function initializeUI() {
   // Subscribe to state changes
   stateUnsubscribe = subscribe(() => {
+    currentRouteSummary = null;
     renderDestinationPreview();
     renderItinerarySpots();
     renderTimeWallet();
@@ -776,6 +780,11 @@ function openTripSetup() {
   setupOpenedFromCompleted = setup.completed && isTripSetupComplete(setup);
   setupOverlayOpen = true;
   renderTripSetup();
+}
+
+function handleMapRouteResult(event = {}) {
+  currentRouteSummary = event.result || null;
+  renderTimeWallet();
 }
 
 function applySetupDateSelection(selectedDate) {
@@ -1183,13 +1192,22 @@ function setupExportHandlers() {
   const minimizeBtn = document.getElementById('itinerary-minimize-btn');
   
   const handleExport = () => {
+    const setup = getTripSetup();
+    const dayCount = getTripDayCount(setup);
+    const timeWallet = buildCurrentTimeWalletInfo();
     // Prepare export payload
     const exportPayload = {
       days: getAllDays(),
       allStops: getAllStops(),
       totalStops: getAllStops().length,
       activeDay: getActiveDay(),
-      timeWallet: getTimeWalletInfo(),
+      dayCount,
+      dateRange: {
+        startDate: setup.tripDate,
+        endDate: setup.tripEndDate
+      },
+      setup,
+      timeWallet,
       exportedAt: new Date().toISOString()
     };
     
@@ -1203,6 +1221,7 @@ function setupExportHandlers() {
   const handleGenerate = () => {
     const setup = getTripSetup();
     const hub = getHubByName(setup.startPoint);
+    const dayCount = getTripDayCount(setup);
 
     if (!hub || allDestinations.length === 0) {
       addMessage({
@@ -1214,7 +1233,7 @@ function setupExportHandlers() {
 
     const result = generateItinerary({
       hub,
-      dayCount: 3,
+      dayCount,
       budgetFilter: setup.budget,
       selectedActivities: setup.activities,
       allSpots: allDestinations
@@ -1228,10 +1247,10 @@ function setupExportHandlers() {
       return;
     }
 
-    replaceItineraryDays(result.days);
+    replaceItineraryDays(result.days, dayCount);
     addMessage({
       role: 'system',
-      content: 'Generated a lightweight local itinerary from your selected activities and budget.'
+      content: `Generated a lightweight local itinerary for ${dayCount} day${dayCount !== 1 ? 's' : ''} from your selected activities and budget.`
     });
   };
   
@@ -1311,7 +1330,8 @@ function setupExportHandlers() {
   if (chatNextBtn) {
     const clickHandler = () => {
       const activeDay = getActiveDay();
-      if (activeDay < 3) {
+      const dayCount = getTripDayCount();
+      if (activeDay < dayCount) {
         setActiveDay(activeDay + 1);
       }
     };
@@ -1621,17 +1641,38 @@ function updateBudgetSliderVisual(slider) {
 function renderTimeWallet() {
   const paceText = document.getElementById('pace-text');
   const paceFill = document.getElementById('pace-fill');
-  
-  const walletInfo = getTimeWalletInfo();
+  const walletInfo = buildCurrentTimeWalletInfo();
 
   if (paceText && paceFill) {
-    paceText.textContent = `${walletInfo.pace} pace`;
+    const routeHint = walletInfo.routeSource === 'fallback' ? ' approx' : '';
+    paceText.textContent = `${walletInfo.pace} pace · ${walletInfo.visitTime}m visit + ${walletInfo.driveTime}m drive${routeHint}`;
     paceFill.style.width = `${walletInfo.percentage}%`;
   }
 }
 
+function buildCurrentTimeWalletInfo() {
+  const activeDay = getActiveDay();
+  const stops = getDayStops(activeDay);
+  const hub = getHubByName(getTripSetup().startPoint);
+  const fallbackUsage = hub ? calculateTimeUsage(hub, stops, { includeReturnLeg: false }) : { driveTime: 0, visitTime: 0 };
+  const routeDriveTime = Number(currentRouteSummary?.durationMin ?? currentRouteSummary?.duration_min);
+  const driveTime = Number.isFinite(routeDriveTime) && routeDriveTime > 0
+    ? Math.round(routeDriveTime)
+    : fallbackUsage.driveTime;
+  const routeSource = currentRouteSummary?.isFallback ? 'fallback' : (currentRouteSummary ? 'api' : 'estimate');
+
+  return {
+    ...getTimeWalletInfo(activeDay, {
+      visitMinutes: fallbackUsage.visitTime,
+      travelMinutes: driveTime
+    }),
+    routeSource
+  };
+}
+
 function updateDayTabs() {
   const activeDay = getActiveDay();
+  const dayCount = getTripDayCount();
   const dayIndicatorText = document.getElementById('day-indicator-text');
   const chatSaveBtn = document.getElementById('chat-save-btn');
   const chatGenerateBtn = document.getElementById('chat-generate-btn');
@@ -1639,7 +1680,7 @@ function updateDayTabs() {
   const chatNextBtn = document.getElementById('chat-next-btn');
   
   if (dayIndicatorText) {
-    dayIndicatorText.textContent = `Day ${activeDay} of 3`;
+    dayIndicatorText.textContent = `Day ${activeDay} of ${dayCount}`;
   }
   
   // Handle action button visibility based on day
@@ -1647,8 +1688,8 @@ function updateDayTabs() {
     // Back button: disabled on Day 1, enabled on Day 2+
     chatBackBtn.disabled = activeDay <= 1;
     
-    // Next button: visible on Day 1-2, hidden on Day 3
-    if (activeDay < 3) {
+    // Next button: visible until final day, Save button only on final day
+    if (activeDay < dayCount) {
       chatNextBtn.style.display = 'block';
       chatSaveBtn.style.display = 'none';
     } else {

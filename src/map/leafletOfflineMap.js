@@ -1,5 +1,5 @@
 import 'leaflet/dist/leaflet.css';
-import { buildOfflineRouteGeometry } from '../utils/offlineRouting.js';
+import { requestRouteGeometry as requestRouteFromService } from '../utils/routeService.js';
 
 const GEOJSON_URL = '/data/catanduanes_datafile.geojson';
 const LOCAL_TILE_URL = '/tiles/{z}/{x}/{y}.png';
@@ -9,15 +9,6 @@ const DEFAULT_MAX_BOUNDS = [
   [13.32, 123.78],
   [14.24, 124.72]
 ];
-
-const CATEGORY_COLORS = {
-  Water: '#3b82f6',
-  Views: '#8b5cf6',
-  Outdoor: '#10b981',
-  Heritage: '#f59e0b',
-  Dining: '#ef4444',
-  Stay: '#6366f1'
-};
 
 const CATEGORY_ICONS = {
   Water: '<path d="M12 4c2.8 3.2 4.2 5.7 4.2 7.5A4.2 4.2 0 0 1 7.8 11.5C7.8 9.7 9.2 7.2 12 4Z" />',
@@ -74,6 +65,14 @@ export function initMap(containerId, destinations = [], options = {}) {
     hub: null,
     routeCoordinates: [],
     previewCoordinates: [],
+    routeCache: new Map(),
+    routeRequestId: 0,
+    previewRequestId: 0,
+    routeKey: '',
+    previewKey: '',
+    routeResult: null,
+    previewResult: null,
+    onRouteResult: typeof options.onRouteResult === 'function' ? options.onRouteResult : null,
     bounds: null,
     initId: Date.now(),
     popupClickHandler: null
@@ -156,11 +155,7 @@ export function destroyMap() {
 }
 
 export async function requestRouteGeometry(waypoints = []) {
-  if (!Array.isArray(waypoints) || waypoints.length < 2) {
-    return null;
-  }
-
-  return buildOfflineRouteGeometry(waypoints);
+  return requestRouteFromService(waypoints);
 }
 
 async function setupLeafletMap(instance, options) {
@@ -369,62 +364,98 @@ function renderDynamicLayers() {
 
 function renderRouteLayer() {
   const instance = mapInstance;
-  instance.routeLayer.clearLayers();
-
-  const routed = buildOfflineRouteGeometry(instance.routeCoordinates);
-  const latLngs = coordinatesToLatLngs(routed.coordinates);
-  if (latLngs.length < 2) return;
-
-  instance.L.polyline(latLngs, {
-    renderer: instance.routeRenderer,
-    className: 'offline-route-casing',
-    color: '#ffffff',
-    weight: 8,
-    opacity: 0.86,
-    lineCap: 'round',
-    lineJoin: 'round'
-  }).addTo(instance.routeLayer);
-
-  instance.L.polyline(latLngs, {
-    renderer: instance.routeRenderer,
-    className: 'offline-route-line',
-    color: '#12b7d4',
-    weight: 5,
-    opacity: 0.9,
-    lineCap: 'round',
-    lineJoin: 'round'
-  }).addTo(instance.routeLayer);
+  scheduleRouteRender(instance, 'route', instance.routeCoordinates);
 }
 
 function renderPreviewLayer() {
   const instance = mapInstance;
-  instance.previewLayer.clearLayers();
+  scheduleRouteRender(instance, 'preview', instance.previewCoordinates);
+}
 
-  const routed = buildOfflineRouteGeometry(instance.previewCoordinates);
-  const latLngs = coordinatesToLatLngs(routed.coordinates);
+function scheduleRouteRender(instance, kind, coordinates) {
+  const routeCoordinates = Array.isArray(coordinates) ? coordinates : [];
+  const layer = kind === 'preview' ? instance.previewLayer : instance.routeLayer;
+  const requestField = kind === 'preview' ? 'previewRequestId' : 'routeRequestId';
+  const keyField = kind === 'preview' ? 'previewKey' : 'routeKey';
+  const resultField = kind === 'preview' ? 'previewResult' : 'routeResult';
+  const key = coordinatesKey(routeCoordinates);
+
+  if (!key || routeCoordinates.length < 2) {
+    layer.clearLayers();
+    instance[keyField] = '';
+    instance[resultField] = null;
+    if (kind === 'route') notifyRouteResult(instance, null);
+    return;
+  }
+
+  if (instance[keyField] === key && instance[resultField]) {
+    return;
+  }
+
+  instance[keyField] = key;
+  const cached = instance.routeCache.get(key);
+  if (cached) {
+    instance[resultField] = cached;
+    drawRouteResult(instance, kind, cached);
+    if (kind === 'route') notifyRouteResult(instance, cached);
+    return;
+  }
+
+  layer.clearLayers();
+  const requestId = instance[requestField] + 1;
+  instance[requestField] = requestId;
+
+  requestRouteFromService(routeCoordinates).then(result => {
+    if (mapInstance !== instance || instance[requestField] !== requestId || instance[keyField] !== key) return;
+    instance.routeCache.set(key, result);
+    instance[resultField] = result;
+    drawRouteResult(instance, kind, result);
+    if (kind === 'route') notifyRouteResult(instance, result);
+  });
+}
+
+function drawRouteResult(instance, kind, result) {
+  const layer = kind === 'preview' ? instance.previewLayer : instance.routeLayer;
+  layer.clearLayers();
+
+  const latLngs = coordinatesToLatLngs(result?.coordinates || result?.geometry || []);
   if (latLngs.length < 2) return;
 
-  instance.L.polyline(latLngs, {
-    renderer: instance.routeRenderer,
-    className: 'offline-preview-casing',
-    color: '#ffffff',
-    weight: 7,
-    opacity: 0.72,
-    dashArray: '10 10',
-    lineCap: 'round',
-    lineJoin: 'round'
-  }).addTo(instance.previewLayer);
+  const isPreview = kind === 'preview';
+  const isFallback = Boolean(result?.isFallback);
 
   instance.L.polyline(latLngs, {
     renderer: instance.routeRenderer,
-    className: 'offline-preview-line',
-    color: '#f59e0b',
-    weight: 4,
-    opacity: 0.88,
-    dashArray: '10 10',
+    className: isPreview ? 'offline-preview-casing' : 'offline-route-casing',
+    color: '#ffffff',
+    weight: isPreview ? 7 : 8,
+    opacity: isPreview ? 0.74 : 0.88,
+    dashArray: isPreview || isFallback ? '10 10' : null,
     lineCap: 'round',
     lineJoin: 'round'
-  }).addTo(instance.previewLayer);
+  }).addTo(layer);
+
+  instance.L.polyline(latLngs, {
+    renderer: instance.routeRenderer,
+    className: [
+      isPreview ? 'offline-preview-line' : 'offline-route-line',
+      isFallback ? 'route-fallback' : 'route-api'
+    ].join(' '),
+    color: isPreview ? '#f59e0b' : '#12b7d4',
+    weight: isPreview ? 4 : 5,
+    opacity: isPreview ? 0.9 : 0.92,
+    dashArray: isPreview || isFallback ? '10 10' : null,
+    lineCap: 'round',
+    lineJoin: 'round'
+  }).addTo(layer);
+}
+
+function notifyRouteResult(instance, result) {
+  instance.onRouteResult?.({
+    kind: 'route',
+    result,
+    coordinates: instance.routeCoordinates
+  });
 }
 
 function renderHubLayer() {
@@ -482,7 +513,7 @@ function renderMarkerLayer() {
 
 function createDestinationIcon(instance, destination, state) {
   const category = destination.categoryGroup || destination.displayCategory || destination.category;
-  const color = state.isFeatured ? '#ef4444' : (CATEGORY_COLORS[category] || '#3b82f6');
+  const color = state.isFeatured ? '#ef4444' : '#2563eb';
   const classNames = [
     'offline-destination-marker',
     state.isFeatured ? 'featured' : '',
@@ -495,9 +526,9 @@ function createDestinationIcon(instance, destination, state) {
     html: state.isFeatured
       ? renderFeaturedMarker(destination, color)
       : renderCompactMarker(category, color),
-    iconSize: state.isFeatured ? [72, 82] : [34, 34],
-    iconAnchor: state.isFeatured ? [36, 58] : [17, 17],
-    popupAnchor: [0, state.isFeatured ? -58 : -20]
+    iconSize: state.isFeatured ? [78, 86] : [30, 30],
+    iconAnchor: state.isFeatured ? [39, 58] : [15, 15],
+    popupAnchor: [0, state.isFeatured ? -58 : -18]
   });
 }
 
@@ -505,7 +536,10 @@ function renderFeaturedMarker(destination, color) {
   return `
     <span class="offline-marker-ring"></span>
     <span class="offline-marker-pin" style="--marker-color: ${color};">
-      <span class="offline-marker-core"></span>
+      <svg viewBox="0 0 42 56" aria-hidden="true">
+        <path d="M21 54C16.3 47.2 5 36.8 5 21.8 5 12.5 12.2 5 21 5s16 7.5 16 16.8C37 36.8 25.7 47.2 21 54Z" />
+        <circle cx="21" cy="21" r="7.4" />
+      </svg>
     </span>
     <span class="offline-marker-label">${escapeHtml(destination.name)}</span>
   `;
@@ -606,6 +640,14 @@ function coordinatesToLatLngs(coordinates = []) {
   return coordinates
     .filter(isValidCoordinate)
     .map(toLatLng);
+}
+
+function coordinatesKey(coordinates = []) {
+  const cleanCoordinates = coordinates.filter(isValidCoordinate);
+  if (cleanCoordinates.length < 2) return '';
+  return cleanCoordinates
+    .map(coordinate => `${Number(coordinate[0]).toFixed(5)},${Number(coordinate[1]).toFixed(5)}`)
+    .join('|');
 }
 
 function toLatLng([lng, lat]) {

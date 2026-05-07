@@ -2,6 +2,8 @@
 // Handles multi-day itinerary, destination selection, and time wallet
 
 const STORAGE_KEY = 'pathfinder-lite-itinerary-state';
+const DEFAULT_DAY_COUNT = 3;
+const MAX_TRIP_DAYS = 7;
 
 const DEFAULT_TRIP_SETUP = {
   startPoint: '',
@@ -16,11 +18,7 @@ const DEFAULT_TRIP_SETUP = {
 const DEFAULT_STATE = {
   selectedDestination: null,
   activeDay: 1,
-  days: {
-    1: [],
-    2: [],
-    3: []
-  },
+  days: createDayMap(DEFAULT_DAY_COUNT),
   setup: { ...DEFAULT_TRIP_SETUP },
   dayCapacity: 8 // 8 hours per day
 };
@@ -37,9 +35,10 @@ function loadState() {
       state = { ...DEFAULT_STATE, ...parsed };
       // Ensure days structure exists
       if (!state.days) {
-        state.days = { 1: [], 2: [], 3: [] };
+        state.days = createDayMap(DEFAULT_DAY_COUNT);
       }
       state.setup = normalizeTripSetup(state.setup);
+      ensureDayStructure();
     }
   } catch (error) {
     console.error('Error loading itinerary state:', error);
@@ -84,6 +83,7 @@ function updateTripSetup(updates = {}) {
     completed: false,
     completedAt: null
   });
+  ensureDayStructure();
   saveState();
   notifyListeners();
 }
@@ -122,6 +122,7 @@ function completeTripSetup() {
     completed: true,
     completedAt: new Date().toISOString()
   });
+  ensureDayStructure();
   saveState();
   notifyListeners();
   return { success: true, setup: getTripSetup() };
@@ -153,8 +154,10 @@ function getActiveDay() {
 
 // Set active day
 function setActiveDay(day) {
-  if (day >= 1 && day <= 3) {
-    state.activeDay = day;
+  const dayCount = getTripDayCount();
+  const targetDay = Number(day);
+  if (targetDay >= 1 && targetDay <= dayCount) {
+    state.activeDay = targetDay;
     saveState();
     notifyListeners();
   }
@@ -173,8 +176,9 @@ function getAllDays() {
 
 // Add destination to active day
 function addStopToDay(destination) {
+  ensureDayStructure();
   const day = state.activeDay;
-  const stops = state.days[day];
+  const stops = state.days[day] || (state.days[day] = []);
   
   // Check for duplicate
   const isDuplicate = stops.some(stop => stop.id === destination.id);
@@ -199,13 +203,15 @@ function addStopToDay(destination) {
 
 // Remove stop from active day
 function removeStopFromDay(stopId) {
+  ensureDayStructure();
   const day = state.activeDay;
-  state.days[day] = state.days[day].filter(stop => stop.stopId !== stopId);
+  state.days[day] = (state.days[day] || []).filter(stop => stop.stopId !== stopId);
   saveState();
   notifyListeners();
 }
 
 function removeDestinationFromDay(destinationId, day = null) {
+  ensureDayStructure();
   const targetDay = day || state.activeDay;
   const stop = state.days[targetDay]?.find(item => item.id === destinationId);
   if (!stop) {
@@ -218,11 +224,12 @@ function removeDestinationFromDay(destinationId, day = null) {
   return { success: true, message: 'Removed from itinerary' };
 }
 
-function replaceItineraryDays(days = {}) {
+function replaceItineraryDays(days = {}, dayCount = getTripDayCount()) {
   const timestamp = Date.now();
-  state.days = { 1: [], 2: [], 3: [] };
+  const safeDayCount = clampDayCount(dayCount);
+  state.days = createDayMap(safeDayCount);
 
-  [1, 2, 3].forEach(day => {
+  Array.from({ length: safeDayCount }, (_, index) => index + 1).forEach(day => {
     const dayStops = Array.isArray(days[day]) ? days[day] : [];
     state.days[day] = dayStops.map((destination, index) => ({
       ...destination,
@@ -233,14 +240,16 @@ function replaceItineraryDays(days = {}) {
   });
 
   state.activeDay = 1;
+  ensureDayStructure(safeDayCount);
   saveState();
   notifyListeners();
 }
 
 // Move stop up in the list
 function moveStopUp(stopId) {
+  ensureDayStructure();
   const day = state.activeDay;
-  const stops = state.days[day];
+  const stops = state.days[day] || [];
   const index = stops.findIndex(stop => stop.stopId === stopId);
   
   if (index > 0) {
@@ -252,8 +261,9 @@ function moveStopUp(stopId) {
 
 // Move stop down in the list
 function moveStopDown(stopId) {
+  ensureDayStructure();
   const day = state.activeDay;
-  const stops = state.days[day];
+  const stops = state.days[day] || [];
   const index = stops.findIndex(stop => stop.stopId === stopId);
   
   if (index < stops.length - 1) {
@@ -264,8 +274,9 @@ function moveStopDown(stopId) {
 }
 
 function reorderStop(stopId, targetStopId) {
+  ensureDayStructure();
   const day = state.activeDay;
-  const stops = state.days[day];
+  const stops = state.days[day] || [];
   const fromIndex = stops.findIndex(stop => stop.stopId === stopId);
   const toIndex = stops.findIndex(stop => stop.stopId === targetStopId);
 
@@ -280,8 +291,9 @@ function reorderStop(stopId, targetStopId) {
 }
 
 function reorderStopToEnd(stopId) {
+  ensureDayStructure();
   const day = state.activeDay;
-  const stops = state.days[day];
+  const stops = state.days[day] || [];
   const fromIndex = stops.findIndex(stop => stop.stopId === stopId);
 
   if (fromIndex === -1 || fromIndex === stops.length - 1) {
@@ -296,8 +308,9 @@ function reorderStopToEnd(stopId) {
 
 // Update stop time
 function updateStopTime(stopId, time) {
+  ensureDayStructure();
   const day = state.activeDay;
-  const stop = state.days[day].find(s => s.stopId === stopId);
+  const stop = (state.days[day] || []).find(s => s.stopId === stopId);
   if (stop) {
     stop.time = time;
     saveState();
@@ -313,16 +326,18 @@ function calculateDayDuration(day = null) {
 }
 
 // Calculate time wallet percentage
-function calculateTimeWalletPercentage(day = null) {
-  const totalDuration = calculateDayDuration(day);
-  const percentage = (totalDuration / state.dayCapacity) * 100;
-  return Math.min(percentage, 100);
+function calculateTimeWalletPercentage(day = null, options = {}) {
+  return getTimeWalletInfo(day, options).percentage;
 }
 
 // Get time wallet info
-function getTimeWalletInfo(day = null) {
-  const totalDuration = calculateDayDuration(day);
-  const percentage = calculateTimeWalletPercentage(day);
+function getTimeWalletInfo(day = null, options = {}) {
+  const targetDay = day || state.activeDay;
+  const visitMinutes = options.visitMinutes ?? Math.round(calculateDayDuration(targetDay) * 60);
+  const driveTime = Number(options.travelMinutes ?? options.driveTime ?? 0);
+  const totalMinutes = Math.max(0, visitMinutes + (Number.isFinite(driveTime) ? driveTime : 0));
+  const totalDuration = totalMinutes / 60;
+  const percentage = Math.min((totalDuration / state.dayCapacity) * 100, 100);
   const remaining = Math.max(state.dayCapacity - totalDuration, 0);
   
   let pace = 'Relaxed';
@@ -331,6 +346,9 @@ function getTimeWalletInfo(day = null) {
   
   return {
     totalDuration,
+    totalMinutes,
+    driveTime: Number.isFinite(driveTime) ? driveTime : 0,
+    visitTime: visitMinutes,
     percentage,
     remaining,
     pace,
@@ -354,7 +372,7 @@ function getStopCount(day = null) {
 function resetItinerary() {
   state = {
     ...DEFAULT_STATE,
-    days: { 1: [], 2: [], 3: [] },
+    days: createDayMap(DEFAULT_DAY_COUNT),
     setup: { ...DEFAULT_TRIP_SETUP }
   };
   saveState();
@@ -389,6 +407,55 @@ function subscribe(listener) {
 // Get entire state
 function getState() {
   return { ...state };
+}
+
+function getTripDayCount(setup = state.setup) {
+  return calculateTripDayCount(setup, Object.keys(state.days || {}).length || DEFAULT_DAY_COUNT);
+}
+
+function calculateTripDayCount(setup = {}, fallbackDayCount = DEFAULT_DAY_COUNT) {
+  const startValue = setup.tripDate || setup.startDate;
+  const endValue = setup.tripEndDate || setup.endDate;
+  const start = parseLocalDate(startValue);
+  const end = parseLocalDate(endValue);
+
+  if (!start || !end) return clampDayCount(fallbackDayCount);
+
+  const diffDays = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+  return clampDayCount(diffDays);
+}
+
+function ensureDayStructure(dayCount = getTripDayCount()) {
+  const safeDayCount = clampDayCount(dayCount);
+  const nextDays = createDayMap(safeDayCount);
+
+  Object.keys(nextDays).forEach(day => {
+    nextDays[day] = Array.isArray(state.days?.[day]) ? state.days[day] : [];
+  });
+
+  state.days = nextDays;
+  if (state.activeDay > safeDayCount) state.activeDay = safeDayCount;
+  if (state.activeDay < 1) state.activeDay = 1;
+}
+
+function createDayMap(dayCount = DEFAULT_DAY_COUNT) {
+  return Array.from({ length: clampDayCount(dayCount) }, (_, index) => index + 1)
+    .reduce((days, day) => {
+      days[day] = [];
+      return days;
+    }, {});
+}
+
+function clampDayCount(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return DEFAULT_DAY_COUNT;
+  return Math.min(Math.max(Math.floor(number), 1), MAX_TRIP_DAYS);
+}
+
+function parseLocalDate(value) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 // Parse duration string to hours (e.g., "2-3 hours" -> 2.5)
@@ -436,6 +503,8 @@ export {
   isDestinationInDay,
   getStopCount,
   getTripSetup,
+  getTripDayCount,
+  calculateTripDayCount,
   updateTripSetup,
   toggleTripSetupActivity,
   setTripSetupBudget,

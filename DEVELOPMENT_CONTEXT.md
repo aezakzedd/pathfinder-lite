@@ -217,6 +217,21 @@
 - Added `src/utils/offlineRouting.js`, a small local road-network router that snaps stops to offline road corridors and uses Dijkstra to draw multi-segment route/preview lines
 - Kept local GeoJSON fallback and confirmed no online tiles or public routing servers are used
 
+**Focused Phase: Map Parity Fixes - Theme, Markers, Date Range, and Routing Contract**
+- Restyled the Leaflet GeoJSON base through the existing website theme variables: light mode uses soft green land, dark mode uses white/light-gray land, with readable water, labels, boundaries, and routes
+- Made non-featured POIs uniform compact circular markers and top-10 destinations stable SVG pin markers to prevent stretched Leaflet divIcon rendering
+- Added `src/utils/routeService.js` as the frontend routing contract: it first tries local `POST /api/route` with `{ "waypoints": [[lng, lat], ...] }` and expects `{ "geometry": [[lng, lat], ...], "distance_km": number, "duration_min": number, "source": string }`
+- Kept `src/utils/offlineRouting.js` only as an internally marked `fallback-approximate-road-network` when `/api/route` is unavailable; fallback route lines are visually dashed so they are not presented as authoritative road routing
+- Added dynamic date-range day counts from 1 to 7 days across itinerary state, Generate, Back/Next/Save actions, and final/share export payload
+- Updated pace calculation to combine visit time with route travel time, using `/api/route` duration when available and fallback estimates otherwise
+- Inspected the original Pathfinder route utilities: the original frontend used Turf, geojson-path-finder, and `catanduanes_optimized.json`; Lite does not port those heavy dependencies
+
+**Offline Routing Implementation Plan:**
+- Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
+- Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
+- The Lite frontend must remain a renderer only; it should not become the heavy routing/pathfinding engine
+- No public OSRM/demo servers, online routing APIs, online tiles, external CDNs, Turf, geojson-path-finder, or MapLibre should be used in Pathfinder Lite
+
 ## Current Known Implementation
 
 **Working Features:**
@@ -226,8 +241,9 @@
 - Leaflet panning and zooming are restored
 - Non-featured markers use compact category icon circles; top-10 markers remain prominent pins
 - Itinerary map filters markers by selected activities and budget
-- Itinerary map shows selected start hub, current-day road-following route, preview route, selected marker highlight, and featured markers
-- Setup calendar supports start and end date range selection
+- Itinerary map shows selected start hub, current-day route, preview route, selected marker highlight, and featured markers
+- Route rendering first tries local `/api/route` and falls back to an approximate local road graph only when unavailable
+- Setup calendar supports start and end date range selection, and itinerary days are derived from the selected range up to 7 days
 - First visit to itinerary opens setup overlay until setup is completed
 - Setup completion persists in localStorage and can be reopened from the top-right Setup control
 - Setup overlay validates start point, trip date, and activities before enabling Done
@@ -262,14 +278,14 @@
 
 ## Current Bundle Size
 
-Latest build (Leaflet Map Interaction Fixes):
+Latest build (Map Parity Fixes):
 - HTML: 0.56 kB
-- Main CSS: 95.54 kB
-- Main JS: 92.17 kB
+- Main CSS: 95.62 kB
+- Main JS: 97.59 kB
 - Leaflet async JS chunk: 149.47 kB
 - Lazy route CSS chunks: 13.21 kB total
-- Lazy route JS chunks: 18.55 kB total
-- Full built JS/CSS assets: ~368.30 kB
+- Lazy route JS chunks: 18.90 kB total
+- Full built JS/CSS assets: ~374.79 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
@@ -287,6 +303,7 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
 - Previous lightweight SVG map logic remains in `src/map/liteMap.js` as fallback/reference
 - Local map geometry is in `public/data/catanduanes_datafile.geojson`
 - Offline road routing logic is in `src/utils/offlineRouting.js`
+- Route API contract and fallback selection logic is in `src/utils/routeService.js`
 - The map checks local `/tiles/{z}/{x}/{y}.png` candidates and only enables tiles when the response is an actual image
 - If no local tiles are present, Leaflet renders the local GeoJSON polygon/line layer over a local sea-colored base
 - The renderer preserves the same itinerary events for destination selection and Add to Trip

@@ -15,6 +15,8 @@ export function renderLast(container) {
 
   // Check if we have itinerary data
   const hasItinerary = exportPayload && exportPayload.totalStops > 0;
+  const dayCount = Number(exportPayload?.dayCount) || Object.keys(exportPayload?.days || {}).length;
+  const dateRangeText = formatDateRange(exportPayload?.dateRange);
 
   container.innerHTML = `
     <div class="page page-last">
@@ -24,7 +26,7 @@ export function renderLast(container) {
         </h1>
         <p class="lead">
           ${hasItinerary 
-            ? `${exportPayload.totalStops} destinations across your selected days.`
+            ? `${exportPayload.totalStops} destinations across ${dayCount} day${dayCount !== 1 ? 's' : ''}${dateRangeText ? ` (${dateRangeText})` : ''}.`
             : 'Build your itinerary first to generate a shareable trip.'}
         </p>
       </section>
@@ -40,7 +42,7 @@ export function renderLast(container) {
               </div>
               <div class="stat-item">
                 <span class="stat-label">Days Planned</span>
-                <span class="stat-value">${Object.keys(exportPayload.days).filter(day => exportPayload.days[day].length > 0).length}</span>
+                <span class="stat-value">${dayCount}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">Pace</span>
@@ -150,4 +152,17 @@ export function renderLast(container) {
       startNewBtn.addEventListener('click', clickHandler);
     }
   }
+}
+
+function formatDateRange(dateRange = {}) {
+  if (!dateRange.startDate || !dateRange.endDate) return '';
+  const start = formatDate(dateRange.startDate);
+  const end = formatDate(dateRange.endDate);
+  return start && end ? `${start} - ${end}` : '';
+}
+
+function formatDate(value) {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }

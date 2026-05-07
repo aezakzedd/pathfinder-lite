@@ -1,17 +1,19 @@
 /* Itinerary page styles */
 
 :root {
-  --offline-map-sea: #a7d7cc;
-  --offline-map-land: #dcefd6;
-  --offline-map-boundary: rgba(31, 77, 56, 0.5);
-  --offline-map-line: rgba(31, 77, 56, 0.32);
+  --offline-map-sea: #a8d6d2;
+  --offline-map-land: #d8ead3;
+  --offline-map-boundary: rgba(37, 89, 60, 0.55);
+  --offline-map-line: rgba(37, 89, 60, 0.34);
+  --offline-map-label: rgba(26, 59, 42, 0.72);
 }
 
 :root[data-theme='dark'] {
-  --offline-map-sea: #c2c8ca;
-  --offline-map-land: #e6e8e6;
-  --offline-map-boundary: rgba(15, 23, 42, 0.48);
-  --offline-map-line: rgba(15, 23, 42, 0.3);
+  --offline-map-sea: #cdd2d2;
+  --offline-map-land: #f1f3ef;
+  --offline-map-boundary: rgba(15, 23, 42, 0.5);
+  --offline-map-line: rgba(15, 23, 42, 0.34);
+  --offline-map-label: rgba(15, 23, 42, 0.7);
 }
 
 /* Route-specific overrides for fullscreen itinerary */
@@ -593,7 +595,7 @@ body[data-route="itinerary"] .page-container {
 }
 
 .offline-map-label {
-  color: rgba(15, 23, 42, 0.62);
+  color: var(--offline-map-label);
   font-size: 13px;
   font-weight: 900;
   line-height: 1;
@@ -615,8 +617,8 @@ body[data-route="itinerary"] .page-container {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   border: 3px solid #22d3ee;
   background: rgba(20, 184, 166, 0.16);
@@ -631,20 +633,20 @@ body[data-route="itinerary"] .page-container {
 }
 
 .offline-destination-marker.featured .offline-marker-ring {
-  top: 43%;
-  width: 52px;
-  height: 52px;
+  top: 34%;
+  width: 54px;
+  height: 54px;
 }
 
 .offline-marker-badge {
   position: absolute;
-  inset: 2px;
+  inset: 0;
   display: grid;
   place-items: center;
   border-radius: 999px;
   background: var(--marker-color, #3b82f6);
   border: 3px solid #ffffff;
-  box-shadow: 0 7px 12px rgba(15, 23, 42, 0.26);
+  box-shadow: 0 5px 9px rgba(15, 23, 42, 0.22);
 }
 
 .offline-marker-badge svg {
@@ -655,14 +657,15 @@ body[data-route="itinerary"] .page-container {
 
 .offline-destination-marker.added .offline-marker-badge {
   opacity: 0.76;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.45), 0 5px 9px rgba(15, 23, 42, 0.18);
 }
 
 .offline-marker-pin {
   position: absolute;
   left: 50%;
-  top: 4px;
-  width: 36px;
-  height: 48px;
+  top: 0;
+  width: 42px;
+  height: 56px;
   transform: translateX(-50%);
   filter: drop-shadow(0 8px 12px rgba(15, 23, 42, 0.3));
 }
@@ -673,25 +676,22 @@ body[data-route="itinerary"] .page-container {
   filter: drop-shadow(0 10px 14px rgba(239, 68, 68, 0.28));
 }
 
-.offline-marker-pin::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--marker-color, #3b82f6);
-  border: 4px solid #ffffff;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
+.offline-marker-pin svg {
+  display: block;
+  width: 42px;
+  height: 56px;
+  overflow: visible;
 }
 
-.offline-marker-core {
-  position: absolute;
-  left: 50%;
-  top: 16px;
-  width: 11px;
-  height: 11px;
-  border-radius: 999px;
-  background: #ffffff;
-  transform: translateX(-50%);
+.offline-marker-pin path {
+  fill: var(--marker-color, #ef4444);
+  stroke: #ffffff;
+  stroke-width: 4px;
+  paint-order: stroke fill;
+}
+
+.offline-marker-pin circle {
+  fill: #ffffff;
 }
 
 .offline-destination-marker.added .offline-marker-pin {
@@ -769,7 +769,11 @@ body[data-route="itinerary"] .page-container {
 .offline-route-casing,
 .offline-preview-line,
 .offline-preview-casing {
-  filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.18));
+  filter: drop-shadow(0 3px 4px rgba(15, 23, 42, 0.14));
+}
+
+.offline-route-line.route-fallback {
+  opacity: 0.8;
 }
 
 .offline-map-popup {
