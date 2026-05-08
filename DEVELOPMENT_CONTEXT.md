@@ -584,6 +584,29 @@
 - QR sharing and Download PDF functionality remain intact
 - Finish & Home cleanup remains intact
 
+**Phase 13E.3: Restore Visible Scrolling for Backend-Rendered PDF Image Preview**
+- Removed `scrollbar-width: none` from `.pdf-preview-pages` in `src/styles/last.css`
+- Removed `::-webkit-scrollbar { display: none; }` from `.pdf-preview-pages` in `src/styles/last.css`
+- Added dark Pathfinder-style scrollbar to `.pdf-preview-pages`:
+  - `scrollbar-width: thin`
+  - `scrollbar-color: rgba(226, 232, 240, 0.72) rgba(15, 23, 42, 0.55)`
+  - WebKit scrollbar width: 10px
+  - WebKit scrollbar track: dark navy/black with rounded corners
+  - WebKit scrollbar thumb: muted slate/light gray with rounded corners and border
+- Added `overflow-x: hidden` to prevent horizontal scrollbar
+- `.pdf-preview-pages-inner` already has correct height from rendered page images
+- Rendered page images are not clipped (width: 100%, height: auto)
+- Scrolling happens inside the preview area, not the whole app shell
+- Fixed controls remain visible at top-left
+- QR panel remains visible
+- Map overlay links remain clickable after scrolling
+- No horizontal scrollbar appears
+- Preview is usable at 1366x768, 1920x1080, and Raspberry Pi Chromium kiosk fullscreen
+- All smoke tests pass, backend compiles successfully, frontend builds successfully
+- QR sharing and Download PDF functionality remain intact
+- Finish & Home cleanup remains intact
+- localStorage PDF recovery remains intact
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
