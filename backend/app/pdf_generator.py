@@ -201,7 +201,7 @@ def generate_itinerary_pdf(payload: Dict[str, Any]) -> tuple[str, str]:
         align="C")
     
     # Save PDF
-    pdf_bytes = pdf.output()
+    pdf_bytes = pdf.output(dest='S')
     save_pdf(pdf_id, pdf_bytes)
     
     download_url = f"/api/pdf/{pdf_id}.pdf"
