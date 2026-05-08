@@ -7,6 +7,12 @@ const EXPORT_PAYLOAD_KEY = 'pathfinder-lite-export-payload';
 const PDF_ID_KEY = 'pathfinder-lite-pdf-id';
 const CHAT_MESSAGES_KEY = 'pathfinder-lite-chat-messages';
 
+function resolveBackendUrl(value) {
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  return apiUrl(value);
+}
+
 export function renderLast(container) {
   const { exportPayload, savedPdfId } = loadExportState();
   const hasItinerary = Boolean(exportPayload && Number(exportPayload.totalStops) > 0);
@@ -379,13 +385,13 @@ function renderPreviewPages(previewData, container) {
   }
 
   const pagesHtml = pages.map((page) => {
-    const pageImage = page.image_url || '';
+    const pageImage = resolveBackendUrl(page.image_url || '');
     const pageWidth = page.width || 794;
     const pageHeight = page.height || 1123;
     const links = page.links || [];
 
     const overlaysHtml = links.map((link) => {
-      const href = link.href || '#';
+      const href = resolveBackendUrl(link.href || '#');
       const target = link.target || '_blank';
       const x = (link.x || 0) * 100;
       const y = (link.y || 0) * 100;
@@ -408,7 +414,7 @@ function renderPreviewPages(previewData, container) {
 
     return `
       <article class="pdf-preview-image-page" style="--page-w:${pageWidth}px;--page-h:${pageHeight}px;">
-        <img class="pdf-preview-page-image" src="${pageImage}" alt="PDF page ${page.page}" loading="lazy">
+        <img class="pdf-preview-page-image" src="${pageImage}" alt="PDF page ${page.page}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTcgM2g3bDUgNXYxM0g3VjNaIiBzdHJva2U9IiM0NzU2NjkiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiAvPjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IDEwaDJNOS41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IEhaXN0b3J5Pjwvc3ZnPg=='; console.error('Preview image failed to load:', '${page.image_url}');">
         ${overlaysHtml}
       </article>
     `;

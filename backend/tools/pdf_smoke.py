@@ -16,7 +16,7 @@ from app.pdf_store import pdf_exists, get_pdf_size, get_pdf_path
 from app.main import app
 from app.map_link import get_map_link, cleanup_expired_map_links
 from app.map_renderer import generate_route_map_image, generate_fallback_map_image
-from app.pdf_preview import render_pdf_pages_to_images, delete_preview_images, get_preview_with_overlays
+from app.pdf_preview import render_pdf_pages_to_images, delete_preview_images, get_preview_with_overlays, add_map_link_overlay
 from fastapi.testclient import TestClient
 
 try:
@@ -566,6 +566,29 @@ def main():
             traceback.print_exc()
             return False
 
+        # Add map link overlays to preview metadata
+        try:
+            if overlay_metadata_2 and overlay_metadata_2.get('map_links'):
+                for map_link in overlay_metadata_2['map_links']:
+                    add_map_link_overlay(
+                        pdf_id_2,
+                        map_link.get('page', 1),
+                        map_link.get('map_link_id', ''),
+                        map_link.get('x', 0),
+                        map_link.get('y', 0),
+                        map_link.get('w', 0),
+                        map_link.get('h', 0),
+                        map_link.get('label', 'Open in Google Maps')
+                    )
+                print(f"[OK] Map link overlays added: {len(overlay_metadata_2['map_links'])} overlays")
+            else:
+                print("[WARN] No map links to add to preview metadata")
+        except Exception as e:
+            print(f"[FAIL] Map link overlay addition error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
         # Test preview metadata retrieval
         try:
             preview_metadata = get_preview_with_overlays(pdf_id_2)
@@ -573,6 +596,38 @@ def main():
                 print(f"[OK] Preview metadata retrieved successfully")
                 print(f"  Page count: {preview_metadata['page_count']}")
                 print(f"  Pages with links: {len([p for p in preview_metadata['pages'] if p.get('links')])}")
+                
+                # Assert numeric page order
+                page_numbers = [p['page'] for p in preview_metadata['pages']]
+                if page_numbers == sorted(page_numbers):
+                    print(f"[OK] Preview pages are in numeric order: {page_numbers}")
+                else:
+                    print(f"[FAIL] Preview pages are not in numeric order: {page_numbers}")
+                    return False
+                
+                # Assert image_url format
+                invalid_urls = [p['image_url'] for p in preview_metadata['pages'] if not p['image_url'].startswith('/api/pdf/')]
+                if invalid_urls:
+                    print(f"[FAIL] Invalid image_url format: {invalid_urls}")
+                    return False
+                print(f"[OK] All image_urls start with /api/pdf/")
+                
+                # Assert overlay metadata format
+                pages_with_overlays = [p for p in preview_metadata['pages'] if p.get('links')]
+                if pages_with_overlays:
+                    for page in pages_with_overlays:
+                        for link in page['links']:
+                            if not link.get('href', '').startswith('/m/'):
+                                print(f"[FAIL] Invalid overlay href: {link.get('href')}")
+                                return False
+                            if link.get('target') != '_blank':
+                                print(f"[FAIL] Invalid overlay target: {link.get('target')}")
+                                return False
+                    print(f"[OK] All overlay hrefs start with /m/ and have target _blank")
+                    print(f"[OK] At least one page has map overlay (coordinates present)")
+                else:
+                    print("[FAIL] No pages with overlay links found (expected with coordinates)")
+                    return False
             else:
                 print("[FAIL] Preview metadata retrieval failed")
                 return False

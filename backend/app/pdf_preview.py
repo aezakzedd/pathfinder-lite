@@ -13,6 +13,14 @@ from .pdf_store import get_pdf_path
 PREVIEWS_DIR = Path(__file__).parent.parent / "data" / "generated_pdfs" / "previews"
 
 
+def get_page_number(path: Path) -> int:
+    """Extract page number from filename like 'page-1.png'."""
+    try:
+        return int(path.stem.split("-")[1])
+    except Exception:
+        return 0
+
+
 def ensure_previews_dir(pdf_id: str) -> Path:
     """Ensure the preview directory exists for a PDF."""
     pdf_preview_dir = PREVIEWS_DIR / pdf_id
@@ -88,7 +96,7 @@ def get_preview_metadata(pdf_id: str) -> dict[str, Any] | None:
     if not pdf_preview_dir.exists():
         return None
 
-    page_files = sorted(pdf_preview_dir.glob("page-*.png"))
+    page_files = sorted(pdf_preview_dir.glob("page-*.png"), key=get_page_number)
     if not page_files:
         return None
 

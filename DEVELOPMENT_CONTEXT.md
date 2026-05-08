@@ -557,6 +557,33 @@
 - Preview images are cleaned up on PDF deletion and session finish
 - All smoke tests pass, dependencies installed, backend compiles, frontend builds successfully
 
+**Phase 13E.2: Fix PDF Preview Image Loading, Page Ordering, and Google Maps Overlay Links**
+- Added `resolveBackendUrl()` helper function to `src/pages/last.js` to resolve relative backend URLs to the correct API origin
+- Updated `renderPreviewPages()` to use `resolveBackendUrl()` for preview image `src` attributes
+- Updated `renderPreviewPages()` to use `resolveBackendUrl()` for overlay `href` values
+- Added `get_page_number()` helper function to `backend/app/pdf_preview.py` to extract page numbers from filenames
+- Updated `get_preview_metadata()` in `backend/app/pdf_preview.py` to sort page files numerically instead of lexicographically (fixing page order: 1, 2, 3 instead of 1, 10, 11)
+- Added debug hover style for map hotspots in `src/styles/last.css` with blue outline and semi-transparent background
+- Added `img onerror` handling in `src/pages/last.js` to display a fallback SVG and log failed image URLs to console
+- Verified overlay anchors already have `target="_blank"` and `rel="noopener noreferrer"` attributes
+- Verified overlay anchors already have `title` and `aria-label` attributes for accessibility
+- Updated smoke test `backend/tools/pdf_smoke.py` to:
+  - Import `add_map_link_overlay` function
+  - Call `add_map_link_overlay()` after preview image generation to properly populate overlay metadata
+  - Assert preview pages are in numeric order
+  - Assert all image_urls start with `/api/pdf/`
+  - Assert all overlay hrefs start with `/m/`
+  - Assert all overlays have `target="_blank"`
+  - Assert at least one page has map overlay when coordinates are present
+- Backend preview images now load correctly from backend API origin instead of frontend Vite origin
+- Page ordering is now numeric (1, 2, 3, 4...) instead of lexicographic (1, 10, 11, 2...)
+- Google Maps overlay links now work correctly by resolving to backend `/m/{map_link_id}` launcher URLs
+- Map hotspots are now visible on hover with debug styling for easier debugging
+- Image failures now show readable fallback message and log errors for debugging
+- All smoke tests pass, backend compiles successfully, frontend builds successfully
+- QR sharing and Download PDF functionality remain intact
+- Finish & Home cleanup remains intact
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract

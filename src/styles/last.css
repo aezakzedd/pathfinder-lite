@@ -249,6 +249,11 @@
   z-index: 10;
 }
 
+.pdf-preview-hotspot:hover {
+  outline: 2px solid rgba(37, 99, 235, 0.65);
+  background: rgba(37, 99, 235, 0.08);
+}
+
 .pdf-document-placeholder,
 .pdf-preview-fallback {
   min-height: 1240px;
