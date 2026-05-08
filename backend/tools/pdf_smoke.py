@@ -174,49 +174,86 @@ def main():
     print("Generating PDF...")
     try:
         pdf_id, download_url = generate_itinerary_pdf(payload)
-        print(f"✓ PDF generated successfully")
+        print(f"[OK] PDF generated successfully")
         print(f"  PDF ID: {pdf_id}")
         print(f"  Download URL: {download_url}")
         print()
         
         # Verify PDF exists
         if pdf_exists(pdf_id):
-            print("✓ PDF file exists in storage")
+            print("[OK] PDF file exists in storage")
             
             # Check file size
             size = get_pdf_size(pdf_id)
             if size and size > 0:
-                print(f"✓ PDF file size: {size} bytes")
+                print(f"[OK] PDF file size: {size} bytes")
             else:
-                print("✗ PDF file size is 0 or unavailable")
+                print("[FAIL] PDF file size is 0 or unavailable")
                 return False
         else:
-            print("✗ PDF file not found in storage")
+            print("[FAIL] PDF file not found in storage")
             return False
         
         print()
         print("=== PDF Feature Verification ===")
         print()
-        print("✓ Expedition-style header with STATUS, ID, EXPEDITION PLAN")
-        print("✓ Computed arrival times (not all 9:00 AM)")
-        print("✓ Duration formatting (hours/minutes)")
-        print("✓ Route source display")
-        print("✓ Day cards with schedule status")
-        print("✓ Time-block grouping (MORNING/AFTERNOON/EVENING)")
-        print("✓ Drive lines with transport type and cost estimates")
-        print("✓ Enhanced stop information (description, hours, best time, exposure)")
-        print("✓ Financial Blueprint section")
-        print("✓ Emergency & Reference section")
-        print("✓ Travel Reminders section")
-        print("✓ Stronger disclaimer")
-        print("✓ Footer with page numbers")
-        print()
-        
-        # Test session finish endpoint
-        print("=== Session Finish Smoke Test ===")
+        print("[OK] Expedition-style header with STATUS, ID, EXPEDITION PLAN")
+        print("[OK] Computed arrival times (not all 9:00 AM)")
+        print("[OK] Duration formatting (hours/minutes)")
+        print("[OK] Route source display")
+        print("[OK] Day cards with schedule status")
+        print("[OK] Time-block grouping (MORNING/AFTERNOON/EVENING)")
+        print("[OK] Drive lines with transport type and cost estimates")
+        print("[OK] Enhanced stop information (description, hours, best time, exposure)")
+        print("[OK] Financial Blueprint section")
+        print("[OK] Emergency & Reference section")
+        print("[OK] Travel Reminders section")
+        print("[OK] Stronger disclaimer")
+        print("[OK] Footer with page numbers")
         print()
         
         client = TestClient(app)
+
+        # Test QR share endpoints
+        print("=== QR Share Smoke Test ===")
+        print()
+
+        print("Creating PDF share session...")
+        share_response = client.post(f"/api/pdf/{pdf_id}/share")
+        if share_response.status_code != 200:
+            print(f"Share creation failed: {share_response.status_code} {share_response.text}")
+            return False
+
+        share = share_response.json()
+        share_id = share.get("share_id")
+        if not share_id or "/s/" not in share.get("share_url", "") or "<svg" not in share.get("qr_svg", ""):
+            print("Share response missing share_id, share_url, or SVG QR")
+            return False
+
+        print("Share session created")
+        print(f"  Share ID: {share_id}")
+        print(f"  Share URL: {share.get('share_url')}")
+        print(f"  PDF URL: {share.get('pdf_url')}")
+
+        page_response = client.get(f"/s/{share_id}")
+        if page_response.status_code == 200 and "Open PDF" in page_response.text:
+            print("Mobile share landing page loads")
+        else:
+            print(f"Mobile share landing failed: {page_response.status_code}")
+            return False
+
+        shared_pdf_response = client.get(f"/api/pdf-share/{share_id}.pdf")
+        if shared_pdf_response.status_code == 200 and shared_pdf_response.headers.get("content-type", "").startswith("application/pdf"):
+            print("Shared PDF endpoint serves inline PDF")
+        else:
+            print(f"Shared PDF endpoint failed: {shared_pdf_response.status_code}")
+            return False
+
+        print()
+
+        # Test session finish endpoint
+        print("=== Session Finish Smoke Test ===")
+        print()
         
         # Call session finish with pdf_id
         print("Calling /api/session/finish with pdf_id...")
@@ -224,36 +261,43 @@ def main():
         
         if response.status_code == 200:
             result = response.json()
-            print(f"✓ Session finish succeeded")
+            print(f"[OK] Session finish succeeded")
             print(f"  Response: {result}")
             
             if result.get("deleted_pdf"):
-                print("✓ PDF deleted by session finish")
+                print("[OK] PDF deleted by session finish")
             else:
-                print("⚠ PDF not deleted by session finish")
+                print("[WARN] PDF not deleted by session finish")
         else:
-            print(f"✗ Session finish failed: {response.status_code}")
+            print(f"[FAIL] Session finish failed: {response.status_code}")
             return False
         
         print()
         
         # Verify PDF is deleted
         if not pdf_exists(pdf_id):
-            print("✓ PDF file confirmed deleted from storage")
+            print("[OK] PDF file confirmed deleted from storage")
         else:
-            print("✗ PDF file still exists in storage")
+            print("[FAIL] PDF file still exists in storage")
             return False
         
         print()
         
+        shared_pdf_after_finish = client.get(f"/api/pdf-share/{share_id}.pdf")
+        if shared_pdf_after_finish.status_code == 404:
+            print("Share link invalidated after session finish")
+        else:
+            print(f"Share link still works after finish: {shared_pdf_after_finish.status_code}")
+            return False
+
         # Call session finish again (should not crash)
         print("Calling /api/session/finish again (should not crash)...")
         response = client.post("/api/session/finish", json={"pdf_id": pdf_id, "session_id": "test-session"})
         
         if response.status_code == 200:
-            print("✓ Session finish handles already-deleted PDF safely")
+            print("[OK] Session finish handles already-deleted PDF safely")
         else:
-            print(f"✗ Session finish crashed on already-deleted PDF: {response.status_code}")
+            print(f"[FAIL] Session finish crashed on already-deleted PDF: {response.status_code}")
             return False
         
         print()
@@ -261,7 +305,7 @@ def main():
         return True
         
     except Exception as error:
-        print(f"✗ PDF generation failed: {error}")
+        print(f"[FAIL] PDF generation failed: {error}")
         import traceback
         traceback.print_exc()
         return False

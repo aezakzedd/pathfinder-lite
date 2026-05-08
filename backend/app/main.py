@@ -1,12 +1,21 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
 
 from .chatbot import answer_question
 from .routing import build_route_response
 from .pdf_generator import generate_itinerary_pdf
 from .pdf_store import load_pdf, delete_pdf, pdf_exists
+from .pdf_share import (
+    build_mobile_share_page,
+    build_share_error_page,
+    cleanup_expired_shares,
+    create_or_reuse_share,
+    get_share,
+    get_share_base_url,
+    invalidate_pdf_share,
+)
 from .dialogue_state import dialogue_store
 
 
@@ -93,15 +102,21 @@ def generate_pdf(request: PdfGenerateRequest):
         raise HTTPException(status_code=500, detail=str(error)) from error
 
 
+@app.post("/api/pdf/{pdf_id}/share")
+def share_pdf(pdf_id: str, request: Request):
+    if not pdf_exists(pdf_id):
+        raise HTTPException(status_code=404, detail="PDF not found")
+
+    base_url = get_share_base_url(request)
+    return create_or_reuse_share(pdf_id, base_url)
+
+
 @app.get("/api/pdf/{pdf_id}.pdf")
 def get_pdf(pdf_id: str, download: bool = False):
     pdf_bytes = load_pdf(pdf_id)
     if pdf_bytes is None:
         raise HTTPException(status_code=404, detail="PDF not found")
-    
-    from io import BytesIO
-    from fastapi.responses import Response
-    
+
     disposition = "attachment" if download else "inline"
 
     return Response(
@@ -118,9 +133,42 @@ def delete_pdf_endpoint(pdf_id: str):
     
     deleted = delete_pdf(pdf_id)
     if deleted:
+        invalidate_pdf_share(pdf_id)
         return {"message": "PDF deleted successfully"}
     else:
         raise HTTPException(status_code=500, detail="Failed to delete PDF")
+
+
+@app.get("/s/{share_id}", response_class=HTMLResponse)
+def mobile_share_page(share_id: str, request: Request):
+    cleanup_expired_shares()
+    share = get_share(share_id)
+    if not share or not pdf_exists(share.pdf_id):
+        return HTMLResponse(
+            content=build_share_error_page("This transfer link is expired or no longer available."),
+            status_code=404,
+        )
+
+    base_url = get_share_base_url(request)
+    return HTMLResponse(content=build_mobile_share_page(share_id, base_url))
+
+
+@app.get("/api/pdf-share/{share_id}.pdf")
+def get_shared_pdf(share_id: str):
+    share = get_share(share_id)
+    if not share:
+        raise HTTPException(status_code=404, detail="Share link not found or expired")
+
+    pdf_bytes = load_pdf(share.pdf_id)
+    if pdf_bytes is None:
+        invalidate_pdf_share(share.pdf_id)
+        raise HTTPException(status_code=404, detail="PDF not found")
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "inline; filename=pathfinder-itinerary.pdf"},
+    )
 
 
 @app.post("/api/session/finish")
@@ -130,6 +178,7 @@ def finish_session(request: SessionFinishRequest):
     
     # Delete PDF if provided
     if request.pdf_id:
+        invalidate_pdf_share(request.pdf_id)
         if pdf_exists(request.pdf_id):
             deleted = delete_pdf(request.pdf_id)
             deleted_pdf = deleted

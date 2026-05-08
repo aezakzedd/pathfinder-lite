@@ -13,6 +13,14 @@ uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 
 The frontend reads `VITE_API_URL` and falls back to `http://localhost:8000`.
 
+For phone QR sharing on Raspberry Pi, set the share base URL to the Pi LAN or hotspot address before starting the backend:
+
+```bash
+PATHFINDER_SHARE_BASE_URL=http://192.168.1.50:8000 uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+```
+
+Do not use `localhost` for kiosk QR codes. A phone scanning the QR must be on the same Wi-Fi/hotspot and must be able to reach the Pi IP address.
+
 ## Route Endpoint
 
 `POST /api/route`
@@ -259,7 +267,7 @@ Returns PDF ID and download URL:
 
 `GET /api/pdf/{pdf_id}.pdf`
 
-Download the generated PDF file. Returns binary PDF content with `Content-Type: application/pdf` and `Content-Disposition: attachment`.
+Preview or download the generated PDF file. By default this serves inline PDF content for browser preview. Add `?download=1` to force attachment download.
 
 ### PDF Deletion
 
@@ -303,6 +311,56 @@ Run smoke test:
 python -m backend.tools.pdf_smoke
 ```
 
+## QR PDF Sharing
+
+Pathfinder Lite generates QR codes on the backend and returns SVG markup to the frontend. No frontend QR package, canvas QR renderer, PNG QR renderer, or external service is used.
+
+### Create Share Session
+
+`POST /api/pdf/{pdf_id}/share`
+
+Creates or reuses a short-lived share session for an existing generated PDF. The raw `pdf_id` is not exposed in the QR URL.
+
+Returns:
+
+```json
+{
+  "share_id": "uN7xrnYePbqm",
+  "share_url": "http://192.168.1.50:8000/s/uN7xrnYePbqm",
+  "pdf_url": "http://192.168.1.50:8000/api/pdf-share/uN7xrnYePbqm.pdf",
+  "qr_svg": "<svg ...>",
+  "expires_in_minutes": 60
+}
+```
+
+### Mobile Landing Page
+
+`GET /s/{share_id}`
+
+Returns a tiny mobile-friendly HTML page with:
+
+- title: Pathfinder Itinerary
+- Open PDF button
+- same Wi-Fi/hotspot reminder
+
+If the share is missing, expired, or the PDF has been deleted, it returns a readable HTML error page.
+
+### Shared PDF
+
+`GET /api/pdf-share/{share_id}.pdf`
+
+Serves the PDF inline if the share is valid. Returns 404 if the share is invalid, expired, or the PDF file no longer exists.
+
+### Share Base URL
+
+Set this environment variable on Raspberry Pi:
+
+```bash
+PATHFINDER_SHARE_BASE_URL=http://<raspberry-pi-lan-ip>:8000
+```
+
+If not set, the backend falls back to `request.base_url`. That is useful for development but often produces `localhost` URLs, which phones cannot open from a QR scan.
+
 ## Session Finish Endpoint
 
 `POST /api/session/finish`
@@ -319,6 +377,7 @@ Clean up kiosk session data after a tourist finishes their trip:
 Both fields are optional. The endpoint will:
 
 - Delete the generated PDF if `pdf_id` is provided
+- Invalidate any active QR share session for the PDF
 - Clear chatbot dialogue memory for the session if `session_id` is provided
 - Return status of cleanup operations
 

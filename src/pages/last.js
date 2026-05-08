@@ -1,6 +1,6 @@
 // Last/Share page module
 import { clearItinerary } from '../state/itineraryStore.js';
-import { finishSession, requestPdfGeneration } from '../api.js';
+import { createPdfShare, finishSession, requestPdfGeneration } from '../api.js';
 import { apiUrl } from '../config/apiConfig.js';
 
 const EXPORT_PAYLOAD_KEY = 'pathfinder-lite-export-payload';
@@ -34,6 +34,12 @@ export function renderLast(container) {
             <span>Download PDF</span>
           </a>
         </div>
+        <div class="send-phone-panel" id="send-phone-panel" aria-live="polite">
+          <span class="send-phone-label">SEND TO PHONE</span>
+          <p class="send-phone-status" id="send-phone-status">Preparing transfer link...</p>
+          <div class="send-phone-qr" id="send-phone-qr" aria-label="Phone transfer QR code"></div>
+          <p class="send-phone-warning" id="send-phone-warning" hidden></p>
+        </div>
       </section>
 
       <main class="pdf-preview-stage" id="pdf-preview-stage">
@@ -59,6 +65,12 @@ export function renderLast(container) {
   const finishHomeBtn = document.getElementById('finish-home-btn');
   const finishLoading = document.getElementById('finish-loading');
   const finishError = document.getElementById('finish-error');
+  const shareElements = {
+    panel: document.getElementById('send-phone-panel'),
+    status: document.getElementById('send-phone-status'),
+    qr: document.getElementById('send-phone-qr'),
+    warning: document.getElementById('send-phone-warning')
+  };
 
   if (pdfDownloadLink) {
     pdfDownloadLink.addEventListener('click', (event) => {
@@ -80,21 +92,28 @@ export function renderLast(container) {
   }
 
   if (hasItinerary && !pdfReady) {
+    setSharePreparing(shareElements);
     generatePdfForPreview(exportPayload, {
       pdfPreviewContainer,
       pdfDownloadLink,
+      shareElements,
       setPdfId: (pdfId) => {
         currentPdfId = pdfId;
         currentPdfUrl = apiUrl(`/api/pdf/${pdfId}.pdf`);
         currentPdfDownloadUrl = getPdfDownloadUrl(currentPdfUrl);
       }
     });
+  } else if (pdfReady) {
+    createShareForPdf(currentPdfId, shareElements);
+  } else {
+    setSharePreparing(shareElements);
   }
 }
 
 async function generatePdfForPreview(exportPayload, elements) {
-  const { pdfPreviewContainer, pdfDownloadLink, setPdfId } = elements;
+  const { pdfPreviewContainer, pdfDownloadLink, shareElements, setPdfId } = elements;
   setDownloadDisabled(pdfDownloadLink);
+  setSharePreparing(shareElements);
   pdfPreviewContainer.innerHTML = renderExportPreview(exportPayload);
 
   try {
@@ -105,10 +124,29 @@ async function generatePdfForPreview(exportPayload, elements) {
 
     setDownloadReady(pdfDownloadLink, getPdfDownloadUrl(fullDownloadUrl), response.pdf_id);
     pdfPreviewContainer.innerHTML = renderExportPreview(exportPayload);
+    await createShareForPdf(response.pdf_id, shareElements);
   } catch (error) {
     console.error('PDF generation error:', error);
     setDownloadDisabled(pdfDownloadLink);
+    setShareError(shareElements);
     pdfPreviewContainer.innerHTML = renderPreviewUnavailable();
+  }
+}
+
+async function createShareForPdf(pdfId, elements) {
+  if (!pdfId) {
+    setSharePreparing(elements);
+    return;
+  }
+
+  setShareLoading(elements);
+
+  try {
+    const share = await createPdfShare(pdfId);
+    setShareReady(elements, share);
+  } catch (error) {
+    console.error('PDF share error:', error);
+    setShareError(elements);
   }
 }
 
@@ -173,6 +211,64 @@ function setDownloadDisabled(link) {
   link.setAttribute('aria-disabled', 'true');
   link.setAttribute('tabindex', '-1');
   link.classList.add('is-disabled');
+}
+
+function setSharePreparing(elements) {
+  if (!hasShareElements(elements)) return;
+  elements.panel.classList.remove('is-ready', 'is-error');
+  elements.panel.classList.add('is-loading');
+  elements.status.textContent = 'Preparing transfer link...';
+  elements.qr.innerHTML = '';
+  elements.warning.hidden = true;
+  elements.warning.textContent = '';
+}
+
+function setShareLoading(elements) {
+  setSharePreparing(elements);
+}
+
+function setShareReady(elements, share) {
+  if (!hasShareElements(elements)) return;
+  const svg = String(share?.qr_svg || '').trim();
+  if (!svg.includes('<svg')) {
+    setShareError(elements);
+    return;
+  }
+
+  elements.panel.classList.remove('is-loading', 'is-error');
+  elements.panel.classList.add('is-ready');
+  elements.status.textContent = 'Scan with your phone';
+  elements.qr.innerHTML = `
+    <div class="send-phone-qr-box">${svg}</div>
+    <span class="send-phone-expiry">Expires in ${Number(share.expires_in_minutes || 60)} minutes</span>
+  `;
+
+  const shareUrl = String(share?.share_url || '');
+  if (isLocalhostUrl(shareUrl)) {
+    elements.warning.hidden = false;
+    elements.warning.textContent = 'Phone sharing requires the Raspberry Pi LAN/hotspot IP.';
+  } else {
+    elements.warning.hidden = true;
+    elements.warning.textContent = '';
+  }
+}
+
+function setShareError(elements) {
+  if (!hasShareElements(elements)) return;
+  elements.panel.classList.remove('is-loading', 'is-ready');
+  elements.panel.classList.add('is-error');
+  elements.status.textContent = 'Transfer unavailable. Use Download PDF.';
+  elements.qr.innerHTML = '';
+  elements.warning.hidden = true;
+  elements.warning.textContent = '';
+}
+
+function isLocalhostUrl(value) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?\//i.test(value);
+}
+
+function hasShareElements(elements) {
+  return Boolean(elements?.panel && elements.status && elements.qr && elements.warning);
 }
 
 function getPdfDownloadUrl(url) {

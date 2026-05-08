@@ -65,12 +65,8 @@ async function askPathfinder(input) {
   return post('/ask', payload);
 }
 
-async function getPdfCache(pdfId) {
-  return get(`/api/pdf-cache/${pdfId}.pdf`);
-}
-
 async function createPdfShare(pdfId) {
-  return post(`/api/pdf-cache/${pdfId}/share`);
+  return post(`/api/pdf/${encodeURIComponent(pdfId)}/share`, {});
 }
 
 async function finishSession(payload = {}) {
@@ -91,14 +87,4 @@ async function requestPdfGeneration(payload) {
   }
 }
 
-// Placeholder for share link creation
-async function createShareLink(pdfId) {
-  try {
-    return post(`/api/share/${pdfId}`);
-  } catch (error) {
-    console.error('Share link creation failed:', error);
-    throw new Error('Share link generation requires backend support');
-  }
-}
-
-export { get, post, put, del, askChatbot, askPathfinder, getPdfCache, createPdfShare, finishSession, getHealth, requestPdfGeneration, createShareLink };
+export { get, post, put, del, askChatbot, askPathfinder, createPdfShare, finishSession, getHealth, requestPdfGeneration };

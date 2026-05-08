@@ -392,7 +392,7 @@
 - Removed old home bento cards, stats strip, placeholder badges, and emoji carousel placeholders from the active home layout
 - Kept the home page frontend-only, vanilla JS, plain CSS, and local assets only
 
-**Phase 13C.2: Original Pathfinder Public Pages Visual Parity**
+**Phase 13C.1b: Original Pathfinder Public Pages Visual Parity**
 - Inspected the original Pathfinder Home, About, Creators, Contact, and navbar source from `https://github.com/bikemaster2331/pathfinder.git`
 - Rebuilt the public-page navbar to more closely match the original: icon-only Pathfinder mark at left, centered Creators / What we do / Contact links, circular theme button, and compact white Start CTA on the home page
 - Replaced the Lite home implementation with a closer original structure: dark hero, original copy, local badge image, compressed original destination carousel assets, guide showcase, prism media grid, open-source section, and footer
@@ -402,6 +402,19 @@
 - Ported Contact page structure from the original: editorial hero, Email/GitHub/Facebook channel rows, quick-copy email box, and footer
 - Imported original local visual resources into `public/images/original/` as compressed WebP files instead of shipping the original multi-megabyte PNGs
 - Kept the implementation vanilla JS, plain CSS, local assets only, and did not modify itinerary, map, backend routing, chatbot, or PDF behavior
+
+**Phase 13C.2: Lightweight Backend-Generated QR PDF Sharing**
+- Added `qrcode>=7.4,<8` to backend requirements for backend-generated SVG QR output
+- Added `backend/app/pdf_share.py` with in-memory 60-minute share sessions, short safe share IDs, expired-share cleanup, SVG QR generation, mobile share page rendering, and PDF share invalidation
+- Added `POST /api/pdf/{pdf_id}/share` to validate a generated PDF, create or reuse a share ID, build a QR share URL, and return `share_id`, `share_url`, `pdf_url`, `qr_svg`, and `expires_in_minutes`
+- Added `GET /s/{share_id}` to serve a lightweight mobile landing page with an Open PDF button and same-Wi-Fi/hotspot reminder
+- Added `GET /api/pdf-share/{share_id}.pdf` to serve shared PDFs inline without exposing raw `pdf_id` in the URL
+- Added `PATHFINDER_SHARE_BASE_URL` support so Raspberry Pi deployments can emit LAN/hotspot QR URLs such as `http://192.168.1.50:8000`; fallback remains `request.base_url` for development
+- Updated `POST /api/session/finish` and `DELETE /api/pdf/{pdf_id}` to invalidate active QR share sessions for the PDF
+- Replaced stale frontend share helpers pointing at `/api/pdf-cache` and `/api/share` with `createPdfShare(pdfId)` calling `POST /api/pdf/{pdf_id}/share`
+- Restored the Last page Send to Phone panel under the fixed export controls with states for preparing, QR ready, localhost/LAN warning, and transfer unavailable
+- The frontend only injects backend-generated SVG into a dedicated QR container; no frontend QR package, canvas renderer, PNG dependency, or online service was added
+- Expanded `backend/tools/pdf_smoke.py` to verify share creation, QR SVG output, mobile landing page, shared PDF endpoint, and share invalidation after Finish & Home cleanup
 
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
@@ -438,18 +451,25 @@
 - Chatbot connects to backend `/ask` endpoint
 - Chat persists in sessionStorage
 - Final page reads export payload from localStorage
+- Final page can generate a backend SVG QR code for Send to Phone once a PDF is ready
+- QR share links open a lightweight mobile page and serve the generated PDF from the local backend
 - Trip summary displays correctly
 - Empty state appears when no itinerary exists
 
 **Backend-Dependent Features:**
 - PDF generation (backend PDF generation with fpdf2, frontend download button)
-- QR code generation (placeholder, requires backend)
-- Share link creation (placeholder API function ready)
+- QR code generation and phone PDF sharing (backend qrcode SVG output and in-memory share sessions)
+- Share link creation through local backend `/api/pdf/{pdf_id}/share`
 
 ## Current Dependency State
 
 **Production Dependencies:**
 - `leaflet` (^1.9.4) - offline interactive map rendering
+
+**Backend Dependencies:**
+- `fastapi` / `uvicorn` - local API service
+- `fpdf2` - backend PDF generation
+- `qrcode` - backend SVG QR generation
 
 **Dev Dependencies:**
 - `vite` (^8.0.10) - Build tool
@@ -459,16 +479,16 @@
 
 ## Current Bundle Size
 
-Latest build (Phase 13C.2):
+Latest build (Phase 13C.2 QR Sharing):
 - HTML: 0.56 kB
-- Main CSS: 100.55 kB
-- Main JS: 102.63 kB
+- Main CSS: 97.41 kB
+- Main JS: 102.83 kB
 - Leaflet async JS chunk: 149.47 kB
-- Last page CSS chunk: 5.60 kB
-- Last page JS chunk: 11.16 kB
-- Lazy public route CSS chunks: 6.60 kB total
+- Last page CSS chunk: 6.71 kB
+- Last page JS chunk: 13.34 kB
+- Lazy public route CSS chunks: 7.01 kB total
 - Lazy public route JS chunks: 9.24 kB total
-- Full built JS/CSS assets: ~385.25 kB
+- Full built JS/CSS assets: ~386.01 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
