@@ -22,7 +22,7 @@ from .map_link import (
     build_map_link_url,
     cleanup_expired_map_links,
     get_map_link,
-    get_share_base_url as get_map_link_base_url,
+    get_map_link_base_url,
     invalidate_pdf_map_links,
 )
 from .dialogue_state import dialogue_store

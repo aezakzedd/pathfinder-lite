@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import html
+import os
 import secrets
 
 
@@ -22,6 +23,18 @@ class MapLink:
 
 _map_links: dict[str, MapLink] = {}
 _pdf_to_map_links: dict[str, list[str]] = {}
+
+
+def get_map_link_base_url(request) -> str:
+    """Return public base URL for map launcher links.
+
+    PATHFINDER_SHARE_BASE_URL should be set to the Raspberry Pi LAN/hotspot IP
+    in kiosk mode. request.base_url is a useful dev fallback, but localhost
+    links will not open from a phone.
+    """
+    configured = os.getenv("PATHFINDER_SHARE_BASE_URL", "").strip()
+    base_url = configured or str(request.base_url)
+    return base_url.rstrip("/")
 
 
 def create_map_link(pdf_id: str, google_maps_url: str) -> str:
