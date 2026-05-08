@@ -7,12 +7,6 @@ const EXPORT_PAYLOAD_KEY = 'pathfinder-lite-export-payload';
 const PDF_ID_KEY = 'pathfinder-lite-pdf-id';
 const CHAT_MESSAGES_KEY = 'pathfinder-lite-chat-messages';
 
-function resolveBackendUrl(value) {
-  if (!value) return '';
-  if (/^https?:\/\//i.test(value)) return value;
-  return apiUrl(value);
-}
-
 export function renderLast(container) {
   const { exportPayload, savedPdfId } = loadExportState();
   const hasItinerary = Boolean(exportPayload && Number(exportPayload.totalStops) > 0);
@@ -107,7 +101,6 @@ export function renderLast(container) {
       }
     });
   } else if (pdfReady) {
-    loadPreviewImages(currentPdfId, pdfPreviewContainer);
     createShareForPdf(currentPdfId, shareElements);
   } else {
     setSharePreparing(shareElements);
@@ -128,8 +121,7 @@ async function generatePdfForPreview(exportPayload, elements) {
     setPdfId(pdfId);
 
     setDownloadReady(pdfDownloadLink, getPdfDownloadUrl(previewUrl), pdfId);
-    pdfPreviewContainer.innerHTML = renderPdfPreview(pdfId);
-    await loadPreviewImages(pdfId, pdfPreviewContainer);
+    pdfPreviewContainer.innerHTML = renderPdfPreview(previewUrl);
     await createShareForPdf(pdfId, shareElements);
   } catch (error) {
     console.error('PDF generation error:', error);
@@ -281,10 +273,6 @@ function getPdfPreviewUrl(pdfId) {
   return apiUrl(`/api/pdf/${pdfId}.pdf`);
 }
 
-function getPdfPreviewMetadataUrl(pdfId) {
-  return apiUrl(`/api/pdf/${pdfId}/preview`);
-}
-
 function getPdfIframeUrl(pdfUrl) {
   return `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
 }
@@ -294,13 +282,14 @@ function getPdfDownloadUrl(url) {
   return `${url}${separator}download=1`;
 }
 
-function renderPdfPreview(pdfId) {
+function renderPdfPreview(pdfUrl) {
+  const iframeUrl = getPdfIframeUrl(pdfUrl);
   return `
-    <div class="pdf-preview-pages" id="pdf-preview-pages" role="img" aria-label="PDF preview pages">
-      <div class="pdf-preview-loading" role="status" aria-live="polite">
-        <span>Loading preview...</span>
-      </div>
-    </div>
+    <iframe
+      src="${iframeUrl}"
+      class="pdf-preview-frame"
+      title="Pathfinder itinerary PDF preview"
+    ></iframe>
   `;
 }
 
@@ -326,9 +315,6 @@ function renderPreviewUnavailable() {
       ${iconDocument()}
       <h2>Preview unavailable</h2>
       <p>Preview unavailable on this browser. Use Download PDF.</p>
-      <a href="#" id="fallback-pdf-iframe" class="last-control-btn last-finish-btn">
-        <span>Open PDF Preview</span>
-      </a>
     </div>
   `;
 }
@@ -353,90 +339,4 @@ function iconDocument() {
       <path d="M14 3v5h5M9.5 13h5M9.5 16h5M9.5 10h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
     </svg>
   `;
-}
-
-async function loadPreviewImages(pdfId, container) {
-  if (!pdfId || !container) return;
-
-  try {
-    const previewUrl = getPdfPreviewMetadataUrl(pdfId);
-    const response = await fetch(previewUrl);
-
-    if (!response.ok) {
-      container.innerHTML = renderPreviewUnavailable();
-      attachFallbackHandler(pdfId, container);
-      return;
-    }
-
-    const previewData = await response.json();
-    renderPreviewPages(previewData, container);
-  } catch (error) {
-    console.error('Preview loading error:', error);
-    container.innerHTML = renderPreviewUnavailable();
-    attachFallbackHandler(pdfId, container);
-  }
-}
-
-function renderPreviewPages(previewData, container) {
-  const pages = previewData.pages || [];
-  if (pages.length === 0) {
-    container.innerHTML = renderPreviewUnavailable();
-    return;
-  }
-
-  const pagesHtml = pages.map((page) => {
-    const pageImage = resolveBackendUrl(page.image_url || '');
-    const pageWidth = page.width || 794;
-    const pageHeight = page.height || 1123;
-    const links = page.links || [];
-
-    const overlaysHtml = links.map((link) => {
-      const href = resolveBackendUrl(link.href || '#');
-      const target = link.target || '_blank';
-      const x = (link.x || 0) * 100;
-      const y = (link.y || 0) * 100;
-      const w = (link.w || 0) * 100;
-      const h = (link.h || 0) * 100;
-      const label = link.label || 'Open map';
-
-      return `
-        <a
-          class="pdf-preview-hotspot map-hotspot"
-          href="${href}"
-          target="${target}"
-          rel="noopener noreferrer"
-          style="left:${x}%;top:${y}%;width:${w}%;height:${h}%;"
-          aria-label="${label}"
-          title="${label}"
-        ></a>
-      `;
-    }).join('');
-
-    return `
-      <article class="pdf-preview-image-page" style="--page-w:${pageWidth}px;--page-h:${pageHeight}px;">
-        <img class="pdf-preview-page-image" src="${pageImage}" alt="PDF page ${page.page}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTQiIGhlaWdodD0iNTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTcgM2g3bDUgNXYxM0g3VjNaIiBzdHJva2U9IiM0NzU2NjkiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiAvPjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IDEwaDJNOS41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IDEwaDJNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IDEzaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IDEwaDJNNy41IEhaXN0b3J5PjxwYXRoIGQ9Ik0xNCAzdjVoNU0xMC41IDEzaDVNOS41IDEwaDJNOS41IDEzaDVNNy41IEhaXN0b3J5Pjwvc3ZnPg=='; console.error('Preview image failed to load:', '${page.image_url}');">
-        ${overlaysHtml}
-      </article>
-    `;
-  }).join('');
-
-  container.innerHTML = `<div class="pdf-preview-pages-inner">${pagesHtml}</div>`;
-}
-
-function attachFallbackHandler(pdfId, container) {
-  const fallbackLink = container.querySelector('#fallback-pdf-iframe');
-  if (fallbackLink) {
-    fallbackLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      const pdfUrl = getPdfPreviewUrl(pdfId);
-      const iframeUrl = getPdfIframeUrl(pdfUrl);
-      container.innerHTML = `
-        <iframe
-          src="${iframeUrl}"
-          class="pdf-preview-frame"
-          title="Pathfinder itinerary PDF preview"
-        ></iframe>
-      `;
-    });
-  }
 }

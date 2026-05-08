@@ -3,4 +3,3 @@ uvicorn>=0.32,<1
 fpdf2>=2.7.0
 qrcode>=7.4,<8
 Pillow>=10,<12
-pypdfium2>=4,<5

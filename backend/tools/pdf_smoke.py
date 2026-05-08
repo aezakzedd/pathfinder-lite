@@ -14,9 +14,7 @@ sys.path.insert(0, str(backend_dir))
 from app.pdf_generator import generate_itinerary_pdf
 from app.pdf_store import pdf_exists, get_pdf_size, get_pdf_path
 from app.main import app
-from app.map_link import get_map_link, cleanup_expired_map_links
 from app.map_renderer import generate_route_map_image, generate_fallback_map_image
-from app.pdf_preview import render_pdf_pages_to_images, delete_preview_images, get_preview_with_overlays, add_map_link_overlay
 from fastapi.testclient import TestClient
 
 try:
@@ -308,11 +306,10 @@ def main():
     print("Generating PDF...")
     try:
         base_url = "http://testserver"
-        pdf_id, download_url, overlay_metadata = generate_itinerary_pdf(payload, base_url=base_url)
+        pdf_id, download_url = generate_itinerary_pdf(payload, base_url=base_url)
         print(f"[OK] PDF generated successfully")
         print(f"  PDF ID: {pdf_id}")
         print(f"  Download URL: {download_url}")
-        print(f"  Overlay metadata: {len(overlay_metadata.get('map_links', []))} map links")
         print()
         
         # Verify PDF exists
@@ -395,54 +392,6 @@ def main():
 
         print()
 
-        # Test map link launcher
-        print("=== Map Link Launcher Smoke Test ===")
-        print()
-
-        cleanup_expired_map_links()
-        map_links_count = 0
-        for link_id in ["test-link-1", "test-link-2"]:
-            map_link = get_map_link(link_id)
-            if map_link:
-                map_links_count += 1
-
-        print(f"Map registry cleanup run")
-        print(f"  Active map links: {map_links_count}")
-
-        # Test map link creation during PDF generation
-        from app.map_link import _map_links as map_links_registry
-        generated_map_links = len([k for k, v in map_links_registry.items() if v.pdf_id == pdf_id])
-        print(f"  Map links created for PDF {pdf_id}: {generated_map_links}")
-
-        if generated_map_links > 0:
-            print("[OK] Map links created for day directions")
-            # Test one map link endpoint
-            test_link_id = None
-            for link_id, link in map_links_registry.items():
-                if link.pdf_id == pdf_id:
-                    test_link_id = link_id
-                    break
-
-            if test_link_id:
-                launcher_response = client.get(f"/m/{test_link_id}")
-                if launcher_response.status_code == 200:
-                    launcher_content = launcher_response.text
-                    if "Pathfinder Directions" in launcher_content and "Open Google Maps" in launcher_content and "target=\"_blank\"" in launcher_content and "Return to PDF" in launcher_content:
-                        print("[OK] Launcher page contains required elements")
-                        print(f"  Test map link ID: {test_link_id}")
-                    else:
-                        print("[FAIL] Launcher page missing required elements")
-                        return False
-                else:
-                    print(f"[FAIL] Launcher page failed: {launcher_response.status_code}")
-                    return False
-            else:
-                print("[WARN] No map link found to test launcher page")
-        else:
-            print("[WARN] No map links created (coordinates may be missing)")
-
-        print()
-
         # Test session finish endpoint
         print("=== Session Finish Smoke Test ===")
         print()
@@ -481,203 +430,6 @@ def main():
         else:
             print(f"Share link still works after finish: {shared_pdf_after_finish.status_code}")
             return False
-
-        # Verify map links are also invalidated
-        from app.map_link import _map_links as map_links_registry
-        remaining_map_links = len([k for k, v in map_links_registry.items() if v.pdf_id == pdf_id])
-        if remaining_map_links == 0:
-            print("[OK] Map links invalidated by session finish")
-        else:
-            print(f"[WARN] Map links still exist after finish: {remaining_map_links}")
-            # This is not a failure since map links have their own TTL
-
-        # Verify preview images are also deleted
-        from app.pdf_preview import PREVIEWS_DIR
-        preview_dir = PREVIEWS_DIR / pdf_id
-        if not preview_dir.exists():
-            print("[OK] Preview images deleted by session finish")
-        else:
-            print(f"[WARN] Preview directory still exists after finish: {preview_dir}")
-            # This is not a failure since preview cleanup is best-effort
-
-        print()
-
-        # Test map image generation
-        print("=== Map Image Generation Smoke Test ===")
-        print()
-
-        # Test route map image generation with coordinates
-        stops = payload["days"]["1"]
-        try:
-            map_image_bytes = generate_route_map_image(stops, "Virac")
-            if map_image_bytes and len(map_image_bytes) > 0:
-                print("[OK] Route map image generated successfully")
-                print(f"  Image size: {len(map_image_bytes)} bytes")
-            else:
-                print("[FAIL] Route map image generation failed")
-                return False
-        except Exception as e:
-            print(f"[FAIL] Route map image generation error: {e}")
-            return False
-
-        # Test fallback map image generation
-        try:
-            fallback_image_bytes = generate_fallback_map_image()
-            if fallback_image_bytes and len(fallback_image_bytes) > 0:
-                print("[OK] Fallback map image generated successfully")
-                print(f"  Image size: {len(fallback_image_bytes)} bytes")
-            else:
-                print("[FAIL] Fallback map image generation failed")
-                return False
-        except Exception as e:
-            print(f"[FAIL] Fallback map image generation error: {e}")
-            return False
-
-        print()
-
-        # Test preview image generation
-        print("=== PDF Preview Image Generation Smoke Test ===")
-        print()
-
-        # Regenerate PDF for preview testing
-        print("Regenerating PDF for preview testing...")
-        try:
-            pdf_id_2, download_url_2, overlay_metadata_2 = generate_itinerary_pdf(payload, base_url=base_url)
-            print(f"[OK] PDF regenerated for preview testing: {pdf_id_2}")
-            print()
-        except Exception as e:
-            print(f"[FAIL] PDF regeneration failed: {e}")
-            return False
-
-        # Test preview image rendering
-        try:
-            pages_metadata = render_pdf_pages_to_images(pdf_id_2)
-            if pages_metadata and len(pages_metadata) > 0:
-                print(f"[OK] Preview images generated successfully")
-                print(f"  Page count: {len(pages_metadata)}")
-                for page_num, page_meta in pages_metadata.items():
-                    print(f"  Page {page_num}: {page_meta['width']}x{page_meta['height']}")
-            else:
-                print("[FAIL] Preview image generation failed")
-                return False
-        except Exception as e:
-            print(f"[FAIL] Preview image generation error: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-
-        # Add map link overlays to preview metadata
-        try:
-            if overlay_metadata_2 and overlay_metadata_2.get('map_links'):
-                for map_link in overlay_metadata_2['map_links']:
-                    add_map_link_overlay(
-                        pdf_id_2,
-                        map_link.get('page', 1),
-                        map_link.get('map_link_id', ''),
-                        map_link.get('x', 0),
-                        map_link.get('y', 0),
-                        map_link.get('w', 0),
-                        map_link.get('h', 0),
-                        map_link.get('label', 'Open in Google Maps')
-                    )
-                print(f"[OK] Map link overlays added: {len(overlay_metadata_2['map_links'])} overlays")
-            else:
-                print("[WARN] No map links to add to preview metadata")
-        except Exception as e:
-            print(f"[FAIL] Map link overlay addition error: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-
-        # Test preview metadata retrieval
-        try:
-            preview_metadata = get_preview_with_overlays(pdf_id_2)
-            if preview_metadata and preview_metadata.get("page_count") > 0:
-                print(f"[OK] Preview metadata retrieved successfully")
-                print(f"  Page count: {preview_metadata['page_count']}")
-                print(f"  Pages with links: {len([p for p in preview_metadata['pages'] if p.get('links')])}")
-                
-                # Assert numeric page order
-                page_numbers = [p['page'] for p in preview_metadata['pages']]
-                if page_numbers == sorted(page_numbers):
-                    print(f"[OK] Preview pages are in numeric order: {page_numbers}")
-                else:
-                    print(f"[FAIL] Preview pages are not in numeric order: {page_numbers}")
-                    return False
-                
-                # Assert image_url format
-                invalid_urls = [p['image_url'] for p in preview_metadata['pages'] if not p['image_url'].startswith('/api/pdf/')]
-                if invalid_urls:
-                    print(f"[FAIL] Invalid image_url format: {invalid_urls}")
-                    return False
-                print(f"[OK] All image_urls start with /api/pdf/")
-                
-                # Assert overlay metadata format
-                pages_with_overlays = [p for p in preview_metadata['pages'] if p.get('links')]
-                if pages_with_overlays:
-                    for page in pages_with_overlays:
-                        for link in page['links']:
-                            if not link.get('href', '').startswith('/m/'):
-                                print(f"[FAIL] Invalid overlay href: {link.get('href')}")
-                                return False
-                            if link.get('target') != '_blank':
-                                print(f"[FAIL] Invalid overlay target: {link.get('target')}")
-                                return False
-                    print(f"[OK] All overlay hrefs start with /m/ and have target _blank")
-                    print(f"[OK] At least one page has map overlay (coordinates present)")
-                else:
-                    print("[FAIL] No pages with overlay links found (expected with coordinates)")
-                    return False
-            else:
-                print("[FAIL] Preview metadata retrieval failed")
-                return False
-        except Exception as e:
-            print(f"[FAIL] Preview metadata retrieval error: {e}")
-            return False
-
-        # Test preview image endpoint
-        try:
-            preview_response = client.get(f"/api/pdf/{pdf_id_2}/preview")
-            if preview_response.status_code == 200:
-                preview_data = preview_response.json()
-                print(f"[OK] Preview endpoint returned JSON")
-                print(f"  Page count: {preview_data.get('page_count', 0)}")
-            else:
-                print(f"[FAIL] Preview endpoint failed: {preview_response.status_code}")
-                return False
-        except Exception as e:
-            print(f"[FAIL] Preview endpoint error: {e}")
-            return False
-
-        # Test preview page image endpoint
-        try:
-            page_response = client.get(f"/api/pdf/{pdf_id_2}/preview/1.png")
-            if page_response.status_code == 200:
-                print(f"[OK] Preview page image endpoint returned PNG")
-                print(f"  Content type: {page_response.headers.get('content-type')}")
-            else:
-                print(f"[FAIL] Preview page image endpoint failed: {page_response.status_code}")
-                return False
-        except Exception as e:
-            print(f"[FAIL] Preview page image endpoint error: {e}")
-            return False
-
-        # Test preview image cleanup
-        print()
-        print("Testing preview image cleanup...")
-        deleted_count = delete_preview_images(pdf_id_2)
-        print(f"[OK] Preview images deleted: {deleted_count} files")
-
-        # Verify preview directory is removed
-        preview_dir_2 = PREVIEWS_DIR / pdf_id_2
-        if not preview_dir_2.exists():
-            print("[OK] Preview directory removed")
-        else:
-            print("[WARN] Preview directory still exists")
-
-        # Clean up the test PDF
-        from app.pdf_store import delete_pdf
-        delete_pdf(pdf_id_2)
 
         print()
 

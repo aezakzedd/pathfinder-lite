@@ -732,8 +732,23 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
 - Remove online tile dependency
 
 **Phase 13: Backend PDF Generation Integration**
-- Connect placeholder PDF download to backend endpoint
-- Test PDF generation flow
+- Phase 13A: Connect placeholder PDF download to backend endpoint ✓
+- Phase 13B: Test PDF generation flow ✓
+- Phase 13C: Add QR/Share link integration ✓
+- Phase 13D: Add session finish endpoint ✓
+- Phase 13E: Backend-rendered PDF page preview (abandoned)
+- Phase 13F.1: Restore actual PDF iframe preview and bake direct Google Maps links into PDF ✓
+  - Reverted Last page preview from backend-rendered PNG images to actual PDF iframe
+  - Removed all image preview logic from src/pages/last.js
+  - Removed backend-rendered page preview CSS from src/styles/last.css
+  - Updated PDF generator to bake direct Google Maps directions links into PDF using fpdf2's link() annotation
+  - Map image areas in PDF now have clickable Google Maps links baked in
+  - Removed unused backend preview endpoints (/api/pdf/{pdf_id}/preview, /api/pdf/{pdf_id}/preview/{page}.png)
+  - Removed unused map_link launcher (/m/{map_link_id})
+  - Removed pypdfium2 dependency from requirements.txt
+  - Updated smoke test to remove preview image tests
+  - Updated backend/README.md to document new PDF generation approach
+  - All tests passing: pip install, smoke test, compileall, npm build
 
 **Phase 14: QR/Share Link Integration**
 - Connect placeholder QR to backend share endpoint

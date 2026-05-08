@@ -16,16 +16,6 @@ from .pdf_share import (
     get_share_base_url,
     invalidate_pdf_share,
 )
-from .map_link import (
-    build_launcher_error_page,
-    build_launcher_page,
-    build_map_link_url,
-    cleanup_expired_map_links,
-    get_map_link,
-    get_map_link_base_url,
-    invalidate_pdf_map_links,
-)
-from .pdf_preview import delete_preview_images, get_page_image_path, get_preview_with_overlays
 from .dialogue_state import dialogue_store
 
 
@@ -101,30 +91,7 @@ def ask(request: AskRequest):
 def generate_pdf(request: PdfGenerateRequest, http_request: Request):
     try:
         payload = request.model_dump() if hasattr(request, "model_dump") else request.dict()
-        base_url = get_map_link_base_url(http_request)
-        pdf_id, download_url, overlay_metadata = generate_itinerary_pdf(payload, base_url=base_url)
-
-        # Generate preview images
-        from .pdf_preview import render_pdf_pages_to_images, add_map_link_overlay
-        try:
-            render_pdf_pages_to_images(pdf_id)
-            # Add map link overlays from overlay_metadata
-            for map_link in overlay_metadata.get("map_links", []):
-                add_map_link_overlay(
-                    pdf_id,
-                    map_link["page"],
-                    map_link["href"].split("/")[-1],
-                    map_link["x"],
-                    map_link["y"],
-                    map_link["w"],
-                    map_link["h"],
-                    map_link["label"],
-                )
-        except Exception as preview_error:
-            import traceback
-            traceback.print_exc()
-            # Preview generation failure should not block PDF generation
-            print(f"Warning: Preview generation failed: {preview_error}")
+        pdf_id, download_url = generate_itinerary_pdf(payload, base_url="")
 
         return {
             "pdf_id": pdf_id,
@@ -193,8 +160,6 @@ def delete_pdf_endpoint(pdf_id: str):
     deleted = delete_pdf(pdf_id)
     if deleted:
         invalidate_pdf_share(pdf_id)
-        invalidate_pdf_map_links(pdf_id)
-        delete_preview_images(pdf_id)
         return {"message": "PDF deleted successfully"}
     else:
         raise HTTPException(status_code=500, detail="Failed to delete PDF")
@@ -212,20 +177,6 @@ def mobile_share_page(share_id: str, request: Request):
 
     base_url = get_share_base_url(request)
     return HTMLResponse(content=build_mobile_share_page(share_id, base_url))
-
-
-@app.get("/m/{map_link_id}", response_class=HTMLResponse)
-def map_launcher_page(map_link_id: str, request: Request):
-    cleanup_expired_map_links()
-    map_link = get_map_link(map_link_id)
-    if not map_link or not pdf_exists(map_link.pdf_id):
-        return HTMLResponse(
-            content=build_launcher_error_page("This directions link is expired or no longer available."),
-            status_code=404,
-        )
-
-    base_url = get_map_link_base_url(request)
-    return HTMLResponse(content=build_launcher_page(map_link, base_url))
 
 
 @app.get("/api/pdf-share/{share_id}.pdf")
@@ -254,8 +205,6 @@ def finish_session(request: SessionFinishRequest):
     # Delete PDF if provided
     if request.pdf_id:
         invalidate_pdf_share(request.pdf_id)
-        invalidate_pdf_map_links(request.pdf_id)
-        delete_preview_images(request.pdf_id)
         if pdf_exists(request.pdf_id):
             deleted = delete_pdf(request.pdf_id)
             deleted_pdf = deleted
