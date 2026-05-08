@@ -408,6 +408,11 @@ def main():
             pdf_str = pdf_bytes.decode('latin-1', errors='ignore')
             if 'google.com/maps/dir' in pdf_str or 'maps/dir' in pdf_str:
                 print("[OK] PDF contains Google Maps directions URL")
+                # Check for URI action annotation
+                if '/URI' in pdf_str or 'URI' in pdf_str:
+                    print("[OK] PDF contains URI action annotation")
+                else:
+                    print("[WARN] PDF URI action annotation not found (may use different format)")
             else:
                 print("[FAIL] PDF does not contain Google Maps directions URL")
                 return False

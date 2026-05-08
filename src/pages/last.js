@@ -289,6 +289,8 @@ function renderPdfPreview(pdfUrl) {
       src="${iframeUrl}"
       class="pdf-preview-frame"
       title="Pathfinder itinerary PDF preview"
+      allow="popups; popups-to-escape-sandbox"
+      referrerpolicy="no-referrer-when-downgrade"
     ></iframe>
   `;
 }

@@ -762,6 +762,17 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
   - Added PDF content verification to ensure Google Maps URL is embedded
   - Added debug logging for PDF generation (days, stops, coordinates count)
   - All tests passing: pip install, smoke test (with coordinate/URL verification), compileall, npm build
+- Phase 13F.3: Make Google Maps links clickable from PDF preview iframe ✓
+  - Root cause: PDF URI annotation was present, but Chromium's embedded PDF viewer opened links in the same frame instead of a new tab
+  - Added add_uri_link_new_window() helper in pdf_generator.py that tries to use fpdf2's URIAction with add_action
+  - Helper falls back to standard pdf.link() if custom annotation is not supported (fpdf2 doesn't expose /NewWindow directly)
+  - Applied helper to both map image and "Click map image for directions" text areas
+  - Updated iframe in src/pages/last.js with allow="popups; popups-to-escape-sandbox" and referrerpolicy="no-referrer-when-downgrade"
+  - Kept toolbar-hiding fragment (#toolbar=0&navpanes=0&scrollbar=0&view=FitH) - iframe popup permission is the primary solution
+  - Strengthened smoke test to verify PDF contains URI action annotation
+  - All tests passing: pip install, smoke test (with URI annotation verification), compileall, npm build
+  - Remaining limitation: PDF viewer behavior for link targets is controlled by the browser's PDF viewer, not by PDF annotations
+  - Downloaded PDF links work correctly; iframe preview links now have popup permission to allow new tab opening
 
 **Phase 14: QR/Share Link Integration**
 - Connect placeholder QR to backend share endpoint

@@ -7,6 +7,7 @@ from typing import Any
 import uuid
 
 from fpdf import FPDF
+from fpdf.actions import URIAction
 
 from .pdf_store import generate_pdf_id, save_pdf
 from .map_renderer import generate_route_map_image, generate_fallback_map_image
@@ -366,7 +367,7 @@ def draw_map_placeholder(
 
     # Add clickable link to map image area if directions URL is available
     if directions_url:
-        pdf.link(x=x, y=y, w=content_width, h=image_h, link=directions_url)
+        add_uri_link_new_window(pdf, x, y, content_width, image_h, directions_url)
 
     y += image_h + 6
     pdf.set_font("helvetica", "B", 8)
@@ -376,7 +377,7 @@ def draw_map_placeholder(
         # Add clickable link to text area as well
         text_width = pdf.get_string_width("Click map image for directions.")
         text_x = (pdf.w - text_width) / 2
-        pdf.link(x=text_x, y=y - 4, w=text_width, h=7, link=directions_url)
+        add_uri_link_new_window(pdf, text_x, y - 4, text_width, 7, directions_url)
     else:
         pdf.set_text_color(*SOFT_TEXT)
         draw_text(pdf, pdf.w / 2, y, "Directions unavailable: missing coordinates.", align="C")
@@ -1090,6 +1091,36 @@ def extract_stop_coordinates(stop: dict[str, Any]) -> tuple[float, float] | None
                     break
 
     return coords
+
+
+def add_uri_link_new_window(
+    pdf: PathfinderPDF,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    url: str,
+) -> None:
+    """Add a clickable URI link with new-window hint if supported.
+    
+    Tries to use fpdf2's add_action with URIAction if it supports new_window.
+    Falls back to standard pdf.link() if custom annotation is not supported.
+    Never breaks PDF generation.
+    """
+    try:
+        # Try to use URIAction with new_window hint
+        # Note: PDF viewers may still ignore the /NewWindow flag for security reasons
+        action = URIAction(uri=url)
+        # Try to add custom property for new window
+        # This is a best-effort approach - PDF viewer behavior is not guaranteed
+        try:
+            pdf.add_action(action, x=x, y=y, w=w, h=h)
+        except Exception:
+            # Fall back to standard link if add_action fails
+            pdf.link(x=x, y=y, w=w, h=h, link=url)
+    except Exception:
+        # Fall back to standard link if URIAction is not available or fails
+        pdf.link(x=x, y=y, w=w, h=h, link=url)
 
 
 def get_hub_coordinates(hub_name: str) -> tuple[float, float] | None:

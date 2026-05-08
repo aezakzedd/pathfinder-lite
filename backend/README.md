@@ -423,8 +423,10 @@ Pathfinder Lite generates expedition-style PDFs with route maps, schedule detail
 - Automatic reversal detection and correction for reversed coordinates
 - Google Maps URLs use correct LAT,LNG order (required by Google Maps API)
 - Debug logging shows days, stops, and coordinates count during PDF generation
-- This provides a direct, reliable way to open directions from the PDF itself
-- Note: PDF viewer behavior for link targets (new tab vs same tab) is controlled by the browser's PDF viewer, not by PDF annotations
+- PDF preview iframe uses allow="popups; popups-to-escape-sandbox" to enable new tab opening
+- Helper function attempts to use URIAction with add_action for new-window hint, falls back to standard link
+- Note: PDF viewer behavior for link targets is controlled by the browser's PDF viewer, not by PDF annotations
+- Downloaded PDF links work correctly; iframe preview links now have popup permission to allow new tab opening
 
 ### Dependencies
 
