@@ -2,7 +2,7 @@
 import { onRouteChange, navigateTo } from './router.js';
 import { renderNavbar } from './components/navbar.js';
 import { renderThemeToggle } from './components/theme-toggle.js';
-import { renderHome } from './pages/home.js';
+import { renderHome, cleanupHome } from './pages/home.js';
 import { renderItinerary, cleanupItinerary } from './pages/itinerary.js';
 
 // Import CSS
@@ -14,7 +14,7 @@ import './styles/itinerary.css';
 import './styles/kiosk.css';
 
 const routeLoaders = {
-  home: async () => ({ render: renderHome, cleanup: null }),
+  home: async () => ({ render: renderHome, cleanup: cleanupHome }),
   itinerary: async () => ({ render: renderItinerary, cleanup: cleanupItinerary }),
   last: async () => {
     const [page] = await Promise.all([

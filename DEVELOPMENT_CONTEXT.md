@@ -392,6 +392,17 @@
 - Removed old home bento cards, stats strip, placeholder badges, and emoji carousel placeholders from the active home layout
 - Kept the home page frontend-only, vanilla JS, plain CSS, and local assets only
 
+**Phase 13C.2: Original Pathfinder Public Pages Visual Parity**
+- Inspected the original Pathfinder Home, About, Creators, Contact, and navbar source from `https://github.com/bikemaster2331/pathfinder.git`
+- Rebuilt the public-page navbar to more closely match the original: icon-only Pathfinder mark at left, centered Creators / What we do / Contact links, circular theme button, and compact white Start CTA on the home page
+- Replaced the Lite home implementation with a closer original structure: dark hero, original copy, local badge image, compressed original destination carousel assets, guide showcase, prism media grid, open-source section, and footer
+- Added a small vanilla carousel controller and IntersectionObserver scroll reveals with cleanup in `src/pages/home.js`; no Framer Motion, GSAP, canvas particle library, or other animation dependency was added
+- Ported About page copy and structure from the original: editorial hero, island-wide stats strip, What it is / How it works / Who's behind it sections, CTA row, and footer
+- Ported Creators page structure from the original: editorial intro, three creator rows with roles/tags, links, and tourism office closing note
+- Ported Contact page structure from the original: editorial hero, Email/GitHub/Facebook channel rows, quick-copy email box, and footer
+- Imported original local visual resources into `public/images/original/` as compressed WebP files instead of shipping the original multi-megabyte PNGs
+- Kept the implementation vanilla JS, plain CSS, local assets only, and did not modify itinerary, map, backend routing, chatbot, or PDF behavior
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
@@ -401,8 +412,8 @@
 ## Current Known Implementation
 
 **Working Features:**
-- Home page with full layout and animations
-- About, Contact, and Creators pages are polished with kiosk-consistent styling
+- Home page now closely follows the original Pathfinder public landing layout with lightweight carousel and scroll reveal behavior
+- About, Contact, and Creators pages now use original Pathfinder-style editorial structure and copy
 - Itinerary page with offline Leaflet Catanduanes map
 - Leaflet panning and zooming are restored
 - Non-featured markers use compact category icon circles; top-10 markers remain prominent pins
@@ -448,16 +459,16 @@
 
 ## Current Bundle Size
 
-Latest build (Phase 13C.1):
+Latest build (Phase 13C.2):
 - HTML: 0.56 kB
-- Main CSS: 94.68 kB
-- Main JS: 95.14 kB
+- Main CSS: 100.55 kB
+- Main JS: 102.63 kB
 - Leaflet async JS chunk: 149.47 kB
-- Last page CSS chunk: 4.45 kB
-- Last page JS chunk: 5.29 kB
-- Lazy route CSS chunks: 14.84 kB total
-- Lazy route JS chunks: 13.03 kB total
-- Full built JS/CSS assets: ~371.00 kB
+- Last page CSS chunk: 5.60 kB
+- Last page JS chunk: 11.16 kB
+- Lazy public route CSS chunks: 6.60 kB total
+- Lazy public route JS chunks: 9.24 kB total
+- Full built JS/CSS assets: ~385.25 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
