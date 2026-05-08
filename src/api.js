@@ -73,8 +73,8 @@ async function createPdfShare(pdfId) {
   return post(`/api/pdf-cache/${pdfId}/share`);
 }
 
-async function finishSession() {
-  return post('/api/session/finish');
+async function finishSession(payload = {}) {
+  return post('/api/session/finish', payload);
 }
 
 async function getHealth() {

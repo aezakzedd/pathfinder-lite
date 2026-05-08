@@ -1,15 +1,21 @@
 // Last/Share page module
 import { clearItinerary } from '../state/itineraryStore.js';
-import { requestPdfGeneration } from '../api.js';
+import { requestPdfGeneration, finishSession } from '../api.js';
 import { apiUrl } from '../config/apiConfig.js';
 
 export function renderLast(container) {
   // Load export payload from localStorage
   let exportPayload = null;
+  let currentPdfId = null;
   try {
     const saved = localStorage.getItem('pathfinder-lite-export-payload');
     if (saved) {
       exportPayload = JSON.parse(saved);
+    }
+    // Load current PDF ID if stored
+    const savedPdfId = localStorage.getItem('pathfinder-lite-pdf-id');
+    if (savedPdfId) {
+      currentPdfId = savedPdfId;
     }
   } catch (error) {
     console.error('Error loading export payload:', error);
@@ -76,6 +82,21 @@ export function renderLast(container) {
           </div>
           
           <div class="share-actions">
+            <div class="finish-section">
+              <h3>Finish Session</h3>
+              <p class="finish-note">Complete your trip and clear data for the next kiosk user.</p>
+              <button class="btn-secondary" id="finish-home-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Finish & Home
+              </button>
+              <div id="finish-loading" class="finish-loading" style="display: none;">
+                <span>Cleaning up...</span>
+              </div>
+              <div id="finish-error" class="finish-error" style="display: none;"></div>
+            </div>
+            
             <div class="pdf-section">
               <h3>PDF Download</h3>
               <p class="pdf-note">Generate a PDF of your itinerary to download.</p>
@@ -191,6 +212,10 @@ export function renderLast(container) {
           // Build full download URL
           const fullDownloadUrl = apiUrl(response.download_url);
 
+          // Store PDF ID for session cleanup
+          currentPdfId = response.pdf_id;
+          localStorage.setItem('pathfinder-lite-pdf-id', currentPdfId);
+
           // Show download button
           pdfLoading.style.display = 'none';
           pdfDownload.style.display = 'block';
@@ -202,6 +227,60 @@ export function renderLast(container) {
           pdfError.style.display = 'block';
           pdfError.textContent = `Failed to generate PDF: ${error.message}`;
           console.error('PDF generation error:', error);
+        }
+      });
+    }
+
+    // Setup Finish & Home handler
+    const finishHomeBtn = document.getElementById('finish-home-btn');
+    const finishLoading = document.getElementById('finish-loading');
+    const finishError = document.getElementById('finish-error');
+
+    if (finishHomeBtn) {
+      finishHomeBtn.addEventListener('click', async () => {
+        try {
+          // Show loading state
+          finishHomeBtn.disabled = true;
+          finishLoading.style.display = 'block';
+          finishError.style.display = 'none';
+
+          // Call backend to finish session
+          const sessionId = 'kiosk'; // Default kiosk session ID
+          const payload = {};
+          if (currentPdfId) {
+            payload.pdf_id = currentPdfId;
+          }
+          if (sessionId) {
+            payload.session_id = sessionId;
+          }
+
+          await finishSession(payload);
+
+          // Clear local browser state
+          clearItinerary();
+          localStorage.removeItem('pathfinder-lite-export-payload');
+          localStorage.removeItem('pathfinder-lite-pdf-id');
+          sessionStorage.removeItem('pathfinder-lite-chat-messages');
+
+          // Navigate to home
+          window.location.hash = '#/';
+        } catch (error) {
+          // If backend fails, still clear local state and go home
+          console.warn('Backend session finish failed, clearing local state:', error);
+          finishLoading.style.display = 'none';
+          finishError.style.display = 'block';
+          finishError.textContent = 'Backend cleanup failed, but local data cleared.';
+
+          // Clear local state anyway
+          clearItinerary();
+          localStorage.removeItem('pathfinder-lite-export-payload');
+          localStorage.removeItem('pathfinder-lite-pdf-id');
+          sessionStorage.removeItem('pathfinder-lite-chat-messages');
+
+          // Navigate to home after a brief delay
+          setTimeout(() => {
+            window.location.hash = '#/';
+          }, 1500);
         }
       });
     }

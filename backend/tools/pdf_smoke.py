@@ -1,6 +1,7 @@
 """
-PDF generation smoke test for Pathfinder Lite
+PDF generation and session finish smoke test for Pathfinder Lite
 Tests the PDF generator directly with a sample 2-day itinerary payload
+Tests the session finish endpoint for PDF cleanup
 """
 
 import sys
@@ -12,6 +13,8 @@ sys.path.insert(0, str(backend_dir))
 
 from app.pdf_generator import generate_itinerary_pdf
 from app.pdf_store import pdf_exists, get_pdf_size, delete_pdf
+from app.main import app
+from fastapi.testclient import TestClient
 
 
 def create_sample_payload():
@@ -80,7 +83,7 @@ def create_sample_payload():
 
 
 def main():
-    """Run PDF generation smoke test."""
+    """Run PDF generation and session finish smoke test."""
     print("=== PDF Generation Smoke Test ===")
     print()
     
@@ -115,12 +118,49 @@ def main():
         
         print()
         
-        # Cleanup
-        print("Cleaning up test PDF...")
-        if delete_pdf(pdf_id):
-            print("✓ Test PDF deleted successfully")
+        # Test session finish endpoint
+        print("=== Session Finish Smoke Test ===")
+        print()
+        
+        client = TestClient(app)
+        
+        # Call session finish with pdf_id
+        print("Calling /api/session/finish with pdf_id...")
+        response = client.post("/api/session/finish", json={"pdf_id": pdf_id, "session_id": "test-session"})
+        
+        if response.status_code == 200:
+            result = response.json()
+            print(f"✓ Session finish succeeded")
+            print(f"  Response: {result}")
+            
+            if result.get("deleted_pdf"):
+                print("✓ PDF deleted by session finish")
+            else:
+                print("⚠ PDF not deleted by session finish")
         else:
-            print("⚠ Failed to delete test PDF")
+            print(f"✗ Session finish failed: {response.status_code}")
+            return False
+        
+        print()
+        
+        # Verify PDF is deleted
+        if not pdf_exists(pdf_id):
+            print("✓ PDF file confirmed deleted from storage")
+        else:
+            print("✗ PDF file still exists in storage")
+            return False
+        
+        print()
+        
+        # Call session finish again (should not crash)
+        print("Calling /api/session/finish again (should not crash)...")
+        response = client.post("/api/session/finish", json={"pdf_id": pdf_id, "session_id": "test-session"})
+        
+        if response.status_code == 200:
+            print("✓ Session finish handles already-deleted PDF safely")
+        else:
+            print(f"✗ Session finish crashed on already-deleted PDF: {response.status_code}")
+            return False
         
         print()
         print("=== Smoke Test Passed ===")

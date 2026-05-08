@@ -282,3 +282,46 @@ Run smoke test:
 ```bash
 python -m backend.tools.pdf_smoke
 ```
+
+## Session Finish Endpoint
+
+`POST /api/session/finish`
+
+Clean up kiosk session data after a tourist finishes their trip:
+
+```json
+{
+  "pdf_id": "f0ccc287-dbb6-4111-995f-12e4a49f325e",
+  "session_id": "kiosk"
+}
+```
+
+Both fields are optional. The endpoint will:
+
+- Delete the generated PDF if `pdf_id` is provided
+- Clear chatbot dialogue memory for the session if `session_id` is provided
+- Return status of cleanup operations
+
+Returns:
+
+```json
+{
+  "ok": true,
+  "deleted_pdf": true,
+  "cleared_session": true
+}
+```
+
+The endpoint is safe if:
+- `pdf_id` is missing
+- PDF is already deleted
+- `pdf_id` is invalid
+- `session_id` is not found in dialogue store
+
+The endpoint does NOT delete:
+- Route cache
+- Chatbot data files
+- Tourism/GeoJSON data
+- Application files
+
+This ensures the next kiosk user starts with a clean session without affecting shared resources.

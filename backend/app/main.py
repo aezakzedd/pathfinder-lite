@@ -7,6 +7,7 @@ from .chatbot import answer_question
 from .routing import build_route_response
 from .pdf_generator import generate_itinerary_pdf
 from .pdf_store import load_pdf, delete_pdf, pdf_exists
+from .dialogue_state import dialogue_store
 
 
 class RouteRequest(BaseModel):
@@ -28,6 +29,11 @@ class PdfGenerateRequest(BaseModel):
     timeWallet: dict | None = None
     setup: dict | None = None
     routeSource: str | None = None
+
+
+class SessionFinishRequest(BaseModel):
+    pdf_id: str | None = None
+    session_id: str | None = None
 
 
 app = FastAPI(title="Pathfinder Lite Local API", version="0.1.0")
@@ -111,3 +117,32 @@ def delete_pdf_endpoint(pdf_id: str):
         return {"message": "PDF deleted successfully"}
     else:
         raise HTTPException(status_code=500, detail="Failed to delete PDF")
+
+
+@app.post("/api/session/finish")
+def finish_session(request: SessionFinishRequest):
+    deleted_pdf = False
+    cleared_session = False
+    
+    # Delete PDF if provided
+    if request.pdf_id:
+        if pdf_exists(request.pdf_id):
+            deleted = delete_pdf(request.pdf_id)
+            deleted_pdf = deleted
+    
+    # Clear dialogue session if provided
+    if request.session_id:
+        try:
+            # Remove the session from dialogue store
+            if request.session_id in dialogue_store.sessions:
+                del dialogue_store.sessions[request.session_id]
+                cleared_session = True
+        except Exception:
+            # If session clearing fails, continue without error
+            pass
+    
+    return {
+        "ok": True,
+        "deleted_pdf": deleted_pdf,
+        "cleared_session": cleared_session
+    }

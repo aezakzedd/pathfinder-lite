@@ -292,6 +292,28 @@
 - Frontend remains a renderer only; PDF generation is entirely backend-side
 - Kept vanilla JS, Vite, plain CSS, and Leaflet stack without adding React, Tailwind, MapLibre, or frontend PDF libraries
 
+**Phase 13B.2: Finish & Home Cleanup and PDF Session Cleanup**
+- Added POST /api/session/finish endpoint to backend/app/main.py
+- Endpoint accepts optional pdf_id and session_id payload
+- Deletes generated PDF if pdf_id is provided using existing pdf_store logic
+- Clears chatbot dialogue memory for session if session_id is provided
+- Returns {ok: true, deleted_pdf: true/false, cleared_session: true/false}
+- Endpoint is safe if pdf_id is missing, already deleted, or invalid
+- Does not delete route cache, chatbot data, tourism data, or app files
+- Updated src/api.js finishSession(payload) to accept optional payload
+- Updated src/pages/last.js with Finish & Home button
+- Finish & Home button calls POST /api/session/finish with pdf_id and session_id
+- Clears localStorage/sessionStorage keys: itinerary state, export payload, chat messages, pdf_id
+- Navigates back to home after cleanup
+- Shows cleanup/loading state while finishing
+- If backend cleanup fails, still clears local browser state and goes home with readable warning
+- Stores pdf_id in localStorage when PDF is generated for session cleanup
+- Updated backend/tools/pdf_smoke.py to test session finish endpoint
+- Smoke test passed: PDF generated, session finish deleted PDF, repeated call handled safely
+- Ran python -m compileall backend and npm run build successfully
+- Updated backend/README.md with /api/session/finish documentation
+- Ensures next kiosk user starts with clean session without affecting shared resources
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
