@@ -338,6 +338,28 @@
 - PDF remains backend-only using fpdf2, no frontend PDF libraries added
 - Kept vanilla JS, Vite, plain CSS, and Leaflet stack
 
+**Phase 13B.3: Last Page Export UI and Control Visibility Polish**
+- Redesigned Last page layout into a proper kiosk export screen
+- Added fixed/sticky export toolbar that remains visible while PDF is displayed
+- Export toolbar includes: Back to Itinerary, PDF status indicator, Generate PDF/Download PDF, Send to Phone (disabled with "Coming next"), Finish & Home
+- Made buttons larger and readable for kiosk use (min-height 56px, min-width 180px)
+- Added clear PDF state messages: Generating PDF (yellow), PDF Ready (green), Error (red)
+- PDF preview area is scrollable independently with iframe
+- Added preview fallback message: "Preview unavailable on this browser. Use Download PDF."
+- Controls not hidden behind PDF iframe with z-index 1000 on toolbar, z-index 2000 on loading/error overlays
+- Send to Phone button disabled with "Coming next" badge since not yet implemented
+- Layout works at kiosk viewport sizes: 1920x1080 (larger buttons), 1366x768 (stacked layout), smaller screens (responsive)
+- PDF recovery from localStorage after refresh shows correct toolbar state (PDF Ready if PDF exists)
+- Back to Itinerary returns to itinerary page without clearing current itinerary
+- Finish & Home clears session/local state and returns home
+- Download PDF remains immediately visible after PDF generation
+- Updated src/pages/last.js with new export toolbar layout and PDF preview
+- Updated src/styles/last.css with fixed toolbar, large buttons, responsive design
+- Smoke test passed: PDF ID 08b9cba4-9dfe-4b2b-8ee1-139cd1dcfee3, file size 5131 bytes
+- Ran python -m compileall backend and npm run build successfully
+- Kept vanilla JS, Vite, plain CSS, and Leaflet stack
+- Visual style consistent with dark Pathfinder UI
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
