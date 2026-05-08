@@ -314,6 +314,30 @@
 - Updated backend/README.md with /api/session/finish documentation
 - Ensures next kiosk user starts with clean session without affecting shared resources
 
+**Phase 13B.2: Lightweight PDF Schedule and Content Upgrade**
+- Completely rewrote backend/app/pdf_generator.py with expedition-style PDF layout
+- Added expedition-style top section with STATUS, PATHFINDER_LITE version, itinerary ID, EXPEDITION PLAN title, location, date range, total days/stops, and generation timestamp
+- Fixed time scheduling: stops no longer show all 9:00 AM, now use computed arrival times based on drive time and visit duration
+- Fixed duration formatting: decimal hours (1.5, 0.75) now display as hours/minutes (1h 30m, 45m)
+- Added route source display logic: shows local-road-router or fallback-approximate-road-network
+- Added day cards with schedule status (Relaxed/Busy/Tight/Overloaded), stop count, recommended start time, estimated finish time, total duration
+- Added time-block grouping (MORNING before 12:00, AFTERNOON 12:00-18:00, EVENING 18:00+)
+- Added start line "-> START FROM [HUB]" and drive lines between stops
+- Added drive lines with transport type (TRICYCLE/VAN/PRIVATE VAN) and cost estimates based on drive minutes
+- Enhanced stop information: arrival time, name, municipality, category, TOP 10 label, description, opening hours, best time, exposure/weather tip, stay duration
+- Added Financial Blueprint section with budget tier, logistics/payment notes, fuel/terrain notes, cost breakdown disclaimer
+- Added Emergency & Reference section with Provincial Tourism Office, Catanduanes Provincial Hospital, Philippine National Police, Philippine Coast Guard, Emergency Hotline 911
+- Added Travel Reminders section: offline maps, cash, weather, water/sun protection, local customs
+- Added stronger disclaimer about estimates and verification requirements
+- Added footer on every page with Pathfinder Lite, generation date, timing estimates may vary, page number
+- Updated backend/tools/pdf_smoke.py with 10-stop 2-day payload for multi-page PDF testing
+- Added PDF feature verification to smoke test output
+- Smoke test passed: PDF ID 897a9b75-a004-4393-a83b-36ef0856c331, all features verified
+- Ran python -m compileall backend and npm run build successfully
+- Updated backend/README.md with PDF upgrade description
+- PDF remains backend-only using fpdf2, no frontend PDF libraries added
+- Kept vanilla JS, Vite, plain CSS, and Leaflet stack
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract

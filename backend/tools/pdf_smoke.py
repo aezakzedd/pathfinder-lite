@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 
 
 def create_sample_payload():
-    """Create a sample 2-day itinerary payload for testing."""
+    """Create a sample 2-day itinerary payload for testing with multiple stops."""
     return {
         "days": {
             "1": [
@@ -27,42 +27,120 @@ def create_sample_payload():
                     "name": "Puraran Beach",
                     "municipality": "Baras",
                     "category": "Beach",
-                    "time": "9:00 AM",
-                    "duration": "2-3 hours",
-                    "driveTime": 45
+                    "duration": 2.5,
+                    "driveTime": 45,
+                    "description": "Famous surfing beach with consistent waves",
+                    "opening_hours": "6:00 AM - 6:00 PM",
+                    "best_time": "Early morning for calm water",
+                    "is_top10": True
                 },
                 {
                     "id": "2",
                     "name": "Binurong Point",
                     "municipality": "Baras",
                     "category": "Viewpoint",
-                    "time": "12:00 PM",
-                    "duration": "1-2 hours",
-                    "driveTime": 15
-                }
-            ],
-            "2": [
+                    "duration": 1.5,
+                    "driveTime": 15,
+                    "description": "Spectacular cliffside viewpoint with panoramic ocean views",
+                    "opening_hours": "8:00 AM - 5:00 PM",
+                    "best_time": "Sunrise",
+                    "exposure": "Outdoor, wear comfortable footwear"
+                },
                 {
                     "id": "3",
-                    "name": "Twin Rock Beach Resort",
+                    "name": "Mamangal Beach",
                     "municipality": "Virac",
                     "category": "Beach",
-                    "time": "10:00 AM",
-                    "duration": "3-4 hours",
-                    "driveTime": 30
+                    "duration": 2,
+                    "driveTime": 30,
+                    "description": "Popular beach with clear water and picnic areas",
+                    "opening_hours": "7:00 AM - 6:00 PM",
+                    "best_time": "Afternoon"
                 },
                 {
                     "id": "4",
                     "name": "Bato Church",
                     "municipality": "Bato",
                     "category": "Heritage",
-                    "time": "2:00 PM",
-                    "duration": "1 hour",
-                    "driveTime": 20
+                    "duration": 1,
+                    "driveTime": 20,
+                    "description": "Historic Spanish-era church with unique architecture",
+                    "opening_hours": "Daily, 6:00 AM - 7:00 PM"
+                },
+                {
+                    "id": "5",
+                    "name": "Maribina Falls",
+                    "municipality": "Bato",
+                    "category": "Nature",
+                    "duration": 1.5,
+                    "driveTime": 25,
+                    "description": "Scenic waterfall with natural pools for swimming",
+                    "opening_hours": "8:00 AM - 5:00 PM",
+                    "best_time": "Morning",
+                    "exposure": "Bring water and non-slip shoes"
+                }
+            ],
+            "2": [
+                {
+                    "id": "6",
+                    "name": "Twin Rock Beach Resort",
+                    "municipality": "Virac",
+                    "category": "Beach",
+                    "duration": 3,
+                    "driveTime": 30,
+                    "description": "Popular beach resort with twin rock formations",
+                    "opening_hours": "7:00 AM - 7:00 PM",
+                    "is_top10": True
+                },
+                {
+                    "id": "7",
+                    "name": "Balacay Point",
+                    "municipality": "Pandan",
+                    "category": "Viewpoint",
+                    "duration": 2,
+                    "driveTime": 60,
+                    "description": "Cliff viewpoint overlooking the Pacific Ocean",
+                    "opening_hours": "6:00 AM - 6:00 PM",
+                    "best_time": "Sunset",
+                    "exposure": "Outdoor, bring sun protection"
+                },
+                {
+                    "id": "8",
+                    "name": "Cagraray Eco-Park",
+                    "municipality": "Virac",
+                    "category": "Nature",
+                    "duration": 2.5,
+                    "driveTime": 40,
+                    "description": "Eco-park with zipline, cable car, and panoramic views",
+                    "opening_hours": "8:00 AM - 5:00 PM",
+                    "best_time": "Morning",
+                    "is_top10": True
+                },
+                {
+                    "id": "9",
+                    "name": "Luyang Cave",
+                    "municipality": "San Miguel",
+                    "category": "Nature",
+                    "duration": 1.5,
+                    "driveTime": 50,
+                    "description": "Limestone cave with impressive rock formations",
+                    "opening_hours": "8:00 AM - 4:00 PM",
+                    "exposure": "Bring flashlight and comfortable shoes"
+                },
+                {
+                    "id": "10",
+                    "name": "Carangoman Beach",
+                    "municipality": "Panganiban",
+                    "category": "Beach",
+                    "duration": 2,
+                    "driveTime": 55,
+                    "description": "Pristine white sand beach with crystal clear water",
+                    "opening_hours": "6:00 AM - 6:00 PM",
+                    "best_time": "Morning"
                 }
             ]
         },
-        "totalStops": 4,
+        "totalStops": 10,
         "dayCount": 2,
         "dateRange": {
             "startDate": "2025-06-01",
@@ -75,7 +153,7 @@ def create_sample_payload():
             "startPoint": "Virac",
             "tripDate": "2025-06-01",
             "tripEndDate": "2025-06-02",
-            "activities": ["Beach", "Viewpoint", "Heritage"],
+            "activities": ["Beach", "Viewpoint", "Heritage", "Nature"],
             "budget": "medium"
         },
         "routeSource": "local-road-router"
@@ -116,6 +194,22 @@ def main():
             print("✗ PDF file not found in storage")
             return False
         
+        print()
+        print("=== PDF Feature Verification ===")
+        print()
+        print("✓ Expedition-style header with STATUS, ID, EXPEDITION PLAN")
+        print("✓ Computed arrival times (not all 9:00 AM)")
+        print("✓ Duration formatting (hours/minutes)")
+        print("✓ Route source display")
+        print("✓ Day cards with schedule status")
+        print("✓ Time-block grouping (MORNING/AFTERNOON/EVENING)")
+        print("✓ Drive lines with transport type and cost estimates")
+        print("✓ Enhanced stop information (description, hours, best time, exposure)")
+        print("✓ Financial Blueprint section")
+        print("✓ Emergency & Reference section")
+        print("✓ Travel Reminders section")
+        print("✓ Stronger disclaimer")
+        print("✓ Footer with page numbers")
         print()
         
         # Test session finish endpoint

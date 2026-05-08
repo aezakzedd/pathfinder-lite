@@ -277,6 +277,26 @@ Delete a generated PDF from storage:
 
 Generated PDFs are stored in `backend/data/generated_pdfs/`. This directory is gitignored. The PDF generator uses fpdf2 for lightweight backend PDF generation without increasing the frontend bundle.
 
+#### PDF Content
+
+The PDF includes an expedition-style layout with:
+
+- **Expedition Header**: STATUS, PATHFINDER_LITE version, itinerary ID, EXPEDITION PLAN title, location (CATANDUANES, PH // HUB), date range, total days/stops, and generation timestamp
+- **Day-by-Day Itinerary**: Each day shows:
+  - Day number with schedule status (Relaxed/Busy/Tight/Overloaded)
+  - Stop count, recommended start time, estimated finish time, total duration
+  - Time-block grouping (MORNING/AFTERNOON/EVENING)
+  - Start line from hub
+  - Drive lines with transport type (TRICYCLE/VAN/PRIVATE VAN) and cost estimates
+  - Stop details: arrival time, name, municipality, category, TOP 10 label (if applicable), description, opening hours, best time, exposure/weather tip, stay duration
+- **Financial Blueprint**: Budget tier, logistics/payment notes, fuel/terrain notes, cost breakdown disclaimer
+- **Emergency & Reference**: Provincial Tourism Office, Catanduanes Provincial Hospital, Philippine National Police, Philippine Coast Guard, Emergency Hotline 911
+- **Travel Reminders**: Offline maps, cash, weather, water/sun protection, local customs
+- **Disclaimer**: Strong disclaimer about estimates and verification requirements
+- **Footer**: Pathfinder Lite, generation date, timing estimates may vary, page number
+
+The PDF uses computed arrival times based on drive time and visit duration, with fallback estimates for missing route data. Durations are formatted as hours/minutes (e.g., 1.5h becomes 1h 30m).
+
 Run smoke test:
 
 ```bash

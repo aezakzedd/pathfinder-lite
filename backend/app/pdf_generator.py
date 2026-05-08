@@ -1,9 +1,10 @@
 # PDF generation for Pathfinder Lite itineraries
 # Uses fpdf2 for lightweight backend PDF generation
 
-from datetime import datetime
+from datetime import datetime, time as dt_time
 from fpdf import FPDF
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
+import uuid
 
 from .pdf_store import generate_pdf_id, save_pdf
 
@@ -23,7 +24,16 @@ def calculate_day_status(total_minutes: int, day_capacity_hours: int = 8) -> str
         return "Relaxed"
 
 
-def format_duration(minutes: int) -> str:
+def format_duration_hours(hours: float) -> str:
+    """Format hours to hours and minutes (1.5 -> 1h 30m)."""
+    if hours <= 0:
+        return "0m"
+    
+    total_minutes = int(hours * 60)
+    return format_duration_minutes(total_minutes)
+
+
+def format_duration_minutes(minutes: int) -> str:
     """Format minutes to hours and minutes."""
     if minutes < 60:
         return f"{minutes}m"
@@ -34,12 +44,52 @@ def format_duration(minutes: int) -> str:
     return f"{hours}h {mins}m"
 
 
+def format_time_from_minutes(minutes_from_midnight: int) -> str:
+    """Convert minutes from midnight to HH:MM format."""
+    hours = (minutes_from_midnight // 60) % 24
+    mins = minutes_from_midnight % 60
+    return f"{hours:02d}:{mins:02d}"
+
+
+def get_time_block(hour: int) -> str:
+    """Get time block name (MORNING, AFTERNOON, EVENING)."""
+    if hour < 12:
+        return "MORNING"
+    elif hour < 18:
+        return "AFTERNOON"
+    else:
+        return "EVENING"
+
+
+def get_drive_cost_estimate(drive_minutes: int) -> str:
+    """Get cost estimate based on drive time."""
+    if drive_minutes <= 15:
+        return "~P30-50"
+    elif drive_minutes <= 30:
+        return "~P50-150"
+    elif drive_minutes <= 60:
+        return "~P100-300"
+    else:
+        return "~P150-500"
+
+
+def get_drive_transport_type(drive_minutes: int) -> str:
+    """Get transport type based on drive time."""
+    if drive_minutes <= 20:
+        return "TRICYCLE"
+    elif drive_minutes <= 45:
+        return "VAN / TRICYCLE"
+    else:
+        return "PRIVATE VAN RECOMMENDED"
+
+
 def generate_itinerary_pdf(payload: Dict[str, Any]) -> tuple[str, str]:
     """
     Generate PDF from itinerary payload.
     Returns (pdf_id, download_url).
     """
     pdf_id = generate_pdf_id()
+    itinerary_id = str(uuid.uuid4())[:8].upper()
     
     # Extract itinerary data with safe defaults
     days = payload.get("days", {})
@@ -49,156 +99,265 @@ def generate_itinerary_pdf(payload: Dict[str, Any]) -> tuple[str, str]:
     time_wallet = payload.get("timeWallet", {})
     setup = payload.get("setup", {})
     
-    start_point = setup.get("startPoint", "Not specified") or "Not specified"
-    start_date = date_range.get("startDate", "") or ""
-    end_date = date_range.get("endDate", "") or ""
-    route_source = payload.get("routeSource", "Not specified") or "Not specified"
+    start_point = (setup.get("startPoint") or "Virac").upper()
+    start_date = date_range.get("startDate") or ""
+    end_date = date_range.get("endDate") or ""
+    route_source = payload.get("routeSource") or "Route source not available"
+    budget = setup.get("budget") or "Not specified"
     
     # Create PDF
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     
     # Set font (use built-in Arial/Helvetica)
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Arial", "", 9)
     
-    # Title
-    pdf.cell(0, 10, "Pathfinder Catanduanes Itinerary", ln=True, align="C")
-    pdf.ln(5)
+    page_width = pdf.w - 30  # Account for margins
+    left_margin = 15
     
-    # Timestamp
-    pdf.set_font("Arial", "", 10)
-    pdf.cell(0, 8, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align="C")
-    pdf.ln(10)
+    # === EXPEDITION HEADER ===
+    pdf.set_font("Arial", "B", 10)
+    pdf.set_fill_color(240, 240, 240)
+    pdf.rect(left_margin, 10, page_width, 35, "F")
+    pdf.set_fill_color(255, 255, 255)
     
-    # Trip summary section
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Trip Summary", ln=True)
-    pdf.set_font("Arial", "", 10)
+    pdf.set_xy(left_margin, 12)
+    pdf.cell(page_width, 5, f"STATUS: Finalized", ln=True)
     
-    pdf.cell(60, 8, "Start Hub:", border=0)
-    pdf.cell(0, 8, start_point, ln=True)
+    pdf.set_font("Arial", "", 8)
+    pdf.set_xy(left_margin, 17)
+    pdf.cell(page_width, 5, f"PATHFINDER_LITE v1.0 // ID: {itinerary_id}", ln=True)
     
+    pdf.set_font("Arial", "B", 14)
+    pdf.set_xy(left_margin, 22)
+    pdf.cell(page_width, 8, "EXPEDITION PLAN", ln=True)
+    
+    pdf.set_font("Arial", "B", 11)
+    pdf.set_xy(left_margin, 30)
+    pdf.cell(page_width, 6, f"CATANDUANES, PH // HUB: {start_point}", ln=True)
+    
+    pdf.set_font("Arial", "", 9)
     if start_date and end_date:
-        pdf.cell(60, 8, "Date Range:", border=0)
-        pdf.cell(0, 8, f"{start_date} to {end_date}", ln=True)
+        pdf.set_xy(left_margin, 36)
+        pdf.cell(page_width, 5, f"{start_date} to {end_date} // {day_count} DAYS // {total_stops} STOPS", ln=True)
     
-    pdf.cell(60, 8, "Duration:", border=0)
-    pdf.cell(0, 8, f"{day_count} day(s)", ln=True)
+    pdf.set_xy(left_margin, 41)
+    pdf.cell(page_width, 5, f"Generated by Pathfinder Lite // {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True)
     
-    pdf.cell(60, 8, "Total Stops:", border=0)
-    pdf.cell(0, 8, str(total_stops), ln=True)
-    
-    pdf.cell(60, 8, "Route Source:", border=0)
-    pdf.cell(0, 8, route_source, ln=True)
-    
-    pdf.ln(10)
-    
-    # Day-by-day itinerary
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Day-by-Day Itinerary", ln=True)
     pdf.ln(5)
     
-    # Sort days numerically
+    # === DAY-BY-DAY ITINERARY ===
     sorted_days = sorted(days.keys(), key=lambda x: int(x) if x.isdigit() else 0)
     
-    for day_key in sorted_days:
+    for day_idx, day_key in enumerate(sorted_days):
         stops = days.get(day_key, [])
         day_num = int(day_key) if day_key.isdigit() else day_key
         
-        pdf.set_font("Arial", "B", 11)
-        pdf.cell(0, 8, f"Day {day_num}", ln=True)
-        
         if not stops:
-            pdf.set_font("Arial", "", 10)
-            pdf.cell(0, 6, "  No stops planned", ln=True)
-            pdf.ln(3)
             continue
         
-        # Calculate day statistics
+        # Calculate day statistics and schedule
         total_visit_minutes = 0
         total_drive_minutes = 0
+        day_start_minutes = 8 * 60  # 8:00 AM default start
+        current_time_minutes = day_start_minutes
         
+        # Compute schedule
+        scheduled_stops = []
         for stop in stops:
+            # Get visit duration
             duration = stop.get("duration", 0)
+            visit_minutes = 0
             if isinstance(duration, (int, float)):
-                total_visit_minutes += int(duration * 60)  # Convert hours to minutes
+                visit_minutes = int(duration * 60)
             elif isinstance(duration, str):
-                # Try to parse string duration
-                if "h" in duration:
-                    parts = duration.replace("h", " ").split()
+                # Parse string like "2-3 hours" or "1.5h"
+                if "h" in duration.lower():
+                    parts = duration.lower().replace("h", " ").split()
                     for part in parts:
                         try:
-                            total_visit_minutes += int(float(part)) * 60
+                            visit_minutes += int(float(part)) * 60
                         except ValueError:
                             pass
+            # Check for visit_time_minutes
+            visit_time_mins = stop.get("visit_time_minutes")
+            if isinstance(visit_time_mins, (int, float)):
+                visit_minutes = int(visit_time_mins)
             
-            # Check for drive time in stop or route summary
+            # Get drive time
             drive_time = stop.get("driveTime") or stop.get("drive_time") or stop.get("travel_time")
+            drive_minutes = 0
             if isinstance(drive_time, (int, float)):
-                total_drive_minutes += int(drive_time)
+                drive_minutes = int(drive_time)
             elif isinstance(drive_time, str):
-                # Try to parse string drive time
-                if "h" in drive_time or "m" in drive_time:
-                    parts = drive_time.replace("h", " ").replace("m", " ").split()
+                if "h" in drive_time.lower() or "m" in drive_time.lower():
+                    parts = drive_time.lower().replace("h", " ").replace("m", " ").split()
                     for part in parts:
                         try:
                             val = int(float(part))
-                            if "h" in drive_time and drive_time.index("h") < drive_time.index(part) if "h" in drive_time else False:
-                                total_drive_minutes += val * 60
+                            if "h" in drive_time.lower():
+                                drive_minutes += val * 60
                             else:
-                                total_drive_minutes += val
+                                drive_minutes += val
                         except ValueError:
                             pass
+            
+            # Fallback drive time estimate if missing
+            if drive_minutes == 0 and len(scheduled_stops) > 0:
+                drive_minutes = 20  # Conservative estimate
+            
+            # Compute arrival time
+            arrival_time_minutes = current_time_minutes + drive_minutes
+            
+            scheduled_stops.append({
+                "stop": stop,
+                "arrival_minutes": arrival_time_minutes,
+                "visit_minutes": visit_minutes,
+                "drive_minutes": drive_minutes
+            })
+            
+            total_visit_minutes += visit_minutes
+            total_drive_minutes += drive_minutes
+            current_time_minutes = arrival_time_minutes + visit_minutes
         
         total_minutes = total_visit_minutes + total_drive_minutes
         day_status = calculate_day_status(total_minutes)
+        end_time_minutes = current_time_minutes
         
-        # Day status
-        pdf.set_font("Arial", "", 10)
-        pdf.cell(0, 6, f"  Status: {day_status}", ln=True)
-        if total_drive_minutes > 0:
-            pdf.cell(0, 6, f"  Drive Time: {format_duration(total_drive_minutes)}", ln=True)
-        pdf.cell(0, 6, f"  Visit Time: {format_duration(total_visit_minutes)}", ln=True)
+        # Day card header
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 8, f"DAY {day_num}", ln=True)
+        
+        pdf.set_font("Arial", "", 9)
+        pdf.cell(0, 5, f"Status: {day_status} // {len(stops)} stops // {format_time_from_minutes(day_start_minutes)} start", ln=True)
+        pdf.cell(0, 5, f"Estimated finish: {format_time_from_minutes(end_time_minutes)} // Total: {format_duration_minutes(total_minutes)}", ln=True)
         pdf.ln(3)
         
-        # Stop list
-        pdf.set_font("Arial", "", 10)
-        for idx, stop in enumerate(stops, 1):
-            name = stop.get("name", "Unknown")
-            municipality = stop.get("municipality") or stop.get("city") or ""
-            category = stop.get("category") or ""
-            time = stop.get("time", "")
-            duration = stop.get("duration", "")
-            
-            # Format stop line
-            stop_line = f"  {idx}. {name}"
-            if municipality:
-                stop_line += f" ({municipality})"
-            if category:
-                stop_line += f" - {category}"
-            
-            pdf.cell(0, 6, stop_line, ln=True)
-            
-            # Time and duration
-            if time or duration:
-                details = []
-                if time:
-                    details.append(f"Time: {time}")
-                if duration:
-                    details.append(f"Duration: {duration}")
-                if details:
-                    pdf.cell(0, 5, f"     {', '.join(details)}", ln=True)
-            
-            pdf.ln(1)
+        # Group by time blocks
+        time_blocks = {"MORNING": [], "AFTERNOON": [], "EVENING": []}
+        for scheduled in scheduled_stops:
+            hour = scheduled["arrival_minutes"] // 60
+            block = get_time_block(hour)
+            time_blocks[block].append(scheduled)
         
-        pdf.ln(5)
+        # Render time blocks
+        for block_name in ["MORNING", "AFTERNOON", "EVENING"]:
+            block_stops = time_blocks[block_name]
+            if not block_stops:
+                continue
+            
+            pdf.set_font("Arial", "B", 10)
+            pdf.cell(0, 6, f"{block_name}", ln=True)
+            pdf.set_font("Arial", "", 8)
+            
+            # Add start line if first stop
+            if block_stops:
+                pdf.set_font("Arial", "", 8)
+                pdf.cell(0, 5, f"-> START FROM {start_point}", ln=True)
+            
+            for scheduled in block_stops:
+                stop = scheduled["stop"]
+                arrival = scheduled["arrival_minutes"]
+                visit_mins = scheduled["visit_minutes"]
+                drive_mins = scheduled["drive_minutes"]
+                
+                # Drive line
+                if drive_mins > 0:
+                    transport = get_drive_transport_type(drive_mins)
+                    cost = get_drive_cost_estimate(drive_mins)
+                    pdf.cell(0, 5, f"-> {drive_mins} MIN DRIVE // {transport} ({cost})", ln=True)
+                
+                # Stop details
+                name = stop.get("name", "Unknown")
+                municipality = stop.get("municipality") or stop.get("city") or ""
+                category = stop.get("category") or ""
+                is_top10 = stop.get("is_top10", False) or stop.get("top10", False)
+                description = stop.get("description") or stop.get("desc") or ""
+                opening_hours = stop.get("opening_hours") or stop.get("hours") or ""
+                best_time = stop.get("best_time") or ""
+                exposure = stop.get("exposure") or stop.get("weather_tip") or ""
+                
+                pdf.set_font("Arial", "B", 9)
+                arrival_str = format_time_from_minutes(arrival)
+                stop_line = f"{arrival_str} {name}"
+                if is_top10:
+                    stop_line += " [TOP 10]"
+                pdf.cell(0, 5, stop_line, ln=True)
+                
+                pdf.set_font("Arial", "", 8)
+                if municipality:
+                    pdf.cell(0, 4, f"   {municipality} // {category}", ln=True)
+                
+                if description:
+                    pdf.multi_cell(0, 4, f"   {description}")
+                
+                if opening_hours:
+                    pdf.cell(0, 4, f"   Hours: {opening_hours}", ln=True)
+                
+                if best_time:
+                    pdf.cell(0, 4, f"   Best time: {best_time}", ln=True)
+                
+                if exposure:
+                    pdf.cell(0, 4, f"   Note: {exposure}", ln=True)
+                
+                duration_str = format_duration_minutes(visit_mins)
+                pdf.cell(0, 4, f"   Stay: {duration_str}", ln=True)
+                pdf.ln(2)
+        
+        pdf.ln(3)
     
-    # Footer disclaimer
-    pdf.set_y(-30)
+    # === FINANCIAL BLUEPRINT ===
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(0, 8, "FINANCIAL BLUEPRINT", ln=True)
+    pdf.set_font("Arial", "", 9)
+    
+    pdf.cell(0, 5, f"Budget Tier: {budget}", ln=True)
+    pdf.ln(2)
+    
     pdf.set_font("Arial", "", 8)
-    pdf.multi_cell(0, 5, 
-        "Disclaimer: Travel times, costs, operating hours, and availability shown are estimates and should be verified locally before your trip.",
-        align="C")
+    pdf.multi_cell(0, 4, "Logistics/Payment: Most locations in Catanduanes are cash-based. Bring enough cash, especially outside Virac.")
+    pdf.ln(2)
+    pdf.multi_cell(0, 4, "Fuel/Terrain: Mountain roads and longer rural routes may increase transport cost.")
+    pdf.ln(2)
+    pdf.multi_cell(0, 4, "Cost Breakdown: Verify locally. Prices shown are estimates and may vary.")
+    pdf.ln(5)
+    
+    # === EMERGENCY & REFERENCE ===
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(0, 8, "EMERGENCY & REFERENCE", ln=True)
+    pdf.set_font("Arial", "", 8)
+    
+    pdf.cell(0, 5, "Provincial Tourism Office: Verify locally", ln=True)
+    pdf.cell(0, 5, "Catanduanes Provincial Hospital: Verify locally", ln=True)
+    pdf.cell(0, 5, "Philippine National Police: Dial 911 or local station", ln=True)
+    pdf.cell(0, 5, "Philippine Coast Guard: Verify locally", ln=True)
+    pdf.cell(0, 5, "Emergency Hotline: 911", ln=True)
+    pdf.ln(5)
+    
+    # === TRAVEL REMINDERS ===
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(0, 8, "TRAVEL REMINDERS", ln=True)
+    pdf.set_font("Arial", "", 8)
+    
+    pdf.cell(0, 5, "- Download offline maps before travel", ln=True)
+    pdf.cell(0, 5, "- Bring sufficient cash (many locations are cash-only)", ln=True)
+    pdf.cell(0, 5, "- Check weather conditions before outdoor activities", ln=True)
+    pdf.cell(0, 5, "- Bring water and sun protection for outdoor stops", ln=True)
+    pdf.cell(0, 5, "- Respect local customs and protected areas", ln=True)
+    pdf.ln(5)
+    
+    # === DISCLAIMER ===
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(0, 8, "DISCLAIMER", ln=True)
+    pdf.set_font("Arial", "", 8)
+    pdf.multi_cell(0, 4, "Itinerary details, including times, costs, routes, operating hours, and availability, are estimates and may be inaccurate or outdated. Always verify with local operators before travelling.")
+    pdf.ln(5)
+    
+    # === FOOTER ===
+    pdf.set_y(-15)
+    pdf.set_font("Arial", "", 8)
+    pdf.cell(0, 5, f"Pathfinder Lite // {datetime.now().strftime('%Y-%m-%d %H:%M')} // Timing estimates may vary // Page {pdf.page_no()}", align="C")
     
     # Save PDF
     pdf_bytes = pdf.output(dest='S')
