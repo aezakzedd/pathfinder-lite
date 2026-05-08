@@ -190,90 +190,15 @@
   box-shadow: none;
 }
 
-.pdf-page-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-
-.pdf-preview-page {
-  position: relative;
-  width: min(100%, 820px);
-  min-height: 1160px;
+.pdf-preview-frame {
+  display: block;
+  width: min(72vw, 1040px);
+  height: calc(100vh - 44px);
+  min-height: 920px;
   margin: 0 auto;
-  padding: 52px 54px 62px;
+  border: 0;
   background: #ffffff;
-  color: #000000;
   box-shadow: 0 24px 68px rgba(0, 0, 0, 0.48);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 12px;
-  line-height: 1.28;
-}
-
-.pdf-preview-content h1,
-.pdf-preview-content h2,
-.pdf-preview-content h3,
-.pdf-preview-content p {
-  margin: 0 0 7px;
-  color: #000000;
-  letter-spacing: 0;
-}
-
-.pdf-preview-content h1 {
-  font-size: 22px;
-  font-weight: 900;
-}
-
-.pdf-preview-content h2 {
-  margin-top: 18px;
-  font-size: 19px;
-  font-weight: 900;
-}
-
-.pdf-preview-content h3 {
-  margin-top: 14px;
-  font-size: 15px;
-  font-weight: 900;
-}
-
-.pdf-preview-plan-header {
-  padding: 13px 16px;
-  margin-bottom: 24px;
-  background: #eeeeee;
-}
-
-.pdf-map-placeholder {
-  height: 154px;
-  margin: 10px 0 16px;
-  border: 1px dashed #8b8b8b;
-  background: #f2f2f2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #555555;
-  font-size: 13px;
-  font-weight: 900;
-  text-align: center;
-}
-
-.pdf-map-placeholder span {
-  margin-top: 5px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.pdf-preview-footer {
-  position: absolute;
-  left: 54px;
-  right: 54px;
-  bottom: 28px;
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  color: #111111;
-  font-size: 10px;
-  font-weight: 700;
 }
 
 .pdf-document-placeholder,
@@ -419,9 +344,9 @@
     width: min(74vw, 900px);
   }
 
-  .pdf-preview-page {
-    min-height: 1040px;
-    padding: 44px 48px 58px;
+  .pdf-preview-frame {
+    width: min(74vw, 960px);
+    min-height: 820px;
   }
 }
 
@@ -449,8 +374,9 @@
     width: min(78vw, 760px);
   }
 
-  .pdf-preview-page {
-    padding: 36px 34px 56px;
+  .pdf-preview-frame {
+    width: min(78vw, 760px);
+    min-height: 760px;
   }
 }
 
@@ -470,9 +396,8 @@
     width: min(68vw, 1120px);
   }
 
-  .pdf-preview-page {
-    width: min(100%, 920px);
-    min-height: 1320px;
-    font-size: 13px;
+  .pdf-preview-frame {
+    width: min(68vw, 1100px);
+    min-height: 1180px;
   }
 }

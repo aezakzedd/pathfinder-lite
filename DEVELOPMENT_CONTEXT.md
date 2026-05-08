@@ -426,6 +426,14 @@
 - Updated `backend/tools/pdf_smoke.py` with a 2-day, 16-stop original-style sample payload and checks for generated PDF size, multi-page output, QR share creation, mobile share page, shared PDF endpoint, and share invalidation after session finish
 - Documented that map screenshots remain placeholders in this phase because Lite avoids frontend screenshot/PDF libraries and MapLibre; exact map imagery should be handled in a later backend-safe static map phase
 
+**Phase 13D.3: Last Page Real Backend PDF Preview**
+- Removed the fake HTML export preview path from `src/pages/last.js`, including the old `renderExportPreview`, preview-page builders, date/stop formatting helpers, and HTML-only PDF layout rendering
+- Last page preview now shows only the real backend PDF iframe at `/api/pdf/{pdf_id}.pdf`, a generating skeleton, an empty state, or a preview-unavailable fallback
+- Existing saved `pathfinder-lite-pdf-id` values recover immediately into the real backend PDF iframe and enable Download PDF without needing the old export payload
+- New exports show `Generating PDF preview...`, call `POST /api/pdf/generate`, save `pdf_id`, enable Download PDF with `?download=1`, render the inline PDF URL without `?download=1`, and then create the QR share session
+- Trimmed fake-preview CSS from `src/styles/last.css` and added focused `.pdf-preview-frame` styling for centered, scrollable backend PDF display while keeping the fixed export controls and QR panel above the iframe
+- Kept QR sharing, Download PDF, Back to Itinerary, Finish & Home cleanup, and localStorage/sessionStorage cleanup behavior intact without adding frontend PDF or QR libraries
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
@@ -489,16 +497,16 @@
 
 ## Current Bundle Size
 
-Latest build (Phase 13D.1 PDF Parity):
+Latest build (Phase 13D.3 Last Page Real PDF Preview):
 - HTML: 0.56 kB
 - Main CSS: 97.41 kB
 - Main JS: 102.83 kB
 - Leaflet async JS chunk: 149.47 kB
-- Last page CSS chunk: 6.71 kB
-- Last page JS chunk: 13.34 kB
+- Last page CSS chunk: 5.70 kB
+- Last page JS chunk: 7.56 kB
 - Lazy public route CSS chunks: 7.01 kB total
 - Lazy public route JS chunks: 9.24 kB total
-- Full built JS/CSS assets: ~386.01 kB
+- Full built JS/CSS assets: ~379.22 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
