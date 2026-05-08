@@ -49,10 +49,10 @@ def generate_itinerary_pdf(payload: Dict[str, Any]) -> tuple[str, str]:
     time_wallet = payload.get("timeWallet", {})
     setup = payload.get("setup", {})
     
-    start_point = setup.get("startPoint", "Not specified")
-    start_date = date_range.get("startDate", "")
-    end_date = date_range.get("endDate", "")
-    route_source = payload.get("routeSource", "Not specified")
+    start_point = setup.get("startPoint", "Not specified") or "Not specified"
+    start_date = date_range.get("startDate", "") or ""
+    end_date = date_range.get("endDate", "") or ""
+    route_source = payload.get("routeSource", "Not specified") or "Not specified"
     
     # Create PDF
     pdf = FPDF()
