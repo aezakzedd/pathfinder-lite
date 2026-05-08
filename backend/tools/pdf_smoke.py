@@ -12,151 +12,266 @@ backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 from app.pdf_generator import generate_itinerary_pdf
-from app.pdf_store import pdf_exists, get_pdf_size, delete_pdf
+from app.pdf_store import pdf_exists, get_pdf_size, get_pdf_path
 from app.main import app
 from fastapi.testclient import TestClient
 
+try:
+    from pypdf import PdfReader
+except Exception:  # pragma: no cover - optional local inspection helper
+    PdfReader = None
+
 
 def create_sample_payload():
-    """Create a sample 2-day itinerary payload for testing with multiple stops."""
+    """Create a sample payload that resembles the original Pathfinder export."""
     return {
         "days": {
             "1": [
                 {
-                    "id": "1",
-                    "name": "Puraran Beach",
-                    "municipality": "Baras",
-                    "category": "Beach",
-                    "duration": 2.5,
-                    "driveTime": 45,
-                    "description": "Famous surfing beach with consistent waves",
-                    "opening_hours": "6:00 AM - 6:00 PM",
-                    "best_time": "Early morning for calm water",
-                    "is_top10": True
-                },
-                {
-                    "id": "2",
-                    "name": "Binurong Point",
-                    "municipality": "Baras",
-                    "category": "Viewpoint",
-                    "duration": 1.5,
-                    "driveTime": 15,
-                    "description": "Spectacular cliffside viewpoint with panoramic ocean views",
-                    "opening_hours": "8:00 AM - 5:00 PM",
-                    "best_time": "Sunrise",
-                    "exposure": "Outdoor, wear comfortable footwear"
-                },
-                {
-                    "id": "3",
-                    "name": "Mamangal Beach",
+                    "id": "hinagasan-falls",
+                    "name": "Hinagasan Falls",
                     "municipality": "Virac",
-                    "category": "Beach",
-                    "duration": 2,
-                    "driveTime": 30,
-                    "description": "Popular beach with clear water and picnic areas",
-                    "opening_hours": "7:00 AM - 6:00 PM",
-                    "best_time": "Afternoon"
+                    "category": "waterfall",
+                    "description": "A quick roadside stop with cool water and shaded rock pools.",
+                    "opening_hours": "Open daylight hours",
+                    "visit_time_minutes": 30,
+                    "best_time_of_day": "morning",
+                    "outdoor_exposure": "shaded",
+                    "driveTime": 10,
+                    "min_budget": "low",
                 },
                 {
-                    "id": "4",
-                    "name": "Bato Church",
+                    "id": "diocesan-shrine-holy-cross",
+                    "name": "Diocesan Shrine of the Holy Cross",
                     "municipality": "Bato",
-                    "category": "Heritage",
-                    "duration": 1,
+                    "category": "religious",
+                    "description": "The burial site of the Augustinian Recollect Fray Diego de Herrera, marking the introduction of Christianity to the island.",
+                    "opening_hours": "06:00-18:00",
+                    "visit_time_minutes": 30,
+                    "best_time_of_day": "morning",
+                    "outdoor_exposure": "indoor",
                     "driveTime": 20,
-                    "description": "Historic Spanish-era church with unique architecture",
-                    "opening_hours": "Daily, 6:00 AM - 7:00 PM"
+                    "min_budget": "low",
                 },
                 {
-                    "id": "5",
+                    "id": "batalay-mangrove",
+                    "name": "Batalay Mangrove Eco Park",
+                    "municipality": "Bato",
+                    "category": "viewpoint",
+                    "description": "A serene network of wooden boardwalks cutting through dense mangroves.",
+                    "opening_hours": "08:00-17:00",
+                    "visit_time_minutes": 45,
+                    "best_time_of_day": "morning",
+                    "outdoor_exposure": "shaded",
+                    "driveTime": 20,
+                    "min_budget": "low",
+                },
+                {
+                    "id": "bato-church",
+                    "name": "St. John the Baptist Church",
+                    "municipality": "Bato",
+                    "category": "religious",
+                    "description": "A stunning example of colonial architecture standing guard by the river.",
+                    "opening_hours": "06:00-18:00",
+                    "visit_time_minutes": 30,
+                    "best_time_of_day": "morning",
+                    "outdoor_exposure": "indoor",
+                    "is_top_10": True,
+                    "driveTime": 20,
+                    "min_budget": "low",
+                },
+                {
+                    "id": "st-anthony-parish",
+                    "name": "St. Anthony of Padua Parish Church",
+                    "municipality": "Baras",
+                    "category": "religious",
+                    "description": "A community-centered parish serving as a quiet place for reflection.",
+                    "opening_hours": "06:00-18:00",
+                    "visit_time_minutes": 30,
+                    "best_time_of_day": "midday",
+                    "outdoor_exposure": "indoor",
+                    "driveTime": 20,
+                    "min_budget": "low",
+                },
+                {
+                    "id": "maribina-falls",
                     "name": "Maribina Falls",
                     "municipality": "Bato",
-                    "category": "Nature",
-                    "duration": 1.5,
+                    "category": "falls",
+                    "description": "The catch basin is shallow and chilling cold, making it an accessible quick dip right off the main highway.",
+                    "opening_hours": "08:00-17:00",
+                    "visit_time_minutes": 45,
+                    "best_time_of_day": "afternoon",
+                    "outdoor_exposure": "shaded",
+                    "is_top_10": True,
+                    "driveTime": 20,
+                    "min_budget": "low",
+                },
+                {
+                    "id": "virac-town-center",
+                    "name": "Virac Town Center",
+                    "municipality": "Virac",
+                    "category": "food",
+                    "description": "Useful town stop for snacks, cash, supplies, and transport coordination.",
+                    "opening_hours": "08:00-20:00",
+                    "visit_time_minutes": 60,
+                    "best_time_of_day": "afternoon",
+                    "outdoor_exposure": "indoor",
+                    "driveTime": 15,
+                    "min_budget": "medium",
+                },
+                {
+                    "id": "bote-lighthouse",
+                    "name": "Bote Lighthouse",
+                    "municipality": "Bato",
+                    "category": "viewpoint",
+                    "description": "A coastal viewpoint with open views toward the sea and nearby villages.",
+                    "opening_hours": "Open daylight hours",
+                    "visit_time_minutes": 45,
+                    "best_time_of_day": "afternoon",
+                    "outdoor_exposure": "open",
                     "driveTime": 25,
-                    "description": "Scenic waterfall with natural pools for swimming",
-                    "opening_hours": "8:00 AM - 5:00 PM",
-                    "best_time": "Morning",
-                    "exposure": "Bring water and non-slip shoes"
-                }
+                    "min_budget": "low",
+                },
+                {
+                    "id": "cagraray-island-viewpoint",
+                    "name": "Cagraray Island Viewpoint",
+                    "municipality": "Pandan",
+                    "category": "viewpoint",
+                    "description": "A high-view stop with island scenery and cooler air near the ridge roads.",
+                    "opening_hours": "Open daylight hours",
+                    "visit_time_minutes": 60,
+                    "best_time_of_day": "late afternoon",
+                    "outdoor_exposure": "open",
+                    "driveTime": 45,
+                    "min_budget": "low",
+                },
             ],
             "2": [
                 {
-                    "id": "6",
-                    "name": "Twin Rock Beach Resort",
-                    "municipality": "Virac",
-                    "category": "Beach",
-                    "duration": 3,
-                    "driveTime": 30,
-                    "description": "Popular beach resort with twin rock formations",
-                    "opening_hours": "7:00 AM - 7:00 PM",
-                    "is_top10": True
+                    "id": "ba-haw-falls",
+                    "name": "Ba-haw Falls",
+                    "municipality": "Gigmoto",
+                    "category": "falls",
+                    "description": "A top waterfall stop with a refreshing basin and short nature approach.",
+                    "opening_hours": "08:00-17:00",
+                    "visit_time_minutes": 45,
+                    "best_time_of_day": "morning",
+                    "outdoor_exposure": "shaded",
+                    "isTop10": True,
+                    "driveTime": 32,
+                    "min_budget": "low",
                 },
                 {
-                    "id": "7",
-                    "name": "Balacay Point",
-                    "municipality": "Pandan",
-                    "category": "Viewpoint",
-                    "duration": 2,
-                    "driveTime": 60,
-                    "description": "Cliff viewpoint overlooking the Pacific Ocean",
-                    "opening_hours": "6:00 AM - 6:00 PM",
-                    "best_time": "Sunset",
-                    "exposure": "Outdoor, bring sun protection"
+                    "id": "nupa-green-lagoon",
+                    "name": "Nupa Green Lagoon",
+                    "municipality": "Gigmoto",
+                    "category": "water",
+                    "description": "A quiet green lagoon suited for a scenic pause and short photo stop.",
+                    "opening_hours": "Open daylight hours",
+                    "visit_time_minutes": 45,
+                    "best_time_of_day": "morning",
+                    "outdoor_exposure": "open",
+                    "driveTime": 18,
+                    "min_budget": "low",
                 },
                 {
-                    "id": "8",
-                    "name": "Cagraray Eco-Park",
-                    "municipality": "Virac",
-                    "category": "Nature",
-                    "duration": 2.5,
-                    "driveTime": 40,
-                    "description": "Eco-park with zipline, cable car, and panoramic views",
-                    "opening_hours": "8:00 AM - 5:00 PM",
-                    "best_time": "Morning",
-                    "is_top10": True
+                    "id": "bestea-fries",
+                    "name": "Bestea X E-fren Fries",
+                    "municipality": "Viga",
+                    "category": "food",
+                    "description": "A casual food stop for snacks and drinks between coastal and interior routes.",
+                    "opening_hours": "10:00-20:00",
+                    "visit_time_minutes": 45,
+                    "best_time_of_day": "midday",
+                    "outdoor_exposure": "indoor",
+                    "driveTime": 22,
+                    "min_budget": "medium",
                 },
                 {
-                    "id": "9",
-                    "name": "Luyang Cave",
-                    "municipality": "San Miguel",
-                    "category": "Nature",
-                    "duration": 1.5,
-                    "driveTime": 50,
-                    "description": "Limestone cave with impressive rock formations",
-                    "opening_hours": "8:00 AM - 4:00 PM",
-                    "exposure": "Bring flashlight and comfortable shoes"
+                    "id": "nahulugan-falls",
+                    "name": "Nahulugan Falls",
+                    "municipality": "Gigmoto",
+                    "category": "falls",
+                    "description": "A stronger waterfall route that rewards careful planning and dry weather.",
+                    "opening_hours": "08:00-16:00",
+                    "visit_time_minutes": 60,
+                    "best_time_of_day": "afternoon",
+                    "outdoor_exposure": "open",
+                    "weather_tip": "Avoid during heavy rain.",
+                    "is_top10": True,
+                    "driveTime": 35,
+                    "min_budget": "low",
                 },
                 {
-                    "id": "10",
-                    "name": "Carangoman Beach",
-                    "municipality": "Panganiban",
-                    "category": "Beach",
-                    "duration": 2,
-                    "driveTime": 55,
-                    "description": "Pristine white sand beach with crystal clear water",
-                    "opening_hours": "6:00 AM - 6:00 PM",
-                    "best_time": "Morning"
-                }
-            ]
+                    "id": "san-pedro-calungsod",
+                    "name": "San Pedro Calungsod Parish",
+                    "municipality": "Viga",
+                    "category": "religious",
+                    "description": "A local parish stop for a quiet break before the return leg.",
+                    "opening_hours": "06:00-18:00",
+                    "visit_time_minutes": 30,
+                    "best_time_of_day": "afternoon",
+                    "outdoor_exposure": "indoor",
+                    "driveTime": 24,
+                    "min_budget": "low",
+                },
+                {
+                    "id": "mount-carmel-parish",
+                    "name": "Our Lady of Mount Carmel Parish Church",
+                    "municipality": "Viga",
+                    "category": "religious",
+                    "description": "A heritage parish stop near town services and local food options.",
+                    "opening_hours": "06:00-18:00",
+                    "visit_time_minutes": 30,
+                    "best_time_of_day": "afternoon",
+                    "outdoor_exposure": "indoor",
+                    "driveTime": 16,
+                    "min_budget": "low",
+                },
+                {
+                    "id": "banquerohan-bridge",
+                    "name": "Banquerohan Bridge",
+                    "municipality": "Viga",
+                    "category": "viewpoint",
+                    "description": "A final quick viewpoint and road landmark before closing the day.",
+                    "opening_hours": "Open daylight hours",
+                    "visit_time_minutes": 30,
+                    "best_time_of_day": "late afternoon",
+                    "outdoor_exposure": "open",
+                    "driveTime": 20,
+                    "min_budget": "low",
+                },
+            ],
         },
-        "totalStops": 10,
+        "totalStops": 16,
         "dayCount": 2,
+        "totalDistanceKm": 85.3,
         "dateRange": {
-            "startDate": "2025-06-01",
-            "endDate": "2025-06-02"
+            "startDate": "2026-05-13",
+            "endDate": "2026-05-14",
+        },
+        "dayMeta": {
+            "1": {
+                "startLabel": "Virac",
+                "startTime": "08:21 AM",
+            },
+            "2": {
+                "startLabel": "Cagraray Island Viewpoint",
+                "startTime": "09:11 AM",
+            },
         },
         "timeWallet": {
-            "pace": "Moderate"
+            "pace": "Moderate",
         },
         "setup": {
             "startPoint": "Virac",
-            "tripDate": "2025-06-01",
-            "tripEndDate": "2025-06-02",
-            "activities": ["Beach", "Viewpoint", "Heritage", "Nature"],
-            "budget": "medium"
+            "tripDate": "2026-05-13",
+            "tripEndDate": "2026-05-14",
+            "activities": ["Water", "Outdoor", "Views", "Heritage", "Dining"],
+            "budget": "low",
         },
-        "routeSource": "local-road-router"
+        "routeSource": "local-road-router",
     }
 
 
@@ -190,6 +305,13 @@ def main():
             else:
                 print("[FAIL] PDF file size is 0 or unavailable")
                 return False
+
+            if PdfReader is not None:
+                page_count = len(PdfReader(str(get_pdf_path(pdf_id))).pages)
+                print(f"[OK] PDF page count: {page_count}")
+                if page_count < 4:
+                    print("[FAIL] PDF pagination did not exercise multi-page output")
+                    return False
         else:
             print("[FAIL] PDF file not found in storage")
             return False
@@ -200,7 +322,7 @@ def main():
         print("[OK] Expedition-style header with STATUS, ID, EXPEDITION PLAN")
         print("[OK] Computed arrival times (not all 9:00 AM)")
         print("[OK] Duration formatting (hours/minutes)")
-        print("[OK] Route source display")
+        print("[OK] Expedition stats row with total distance")
         print("[OK] Day cards with schedule status")
         print("[OK] Time-block grouping (MORNING/AFTERNOON/EVENING)")
         print("[OK] Drive lines with transport type and cost estimates")
