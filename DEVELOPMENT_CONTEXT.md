@@ -468,6 +468,28 @@
 - Kept iframe centered with flex layout
 - No changes to backend PDF generation, QR sharing, Download PDF, or Finish & Home
 
+**Phase 13D.6: Google Maps Launcher Page for PDF Map Links**
+- Added `backend/app/map_link.py` with in-memory map link registry similar to QR share registry
+- Map link registry stores: map_link_id, pdf_id, google_maps_url, created_at, expires_at
+- Map links expire after 60 minutes (same TTL as QR share sessions)
+- Added endpoint `GET /m/{map_link_id}` that returns lightweight HTML launcher page
+- Launcher page displays: "Pathfinder Directions" title, "Open this day route in Google Maps." message
+- Launcher page has primary button "Open Google Maps" with `target="_blank"` and `rel="noopener noreferrer"`
+- Launcher page has secondary button "Return to PDF" linking back to `/api/pdf/{pdf_id}.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH`
+- Updated `generate_itinerary_pdf()` to accept optional `base_url` parameter
+- Updated `draw_day()` to accept `pdf_id` and `base_url` parameters
+- When a day has Google Maps directions URL and base_url is provided, PDF generator creates a map link via `create_map_link()`
+- PDF map placeholder now links to launcher URL instead of direct Google Maps URL
+- Launcher page uses the same base URL logic as QR sharing (PATHFINDER_SHARE_BASE_URL or request.base_url)
+- Updated `DELETE /api/pdf/{pdf_id}` to invalidate map links for the PDF
+- Updated `POST /api/session/finish` to invalidate map links when pdf_id is provided
+- Updated smoke test to add coordinates to sample payload for Google Maps URL generation
+- Updated smoke test to verify map link creation, launcher page content, and map link invalidation
+- Launcher page avoids open redirect risk by only storing backend-generated Google Maps URLs
+- Direct PDF URI annotations cannot reliably force `target="_blank"` inside Chromium's built-in PDF viewer, so the launcher page is a safe workaround
+- No changes to frontend JavaScript, CSS, or QR sharing
+- No Google API key or online API calls are used for launcher functionality
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract

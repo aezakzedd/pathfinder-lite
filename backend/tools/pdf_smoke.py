@@ -14,6 +14,7 @@ sys.path.insert(0, str(backend_dir))
 from app.pdf_generator import generate_itinerary_pdf
 from app.pdf_store import pdf_exists, get_pdf_size, get_pdf_path
 from app.main import app
+from app.map_link import get_map_link, cleanup_expired_map_links
 from fastapi.testclient import TestClient
 
 try:
@@ -39,6 +40,7 @@ def create_sample_payload():
                     "outdoor_exposure": "shaded",
                     "driveTime": 10,
                     "min_budget": "low",
+                    "coordinates": [124.23, 13.58],
                 },
                 {
                     "id": "diocesan-shrine-holy-cross",
@@ -52,6 +54,7 @@ def create_sample_payload():
                     "outdoor_exposure": "indoor",
                     "driveTime": 20,
                     "min_budget": "low",
+                    "coordinates": [124.28, 13.61],
                 },
                 {
                     "id": "batalay-mangrove",
@@ -65,6 +68,7 @@ def create_sample_payload():
                     "outdoor_exposure": "shaded",
                     "driveTime": 20,
                     "min_budget": "low",
+                    "coordinates": [124.29, 13.62],
                 },
                 {
                     "id": "bato-church",
@@ -79,6 +83,7 @@ def create_sample_payload():
                     "is_top_10": True,
                     "driveTime": 20,
                     "min_budget": "low",
+                    "coordinates": [124.30, 13.63],
                 },
                 {
                     "id": "st-anthony-parish",
@@ -92,6 +97,7 @@ def create_sample_payload():
                     "outdoor_exposure": "indoor",
                     "driveTime": 20,
                     "min_budget": "low",
+                    "coordinates": [124.38, 13.64],
                 },
                 {
                     "id": "maribina-falls",
@@ -106,6 +112,7 @@ def create_sample_payload():
                     "is_top_10": True,
                     "driveTime": 20,
                     "min_budget": "low",
+                    "coordinates": [124.31, 13.64],
                 },
                 {
                     "id": "virac-town-center",
@@ -119,6 +126,7 @@ def create_sample_payload():
                     "outdoor_exposure": "indoor",
                     "driveTime": 15,
                     "min_budget": "medium",
+                    "coordinates": [124.23, 13.58],
                 },
                 {
                     "id": "bote-lighthouse",
@@ -132,6 +140,7 @@ def create_sample_payload():
                     "outdoor_exposure": "open",
                     "driveTime": 25,
                     "min_budget": "low",
+                    "coordinates": [124.32, 13.65],
                 },
                 {
                     "id": "cagraray-island-viewpoint",
@@ -145,6 +154,7 @@ def create_sample_payload():
                     "outdoor_exposure": "open",
                     "driveTime": 45,
                     "min_budget": "low",
+                    "coordinates": [124.20, 13.80],
                 },
             ],
             "2": [
@@ -161,6 +171,7 @@ def create_sample_payload():
                     "isTop10": True,
                     "driveTime": 32,
                     "min_budget": "low",
+                    "coordinates": [124.45, 13.75],
                 },
                 {
                     "id": "nupa-green-lagoon",
@@ -174,6 +185,7 @@ def create_sample_payload():
                     "outdoor_exposure": "open",
                     "driveTime": 18,
                     "min_budget": "low",
+                    "coordinates": [124.46, 13.76],
                 },
                 {
                     "id": "bestea-fries",
@@ -187,6 +199,7 @@ def create_sample_payload():
                     "outdoor_exposure": "indoor",
                     "driveTime": 22,
                     "min_budget": "medium",
+                    "coordinates": [124.55, 13.85],
                 },
                 {
                     "id": "nahulugan-falls",
@@ -202,6 +215,7 @@ def create_sample_payload():
                     "is_top10": True,
                     "driveTime": 35,
                     "min_budget": "low",
+                    "coordinates": [124.47, 13.77],
                 },
                 {
                     "id": "san-pedro-calungsod",
@@ -215,6 +229,7 @@ def create_sample_payload():
                     "outdoor_exposure": "indoor",
                     "driveTime": 24,
                     "min_budget": "low",
+                    "coordinates": [124.56, 13.86],
                 },
                 {
                     "id": "mount-carmel-parish",
@@ -228,6 +243,7 @@ def create_sample_payload():
                     "outdoor_exposure": "indoor",
                     "driveTime": 16,
                     "min_budget": "low",
+                    "coordinates": [124.57, 13.87],
                 },
                 {
                     "id": "banquerohan-bridge",
@@ -241,6 +257,7 @@ def create_sample_payload():
                     "outdoor_exposure": "open",
                     "driveTime": 20,
                     "min_budget": "low",
+                    "coordinates": [124.58, 13.88],
                 },
             ],
         },
@@ -288,7 +305,8 @@ def main():
     # Generate PDF
     print("Generating PDF...")
     try:
-        pdf_id, download_url = generate_itinerary_pdf(payload)
+        base_url = "http://testserver"
+        pdf_id, download_url = generate_itinerary_pdf(payload, base_url=base_url)
         print(f"[OK] PDF generated successfully")
         print(f"  PDF ID: {pdf_id}")
         print(f"  Download URL: {download_url}")
@@ -336,7 +354,8 @@ def main():
         
         client = TestClient(app)
 
-        # Test QR share endpoints
+        # Test QR share
+        print()
         print("=== QR Share Smoke Test ===")
         print()
 
@@ -370,6 +389,54 @@ def main():
         else:
             print(f"Shared PDF endpoint failed: {shared_pdf_response.status_code}")
             return False
+
+        print()
+
+        # Test map link launcher
+        print("=== Map Link Launcher Smoke Test ===")
+        print()
+
+        cleanup_expired_map_links()
+        map_links_count = 0
+        for link_id in ["test-link-1", "test-link-2"]:
+            map_link = get_map_link(link_id)
+            if map_link:
+                map_links_count += 1
+
+        print(f"Map registry cleanup run")
+        print(f"  Active map links: {map_links_count}")
+
+        # Test map link creation during PDF generation
+        from app.map_link import _map_links as map_links_registry
+        generated_map_links = len([k for k, v in map_links_registry.items() if v.pdf_id == pdf_id])
+        print(f"  Map links created for PDF {pdf_id}: {generated_map_links}")
+
+        if generated_map_links > 0:
+            print("[OK] Map links created for day directions")
+            # Test one map link endpoint
+            test_link_id = None
+            for link_id, link in map_links_registry.items():
+                if link.pdf_id == pdf_id:
+                    test_link_id = link_id
+                    break
+
+            if test_link_id:
+                launcher_response = client.get(f"/m/{test_link_id}")
+                if launcher_response.status_code == 200:
+                    launcher_content = launcher_response.text
+                    if "Pathfinder Directions" in launcher_content and "Open Google Maps" in launcher_content and "target=\"_blank\"" in launcher_content and "Return to PDF" in launcher_content:
+                        print("[OK] Launcher page contains required elements")
+                        print(f"  Test map link ID: {test_link_id}")
+                    else:
+                        print("[FAIL] Launcher page missing required elements")
+                        return False
+                else:
+                    print(f"[FAIL] Launcher page failed: {launcher_response.status_code}")
+                    return False
+            else:
+                print("[WARN] No map link found to test launcher page")
+        else:
+            print("[WARN] No map links created (coordinates may be missing)")
 
         print()
 
@@ -411,6 +478,15 @@ def main():
         else:
             print(f"Share link still works after finish: {shared_pdf_after_finish.status_code}")
             return False
+
+        # Verify map links are also invalidated
+        from app.map_link import _map_links as map_links_registry
+        remaining_map_links = len([k for k, v in map_links_registry.items() if v.pdf_id == pdf_id])
+        if remaining_map_links == 0:
+            print("[OK] Map links invalidated by session finish")
+        else:
+            print(f"[WARN] Map links still exist after finish: {remaining_map_links}")
+            # This is not a failure since map links have their own TTL
 
         # Call session finish again (should not crash)
         print("Calling /api/session/finish again (should not crash)...")

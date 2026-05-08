@@ -9,6 +9,7 @@ import uuid
 from fpdf import FPDF
 
 from .pdf_store import generate_pdf_id, save_pdf
+from .map_link import build_map_link_url, create_map_link
 
 
 # Original Pathfinder-inspired theme.
@@ -52,7 +53,7 @@ class PathfinderPDF(FPDF):
         self.cell(0, 4, f"Page {self.page_no()} of {{nb}}", align="R")
 
 
-def generate_itinerary_pdf(payload: dict[str, Any]) -> tuple[str, str]:
+def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple[str, str]:
     """Generate and persist a Pathfinder expedition-style itinerary PDF."""
     pdf_id = generate_pdf_id()
     itinerary_id = get_itinerary_id(payload)
@@ -109,6 +110,8 @@ def generate_itinerary_pdf(payload: dict[str, Any]) -> tuple[str, str]:
             day_meta=day_meta,
             start_point=start_point,
             current_y=current_y,
+            pdf_id=pdf_id,
+            base_url=base_url,
         )
 
     current_y += 6
@@ -226,6 +229,8 @@ def draw_day(
     day_meta: dict[str, Any],
     start_point: str,
     current_y: float,
+    pdf_id: str,
+    base_url: str,
 ) -> tuple[float, dict[str, Any] | None]:
     day_num = int(day_key) if str(day_key).isdigit() else day_key
     schedule = build_day_schedule(stops, day_meta)
@@ -242,8 +247,12 @@ def draw_day(
         status_text=f"{status} Schedule - Start at {format_time_12(start_minutes)}",
     )
 
-    directions_url = build_day_directions_url(start_label, stops)
-    current_y = draw_map_placeholder(pdf, current_y, directions_url)
+    google_maps_url = build_day_directions_url(start_label, stops)
+    launcher_url = ""
+    if google_maps_url and base_url:
+        map_link_id = create_map_link(pdf_id, google_maps_url)
+        launcher_url = build_map_link_url(base_url, map_link_id)
+    current_y = draw_map_placeholder(pdf, current_y, launcher_url)
     current_y += 8
 
     last_block = ""

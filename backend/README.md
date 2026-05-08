@@ -348,6 +348,34 @@ https://www.google.com/maps/dir/?api=1&origin=13.5833,124.2333&destination=13.64
 
 This integration uses only standard Google Maps URLs that work without any API key, authentication, or online API calls. The links open directly in the user's browser or phone.
 
+**Google Maps Launcher Page:**
+
+To avoid browser-specific PDF link behavior, PDF map areas now link to a lightweight backend launcher page instead of directly to Google Maps. This ensures that clicking the map area inside the PDF preview opens Google Maps in a new tab while allowing the user to return to the same PDF without regenerating it.
+
+**Launcher Page Behavior:**
+
+- PDF map areas link to `GET /m/{map_link_id}` instead of direct Google Maps URLs
+- The launcher page displays:
+  - Title: "Pathfinder Directions"
+  - Message: "Open this day route in Google Maps."
+  - Primary button: "Open Google Maps" (opens Google Maps in a new tab with `target="_blank"`)
+  - Secondary button: "Return to PDF" (links back to the PDF with toolbar-hiding fragment)
+- The launcher page is lightweight HTML and works well on laptop and phone
+- Map link IDs are stored in an in-memory registry similar to QR share sessions
+- Map links expire after 60 minutes
+- Map links are invalidated when the PDF is deleted or when Finish & Home is called
+
+**Why a Launcher Page:**
+
+Direct PDF URI annotations cannot reliably force `target="_blank"` inside Chromium's built-in PDF viewer. The browser controls PDF link behavior, and clicking a link inside an embedded PDF iframe may replace the iframe content or navigate in the same tab instead of opening a new tab. The launcher page is a safe workaround that uses normal HTML links with `target="_blank"` to ensure Google Maps opens in a new tab while preserving the PDF preview.
+
+**Map Link Registry:**
+
+- Stores: map_link_id, pdf_id, google_maps_url, created_at, expires_at
+- Uses the same base URL logic as QR sharing (PATHFINDER_SHARE_BASE_URL or request.base_url)
+- Only stores backend-generated Google Maps URLs to avoid open redirect risk
+- Does not accept arbitrary user-provided redirect URLs from query parameters
+
 Run smoke test:
 
 ```bash

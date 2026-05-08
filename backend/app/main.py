@@ -16,6 +16,15 @@ from .pdf_share import (
     get_share_base_url,
     invalidate_pdf_share,
 )
+from .map_link import (
+    build_launcher_error_page,
+    build_launcher_page,
+    build_map_link_url,
+    cleanup_expired_map_links,
+    get_map_link,
+    get_share_base_url as get_map_link_base_url,
+    invalidate_pdf_map_links,
+)
 from .dialogue_state import dialogue_store
 
 
@@ -88,10 +97,11 @@ def ask(request: AskRequest):
 
 
 @app.post("/api/pdf/generate")
-def generate_pdf(request: PdfGenerateRequest):
+def generate_pdf(request: PdfGenerateRequest, http_request: Request):
     try:
         payload = request.model_dump() if hasattr(request, "model_dump") else request.dict()
-        pdf_id, download_url = generate_itinerary_pdf(payload)
+        base_url = get_map_link_base_url(http_request)
+        pdf_id, download_url = generate_itinerary_pdf(payload, base_url=base_url)
         return {
             "pdf_id": pdf_id,
             "download_url": download_url
@@ -130,10 +140,11 @@ def get_pdf(pdf_id: str, download: bool = False):
 def delete_pdf_endpoint(pdf_id: str):
     if not pdf_exists(pdf_id):
         raise HTTPException(status_code=404, detail="PDF not found")
-    
+
     deleted = delete_pdf(pdf_id)
     if deleted:
         invalidate_pdf_share(pdf_id)
+        invalidate_pdf_map_links(pdf_id)
         return {"message": "PDF deleted successfully"}
     else:
         raise HTTPException(status_code=500, detail="Failed to delete PDF")
@@ -151,6 +162,20 @@ def mobile_share_page(share_id: str, request: Request):
 
     base_url = get_share_base_url(request)
     return HTMLResponse(content=build_mobile_share_page(share_id, base_url))
+
+
+@app.get("/m/{map_link_id}", response_class=HTMLResponse)
+def map_launcher_page(map_link_id: str, request: Request):
+    cleanup_expired_map_links()
+    map_link = get_map_link(map_link_id)
+    if not map_link or not pdf_exists(map_link.pdf_id):
+        return HTMLResponse(
+            content=build_launcher_error_page("This directions link is expired or no longer available."),
+            status_code=404,
+        )
+
+    base_url = get_map_link_base_url(request)
+    return HTMLResponse(content=build_launcher_page(map_link, base_url))
 
 
 @app.get("/api/pdf-share/{share_id}.pdf")
@@ -175,14 +200,15 @@ def get_shared_pdf(share_id: str):
 def finish_session(request: SessionFinishRequest):
     deleted_pdf = False
     cleared_session = False
-    
+
     # Delete PDF if provided
     if request.pdf_id:
         invalidate_pdf_share(request.pdf_id)
+        invalidate_pdf_map_links(request.pdf_id)
         if pdf_exists(request.pdf_id):
             deleted = delete_pdf(request.pdf_id)
             deleted_pdf = deleted
-    
+
     # Clear dialogue session if provided
     if request.session_id:
         try:
@@ -193,7 +219,7 @@ def finish_session(request: SessionFinishRequest):
         except Exception:
             # If session clearing fails, continue without error
             pass
-    
+
     return {
         "ok": True,
         "deleted_pdf": deleted_pdf,
