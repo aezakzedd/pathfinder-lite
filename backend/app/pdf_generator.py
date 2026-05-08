@@ -69,6 +69,13 @@ def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple
     total_stops = int(payload.get("totalStops") or len(all_stops))
     total_distance = get_total_distance_km(payload, all_stops)
 
+    # Debug logging: count stops with coordinates
+    stops_with_coords = 0
+    for stop in all_stops:
+        if extract_stop_coordinates(stop):
+            stops_with_coords += 1
+    print(f"[PDF GEN] {len(sorted_day_keys)} days, {total_stops} total stops, {stops_with_coords} with coordinates")
+
     pdf = PathfinderPDF(format="A4", unit="mm", generated_label=generated_label)
     pdf.alias_nb_pages()
     pdf.set_auto_page_break(auto=False)
@@ -228,7 +235,7 @@ def draw_day(
     start_point: str,
     current_y: float,
 ) -> tuple[float, dict[str, Any] | None]:
-    day_num = int(day_key) if str(day_key).isdigit() else day_num
+    day_num = int(day_key) if str(day_key).isdigit() else 1
     schedule = build_day_schedule(stops, day_meta)
     status = schedule["status"]
     start_minutes = schedule["start_minutes"]
@@ -366,6 +373,10 @@ def draw_map_placeholder(
     if directions_url:
         pdf.set_text_color(*BLUE)
         draw_text(pdf, pdf.w / 2, y, "Click map image for directions.", align="C")
+        # Add clickable link to text area as well
+        text_width = pdf.get_string_width("Click map image for directions.")
+        text_x = (pdf.w - text_width) / 2
+        pdf.link(x=text_x, y=y - 4, w=text_width, h=7, link=directions_url)
     else:
         pdf.set_text_color(*SOFT_TEXT)
         draw_text(pdf, pdf.w / 2, y, "Directions unavailable: missing coordinates.", align="C")
@@ -1024,44 +1035,65 @@ def sanitize(value: Any) -> str:
     return text.encode("latin-1", "replace").decode("latin-1").replace("?", "")
 
 
-# Known hub coordinates for Catanduanes (lat, lng for Google Maps)
+# Known hub coordinates for Catanduanes (lng, lat for internal use, will convert to lat,lng for Google Maps)
 HUB_COORDINATES = {
-    "virac": (13.5833, 124.2333),
-    "san andres": (13.6167, 124.0833),
+    "virac": (124.2333, 13.5833),
+    "san andres": (124.0833, 13.6167),
 }
 
 
-def extract_coordinates(stop: dict[str, Any]) -> tuple[float, float] | None:
-    """Extract (lat, lng) coordinates from a stop, supporting multiple field formats."""
+def extract_stop_coordinates(stop: dict[str, Any]) -> tuple[float, float] | None:
+    """Extract (lng, lat) coordinates from a stop, supporting multiple field formats."""
     coords = None
 
     # Try coordinates array [lng, lat] or [lat, lng]
     if "coordinates" in stop:
         val = stop["coordinates"]
         if isinstance(val, (list, tuple)) and len(val) >= 2:
-            # GeoJSON uses [lng, lat], Google Maps uses lat,lng
             lng, lat = float(val[0]), float(val[1])
-            coords = (lat, lng)
+            # Detect and correct reversed coordinates (Catanduanes: lng 123-126, lat 12-15)
+            if not (123 <= lng <= 126 and 12 <= lat <= 15):
+                if 123 <= lat <= 126 and 12 <= lng <= 15:
+                    lng, lat = lat, lng  # Swap to correct order
+            coords = (lng, lat)
 
     # Try geometry.coordinates [lng, lat]
     if not coords and "geometry" in stop and isinstance(stop["geometry"], dict):
         val = stop["geometry"].get("coordinates")
         if isinstance(val, (list, tuple)) and len(val) >= 2:
             lng, lat = float(val[0]), float(val[1])
-            coords = (lat, lng)
+            # Detect and correct reversed coordinates
+            if not (123 <= lng <= 126 and 12 <= lat <= 15):
+                if 123 <= lat <= 126 and 12 <= lng <= 15:
+                    lng, lat = lat, lng  # Swap to correct order
+            coords = (lng, lat)
 
     # Try lng/lat fields
     if not coords:
         lng = stop.get("lng") or stop.get("longitude") or stop.get("lon")
         lat = stop.get("lat") or stop.get("latitude")
         if lng is not None and lat is not None:
-            coords = (float(lat), float(lng))
+            lng, lat = float(lng), float(lat)
+            # Detect and correct reversed coordinates
+            if not (123 <= lng <= 126 and 12 <= lat <= 15):
+                if 123 <= lat <= 126 and 12 <= lng <= 15:
+                    lng, lat = lat, lng  # Swap to correct order
+            coords = (lng, lat)
+
+    # Try nested destination fields
+    if not coords:
+        for nested_key in ["destination", "place", "raw"]:
+            if nested_key in stop and isinstance(stop[nested_key], dict):
+                nested_coords = extract_stop_coordinates(stop[nested_key])
+                if nested_coords:
+                    coords = nested_coords
+                    break
 
     return coords
 
 
 def get_hub_coordinates(hub_name: str) -> tuple[float, float] | None:
-    """Get coordinates for a known hub name."""
+    """Get (lng, lat) coordinates for a known hub name."""
     key = str(hub_name).strip().lower()
     return HUB_COORDINATES.get(key)
 
@@ -1071,23 +1103,26 @@ def build_google_maps_directions_url(
     waypoints: list[tuple[float, float]],
     destination: tuple[float, float],
 ) -> str:
-    """Build a Google Maps directions URL with origin, waypoints, and destination."""
+    """Build a Google Maps directions URL with origin, waypoints, and destination.
+    
+    Google Maps requires LAT,LNG order in URLs, but we use LNG,LAT internally.
+    """
     if not destination:
         return ""
 
     parts = ["https://www.google.com/maps/dir/?api=1"]
 
     if origin:
-        lat, lng = origin
+        lng, lat = origin
         parts.append(f"origin={lat},{lng}")
 
-    lat, lng = destination
+    lng, lat = destination
     parts.append(f"destination={lat},{lng}")
 
     if waypoints:
         # Limit waypoints to avoid URL length issues (Google supports ~8-10 waypoints)
         safe_waypoints = waypoints[:8]
-        waypoint_str = "|".join(f"{lat},{lng}" for lat, lng in safe_waypoints)
+        waypoint_str = "|".join(f"{lat},{lng}" for lng, lat in safe_waypoints)
         parts.append(f"waypoints={waypoint_str}")
 
     parts.append("travelmode=driving")
@@ -1103,13 +1138,13 @@ def build_day_directions_url(
     if not stops:
         return ""
 
-    # Get origin from hub name
+    # Get origin from hub name (returns lng, lat)
     origin_coords = get_hub_coordinates(start_label)
 
-    # Extract coordinates from stops
+    # Extract coordinates from stops (returns lng, lat)
     stop_coords = []
     for stop in stops:
-        coords = extract_coordinates(stop)
+        coords = extract_stop_coordinates(stop)
         if coords:
             stop_coords.append(coords)
 

@@ -11,8 +11,8 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from app.pdf_generator import generate_itinerary_pdf
-from app.pdf_store import pdf_exists, get_pdf_size, get_pdf_path
+from app.pdf_generator import generate_itinerary_pdf, extract_stop_coordinates, build_day_directions_url
+from app.pdf_store import pdf_exists, get_pdf_size, get_pdf_path, load_pdf
 from app.main import app
 from app.map_renderer import generate_route_map_image, generate_fallback_map_image
 from fastapi.testclient import TestClient
@@ -336,6 +336,84 @@ def main():
         
         print()
         print("=== PDF Feature Verification ===")
+        print()
+
+        # Verify coordinates are preserved in sample payload
+        print("=== Coordinate Preservation Verification ===")
+        stops_with_coords = 0
+        total_stops = payload.get("totalStops", 0)
+        for day_key, day_stops in payload.get("days", {}).items():
+            for stop in day_stops:
+                coords = extract_stop_coordinates(stop)
+                if coords:
+                    stops_with_coords += 1
+        
+        print(f"Stops with valid coordinates: {stops_with_coords}/{total_stops}")
+        if stops_with_coords < total_stops:
+            print("[WARN] Some stops are missing coordinates")
+        else:
+            print("[OK] All stops have valid coordinates")
+        
+        print()
+
+        # Verify Google Maps URL generation
+        print("=== Google Maps URL Generation Verification ===")
+        for day_key, day_stops in payload.get("days", {}).items():
+            day_meta = payload.get("dayMeta", {}).get(day_key, {})
+            start_label = day_meta.get("startLabel", "Virac")
+            directions_url = build_day_directions_url(start_label, day_stops)
+            
+            if directions_url:
+                print(f"Day {day_key}: Generated URL")
+                # Verify URL contains required components
+                if "https://www.google.com/maps/dir/" in directions_url:
+                    print("  [OK] URL contains Google Maps base")
+                else:
+                    print("  [FAIL] URL missing Google Maps base")
+                    return False
+                
+                if "api=1" in directions_url:
+                    print("  [OK] URL contains api=1")
+                else:
+                    print("  [FAIL] URL missing api=1")
+                    return False
+                
+                if "origin=" in directions_url:
+                    print("  [OK] URL contains origin")
+                else:
+                    print("  [FAIL] URL missing origin")
+                    return False
+                
+                if "destination=" in directions_url:
+                    print("  [OK] URL contains destination")
+                else:
+                    print("  [FAIL] URL missing destination")
+                    return False
+                
+                if "travelmode=driving" in directions_url:
+                    print("  [OK] URL contains travelmode=driving")
+                else:
+                    print("  [FAIL] URL missing travelmode=driving")
+                    return False
+            else:
+                print(f"Day {day_key}: [WARN] No URL generated (may be missing coordinates)")
+        
+        print()
+        print("=== PDF Content Verification ===")
+        print()
+        
+        # Verify PDF bytes contain Google Maps URL
+        pdf_bytes = load_pdf(pdf_id)
+        if pdf_bytes:
+            pdf_str = pdf_bytes.decode('latin-1', errors='ignore')
+            if 'google.com/maps/dir' in pdf_str or 'maps/dir' in pdf_str:
+                print("[OK] PDF contains Google Maps directions URL")
+            else:
+                print("[FAIL] PDF does not contain Google Maps directions URL")
+                return False
+        else:
+            print("[WARN] Could not verify PDF content (PDF bytes unavailable)")
+        
         print()
         print("[OK] Expedition-style header with STATUS, ID, EXPEDITION PLAN")
         print("[OK] Computed arrival times (not all 9:00 AM)")

@@ -416,7 +416,13 @@ Pathfinder Lite generates expedition-style PDFs with route maps, schedule detail
 
 - Map image areas in the PDF contain direct Google Maps directions links
 - Links are baked into the PDF using fpdf2's link() annotation method
+- Both map image and "Click map image for directions" text areas are clickable
 - Links open Google Maps with origin, waypoints, and destination for each day's route
+- Coordinate extraction is robust, supporting multiple field formats (coordinates array, geometry.coordinates, lng/lat fields)
+- Coordinate validation for Catanduanes region (lng 123-126, lat 12-15)
+- Automatic reversal detection and correction for reversed coordinates
+- Google Maps URLs use correct LAT,LNG order (required by Google Maps API)
+- Debug logging shows days, stops, and coordinates count during PDF generation
 - This provides a direct, reliable way to open directions from the PDF itself
 - Note: PDF viewer behavior for link targets (new tab vs same tab) is controlled by the browser's PDF viewer, not by PDF annotations
 

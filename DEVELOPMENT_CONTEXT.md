@@ -749,6 +749,19 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
   - Updated smoke test to remove preview image tests
   - Updated backend/README.md to document new PDF generation approach
   - All tests passing: pip install, smoke test, compileall, npm build
+- Phase 13F.2: Fix actual PDF Google Maps links and coordinate preservation ✓
+  - Root cause: Frontend coordinates were preserved, but backend coordinate extraction was weak and Google Maps URL generation had LAT/LNG order issues
+  - Added robust extract_stop_coordinates() helper in pdf_generator.py supporting multiple coordinate formats
+  - Added coordinate validation for Catanduanes region (lng 123-126, lat 12-15)
+  - Added automatic reversal detection and correction for reversed coordinates
+  - Fixed build_day_directions_url() to use correct LAT,LNG order for Google Maps URLs
+  - Fixed draw_map_placeholder() to link both map image and "Click map image for directions" text
+  - Fixed day_num bug in draw_day() (undefined variable in else branch)
+  - Added coordinate preservation verification to smoke test
+  - Added Google Maps URL generation verification to smoke test
+  - Added PDF content verification to ensure Google Maps URL is embedded
+  - Added debug logging for PDF generation (days, stops, coordinates count)
+  - All tests passing: pip install, smoke test (with coordinate/URL verification), compileall, npm build
 
 **Phase 14: QR/Share Link Integration**
 - Connect placeholder QR to backend share endpoint
