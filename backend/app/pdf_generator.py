@@ -242,7 +242,8 @@ def draw_day(
         status_text=f"{status} Schedule - Start at {format_time_12(start_minutes)}",
     )
 
-    current_y = draw_map_placeholder(pdf, current_y)
+    directions_url = build_day_directions_url(start_label, stops)
+    current_y = draw_map_placeholder(pdf, current_y, directions_url)
     current_y += 8
 
     last_block = ""
@@ -322,7 +323,7 @@ def draw_day_header(
     return y + 36
 
 
-def draw_map_placeholder(pdf: PathfinderPDF, y: float) -> float:
+def draw_map_placeholder(pdf: PathfinderPDF, y: float, directions_url: str = "") -> float:
     content_width = pdf.w - (PAGE_MARGIN * 2)
     image_h = 44
     x = PAGE_MARGIN
@@ -353,14 +354,23 @@ def draw_map_placeholder(pdf: PathfinderPDF, y: float) -> float:
         pdf.set_fill_color(*BLUE)
         pdf.circle(px, py, 1.2, style="F")
 
-    pdf.set_font("helvetica", "B", 10)
-    pdf.set_text_color(80, 88, 100)
-    draw_text(pdf, pdf.w / 2, y + 24, "MAP SCREENSHOT PLACEHOLDER", align="C")
+    # Reduced placeholder text visibility
+    pdf.set_font("helvetica", "", 7)
+    pdf.set_text_color(160, 168, 180)
+    draw_text(pdf, pdf.w / 2, y + 24, "Route placeholder", align="C")
+
+    # Attach link to map area if directions URL exists
+    if directions_url:
+        pdf.link(x, y, content_width, image_h, directions_url)
 
     y += image_h + 6
     pdf.set_font("helvetica", "B", 8)
-    pdf.set_text_color(*BLUE)
-    draw_text(pdf, pdf.w / 2, y, "Click map image for directions.", align="C")
+    if directions_url:
+        pdf.set_text_color(*BLUE)
+        draw_text(pdf, pdf.w / 2, y, "Click map image for directions.", align="C")
+    else:
+        pdf.set_text_color(*SOFT_TEXT)
+        draw_text(pdf, pdf.w / 2, y, "Directions unavailable: missing coordinates.", align="C")
     return y + 6
 
 
@@ -1014,3 +1024,111 @@ def sanitize(value: Any) -> str:
     for old, new in replacements.items():
         text = text.replace(old, new)
     return text.encode("latin-1", "replace").decode("latin-1").replace("?", "")
+
+
+# Known hub coordinates for Catanduanes (lat, lng for Google Maps)
+HUB_COORDINATES = {
+    "virac": (13.5833, 124.2333),
+    "san andres": (13.6167, 124.0833),
+}
+
+
+def extract_coordinates(stop: dict[str, Any]) -> tuple[float, float] | None:
+    """Extract (lat, lng) coordinates from a stop, supporting multiple field formats."""
+    coords = None
+
+    # Try coordinates array [lng, lat] or [lat, lng]
+    if "coordinates" in stop:
+        val = stop["coordinates"]
+        if isinstance(val, (list, tuple)) and len(val) >= 2:
+            # GeoJSON uses [lng, lat], Google Maps uses lat,lng
+            lng, lat = float(val[0]), float(val[1])
+            coords = (lat, lng)
+
+    # Try geometry.coordinates [lng, lat]
+    if not coords and "geometry" in stop and isinstance(stop["geometry"], dict):
+        val = stop["geometry"].get("coordinates")
+        if isinstance(val, (list, tuple)) and len(val) >= 2:
+            lng, lat = float(val[0]), float(val[1])
+            coords = (lat, lng)
+
+    # Try lng/lat fields
+    if not coords:
+        lng = stop.get("lng") or stop.get("longitude") or stop.get("lon")
+        lat = stop.get("lat") or stop.get("latitude")
+        if lng is not None and lat is not None:
+            coords = (float(lat), float(lng))
+
+    return coords
+
+
+def get_hub_coordinates(hub_name: str) -> tuple[float, float] | None:
+    """Get coordinates for a known hub name."""
+    key = str(hub_name).strip().lower()
+    return HUB_COORDINATES.get(key)
+
+
+def build_google_maps_directions_url(
+    origin: tuple[float, float] | None,
+    waypoints: list[tuple[float, float]],
+    destination: tuple[float, float],
+) -> str:
+    """Build a Google Maps directions URL with origin, waypoints, and destination."""
+    if not destination:
+        return ""
+
+    parts = ["https://www.google.com/maps/dir/?api=1"]
+
+    if origin:
+        lat, lng = origin
+        parts.append(f"origin={lat},{lng}")
+
+    lat, lng = destination
+    parts.append(f"destination={lat},{lng}")
+
+    if waypoints:
+        # Limit waypoints to avoid URL length issues (Google supports ~8-10 waypoints)
+        safe_waypoints = waypoints[:8]
+        waypoint_str = "|".join(f"{lat},{lng}" for lat, lng in safe_waypoints)
+        parts.append(f"waypoints={waypoint_str}")
+
+    parts.append("travelmode=driving")
+
+    return "&".join(parts)
+
+
+def build_day_directions_url(
+    start_label: str,
+    stops: list[dict[str, Any]],
+) -> str:
+    """Build a Google Maps directions URL for a day's itinerary."""
+    if not stops:
+        return ""
+
+    # Get origin from hub name
+    origin_coords = get_hub_coordinates(start_label)
+
+    # Extract coordinates from stops
+    stop_coords = []
+    for stop in stops:
+        coords = extract_coordinates(stop)
+        if coords:
+            stop_coords.append(coords)
+
+    if not stop_coords:
+        return ""
+
+    # Use first stop as origin if hub not available
+    if not origin_coords and stop_coords:
+        origin_coords = stop_coords[0]
+        stop_coords = stop_coords[1:]
+
+    # Use last stop as destination
+    if not stop_coords:
+        return ""
+    destination_coords = stop_coords[-1]
+
+    # Intermediate stops as waypoints
+    waypoints = stop_coords[:-1] if len(stop_coords) > 1 else []
+
+    return build_google_maps_directions_url(origin_coords, waypoints, destination_coords)

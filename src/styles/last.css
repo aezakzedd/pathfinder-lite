@@ -192,7 +192,7 @@
 
 .pdf-preview-frame {
   display: block;
-  width: min(72vw, 1040px);
+  width: min(70vw, 980px);
   height: calc(100vh - 44px);
   min-height: 920px;
   margin: 0 auto;
@@ -345,7 +345,7 @@
   }
 
   .pdf-preview-frame {
-    width: min(74vw, 960px);
+    width: min(72vw, 900px);
     min-height: 820px;
   }
 }
@@ -375,7 +375,7 @@
   }
 
   .pdf-preview-frame {
-    width: min(78vw, 760px);
+    width: min(76vw, 740px);
     min-height: 760px;
   }
 }
@@ -397,7 +397,7 @@
   }
 
   .pdf-preview-frame {
-    width: min(68vw, 1100px);
+    width: min(66vw, 1040px);
     min-height: 1180px;
   }
 }

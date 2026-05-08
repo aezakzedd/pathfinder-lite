@@ -434,6 +434,22 @@
 - Trimmed fake-preview CSS from `src/styles/last.css` and added focused `.pdf-preview-frame` styling for centered, scrollable backend PDF display while keeping the fixed export controls and QR panel above the iframe
 - Kept QR sharing, Download PDF, Back to Itinerary, Finish & Home cleanup, and localStorage/sessionStorage cleanup behavior intact without adding frontend PDF or QR libraries
 
+**Phase 13D.4: PDF Preview Chrome Polish and Google Maps Directions Integration**
+- Added `getPdfIframeUrl(pdfUrl)` helper to append PDF viewer hints: `#toolbar=0&navpanes=0&scrollbar=0&view=FitH`
+- Updated `renderPdfPreview()` to use `getPdfIframeUrl()` for the iframe src while keeping `getPdfDownloadUrl()` separate for downloads
+- Reduced `.pdf-preview-frame` width from 72vw/1040px to 70vw/980px to minimize dark PDF viewer side space
+- Updated responsive breakpoints for pdf-preview-frame to maintain consistent sizing across screen sizes
+- Note: Browser PDF toolbar hiding via URL fragment is best-effort only because Chromium's native PDF viewer controls are browser-owned and may ignore the hints
+- Added Google Maps Directions URL generation to backend with `build_google_maps_directions_url()` and `build_day_directions_url()`
+- Added coordinate extraction supporting multiple field formats: `coordinates=[lng,lat]`, `geometry.coordinates=[lng,lat]`, `lng/lat`, `longitude/latitude`, `lon/lat`
+- Added known hub coordinates for Virac (13.5833, 124.2333) and San Andres (13.6167, 124.0833)
+- Google Maps URLs use correct lat,lng order (not lng,lat) and limit waypoints to 8 to avoid URL length issues
+- Updated `draw_map_placeholder()` to accept `directions_url` parameter and attach clickable link to map rectangle using `pdf.link()`
+- Map placeholder text changed from "MAP SCREENSHOT PLACEHOLDER" to "Route placeholder" with smaller, muted font
+- Link text shows blue "Click map image for directions." when coordinates are available, gray "Directions unavailable: missing coordinates." when not
+- No Google API key or online API calls are used; only standard Google Maps URLs are generated
+- Map screenshots remain as drawn route-style placeholders; actual map imagery is not implemented in this phase
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract

@@ -302,6 +302,52 @@ The PDF uses computed arrival times based on drive time and visit duration, with
 
 Map screenshots are still placeholders in this phase. Pathfinder Lite intentionally avoids frontend screenshot libraries, MapLibre, and browser-side PDF rendering; exact route/map imagery should be handled later by a backend-safe static map or precomputed route image phase.
 
+#### Google Maps Directions Links
+
+The PDF map placeholder areas now include lightweight Google Maps directions links when coordinates are available. This uses standard Google Maps URLs without any Google API key or online API calls.
+
+**Coordinate Extraction:**
+
+The PDF generator supports multiple coordinate field formats from the GeoJSON and itinerary data:
+
+- `stop.coordinates = [lng, lat]` (GeoJSON format)
+- `stop.geometry.coordinates = [lng, lat]` (GeoJSON geometry)
+- `stop.lng / stop.lat`
+- `stop.longitude / stop.latitude`
+- `stop.lon / stop.lat`
+
+**Known Hub Coordinates:**
+
+Default coordinates for Catanduanes hubs are built into the generator:
+
+- Virac: 13.5833, 124.2333
+- San Andres: 13.6167, 124.0833
+
+**Google Maps URL Format:**
+
+For each day, the generator builds a directions URL using:
+
+- Origin: hub coordinates or first stop if hub unknown
+- Waypoints: intermediate stops (limited to 8 to avoid URL length issues)
+- Destination: last stop
+- Travel mode: driving
+- Coordinate order: lat,lng (Google Maps standard, not lng,lat)
+
+Example URL format:
+
+```
+https://www.google.com/maps/dir/?api=1&origin=13.5833,124.2333&destination=13.6419,124.3796&waypoints=13.6167,124.0833&travelmode=driving
+```
+
+**PDF Link Behavior:**
+
+- If coordinates are available: The map placeholder rectangle and "Click map image for directions." text are clickable links to Google Maps directions. The text appears in blue.
+- If coordinates are missing: The text shows "Directions unavailable: missing coordinates." in muted gray, and no link is attached.
+
+**No Google API Key Required:**
+
+This integration uses only standard Google Maps URLs that work without any API key, authentication, or online API calls. The links open directly in the user's browser or phone.
+
 Run smoke test:
 
 ```bash

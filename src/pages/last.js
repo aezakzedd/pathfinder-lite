@@ -273,6 +273,10 @@ function getPdfPreviewUrl(pdfId) {
   return apiUrl(`/api/pdf/${pdfId}.pdf`);
 }
 
+function getPdfIframeUrl(pdfUrl) {
+  return `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
+}
+
 function getPdfDownloadUrl(url) {
   const separator = String(url).includes('?') ? '&' : '?';
   return `${url}${separator}download=1`;
@@ -281,7 +285,7 @@ function getPdfDownloadUrl(url) {
 function renderPdfPreview(pdfUrl) {
   return `
     <iframe
-      src="${pdfUrl}"
+      src="${getPdfIframeUrl(pdfUrl)}"
       class="pdf-preview-frame"
       title="Pathfinder itinerary PDF preview"
     ></iframe>
