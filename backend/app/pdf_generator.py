@@ -10,6 +10,7 @@ from fpdf import FPDF
 
 from .pdf_store import generate_pdf_id, save_pdf
 from .map_link import build_map_link_url, create_map_link
+from .map_renderer import generate_route_map_image, generate_fallback_map_image
 
 
 # Original Pathfinder-inspired theme.
@@ -53,11 +54,14 @@ class PathfinderPDF(FPDF):
         self.cell(0, 4, f"Page {self.page_no()} of {{nb}}", align="R")
 
 
-def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple[str, str]:
+def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple[str, str, dict[str, Any]]:
     """Generate and persist a Pathfinder expedition-style itinerary PDF."""
     pdf_id = generate_pdf_id()
     itinerary_id = get_itinerary_id(payload)
     generated_label = format_generated_date(datetime.now())
+
+    # Store overlay metadata for preview
+    overlay_metadata: dict[str, Any] = {"pdf_id": pdf_id, "map_links": []}
 
     days = normalize_days(payload.get("days", {}))
     sorted_day_keys = sorted(days.keys(), key=lambda value: int(value) if str(value).isdigit() else 0)
@@ -102,7 +106,7 @@ def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple
             or get_stop_name(previous_day_last_stop)
             or start_point
         )
-        current_y, previous_day_last_stop = draw_day(
+        current_y, previous_day_last_stop, day_overlay = draw_day(
             pdf,
             day_key=day_key,
             stops=stops,
@@ -112,6 +116,7 @@ def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple
             current_y=current_y,
             pdf_id=pdf_id,
             base_url=base_url,
+            overlay_metadata=overlay_metadata,
         )
 
     current_y += 6
@@ -121,7 +126,7 @@ def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple
 
     pdf_bytes = pdf.output(dest="S")
     save_pdf(pdf_id, bytes(pdf_bytes))
-    return pdf_id, f"/api/pdf/{pdf_id}.pdf"
+    return pdf_id, f"/api/pdf/{pdf_id}.pdf", overlay_metadata
 
 
 def draw_text(pdf: PathfinderPDF, x: float, y: float, text: Any, *, align: str = "L") -> None:
@@ -231,7 +236,8 @@ def draw_day(
     current_y: float,
     pdf_id: str,
     base_url: str,
-) -> tuple[float, dict[str, Any] | None]:
+    overlay_metadata: dict[str, Any],
+) -> tuple[float, dict[str, Any] | None, dict[str, Any]]:
     day_num = int(day_key) if str(day_key).isdigit() else day_key
     schedule = build_day_schedule(stops, day_meta)
     status = schedule["status"]
@@ -249,10 +255,20 @@ def draw_day(
 
     google_maps_url = build_day_directions_url(start_label, stops)
     launcher_url = ""
+    map_link_id = ""
     if google_maps_url and base_url:
         map_link_id = create_map_link(pdf_id, google_maps_url)
         launcher_url = build_map_link_url(base_url, map_link_id)
-    current_y = draw_map_placeholder(pdf, current_y, launcher_url)
+
+    current_y, map_overlay = draw_map_placeholder(
+        pdf,
+        current_y,
+        launcher_url,
+        stops,
+        start_label,
+        map_link_id,
+        overlay_metadata,
+    )
     current_y += 8
 
     last_block = ""
@@ -332,45 +348,56 @@ def draw_day_header(
     return y + 36
 
 
-def draw_map_placeholder(pdf: PathfinderPDF, y: float, directions_url: str = "") -> float:
+def draw_map_placeholder(
+    pdf: PathfinderPDF,
+    y: float,
+    directions_url: str = "",
+    stops: list[dict[str, Any]] | None = None,
+    start_label: str = "",
+    map_link_id: str = "",
+    overlay_metadata: dict[str, Any] | None = None,
+) -> tuple[float, dict[str, Any]]:
     content_width = pdf.w - (PAGE_MARGIN * 2)
     image_h = 44
     x = PAGE_MARGIN
 
-    pdf.set_fill_color(230, 234, 238)
-    draw_round_rect(pdf, x, y, content_width, image_h, 2, style="F")
-    pdf.set_draw_color(198, 205, 214)
-    draw_round_rect(pdf, x, y, content_width, image_h, 2, style="D")
+    # Generate route map image if coordinates are available
+    map_image_bytes = None
+    if stops:
+        try:
+            map_image_bytes = generate_route_map_image(stops, start_label)
+        except Exception:
+            map_image_bytes = None
 
-    # Road-map-like placeholder lines; intentionally backend-only and static.
-    pdf.set_draw_color(120, 133, 150)
-    pdf.set_line_width(0.25)
-    pdf.line(x + 12, y + 32, x + 54, y + 18)
-    pdf.line(x + 54, y + 18, x + 110, y + 30)
-    pdf.line(x + 110, y + 30, x + 155, y + 12)
-    pdf.line(x + 24, y + 12, x + 88, y + 38)
-    pdf.line(x + 88, y + 38, x + content_width - 18, y + 24)
+    # Use fallback image if generation failed
+    if not map_image_bytes:
+        map_image_bytes = generate_fallback_map_image()
 
-    pdf.set_draw_color(*BLUE)
-    pdf.set_line_width(0.8)
-    pdf.line(x + 22, y + 34, x + 70, y + 22)
-    pdf.line(x + 70, y + 22, x + 126, y + 32)
-    pdf.line(x + 126, y + 32, x + content_width - 26, y + 15)
+    # Embed the map image
+    pdf.image(map_image_bytes, x=x, y=y, w=content_width, h=image_h, type="PNG")
 
-    for px, py in [(x + 22, y + 34), (x + 70, y + 22), (x + 126, y + 32), (x + content_width - 26, y + 15)]:
-        pdf.set_fill_color(*WHITE)
-        pdf.circle(px, py, 2.2, style="F")
-        pdf.set_fill_color(*BLUE)
-        pdf.circle(px, py, 1.2, style="F")
+    # Record overlay metadata for preview
+    overlay = {}
+    if map_link_id and overlay_metadata is not None:
+        # Calculate normalized coordinates (0-1)
+        norm_x = x / pdf.w
+        norm_y = y / pdf.h
+        norm_w = content_width / pdf.w
+        norm_h = image_h / pdf.h
 
-    # Reduced placeholder text visibility
-    pdf.set_font("helvetica", "", 7)
-    pdf.set_text_color(160, 168, 180)
-    draw_text(pdf, pdf.w / 2, y + 24, "Route placeholder", align="C")
+        overlay = {
+            "page": pdf.page_no(),
+            "type": "map",
+            "href": f"/m/{map_link_id}",
+            "target": "_blank",
+            "x": norm_x,
+            "y": norm_y,
+            "w": norm_w,
+            "h": norm_h,
+            "label": f"Open Day {pdf.page_no() - 1} in Google Maps",
+        }
 
-    # Attach link to map area if directions URL exists
-    if directions_url:
-        pdf.link(x, y, content_width, image_h, directions_url)
+        overlay_metadata["map_links"].append(overlay)
 
     y += image_h + 6
     pdf.set_font("helvetica", "B", 8)
@@ -380,7 +407,7 @@ def draw_map_placeholder(pdf: PathfinderPDF, y: float, directions_url: str = "")
     else:
         pdf.set_text_color(*SOFT_TEXT)
         draw_text(pdf, pdf.w / 2, y, "Directions unavailable: missing coordinates.", align="C")
-    return y + 6
+    return y + 6, overlay
 
 
 def draw_transit_line(pdf: PathfinderPDF, y: float, text: str) -> float:

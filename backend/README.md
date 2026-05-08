@@ -382,6 +382,55 @@ Run smoke test:
 python -m backend.tools.pdf_smoke
 ```
 
+## Backend-Rendered PDF Page Preview
+
+To overcome Chromium PDF viewer limitations with link behavior, Pathfinder Lite now renders PDF pages as PNG images on the backend and displays them with HTML link overlays in the frontend. This ensures reliable `target="_blank"` behavior for map links while maintaining the exact PDF appearance.
+
+**Preview Architecture:**
+
+- After PDF generation, the backend uses pypdfium2 to render each page as a PNG image
+- Preview images are stored in `backend/data/generated_pdfs/previews/{pdf_id}/page-X.png`
+- Map link overlay positions are recorded during PDF generation in normalized coordinates (0-1 range)
+- The frontend fetches preview metadata from `GET /api/pdf/{pdf_id}/preview` and renders page images with transparent HTML anchor overlays
+- Map links open in new tabs without replacing the preview
+- Preview images are deleted when the PDF is deleted or when Finish & Home is called
+
+**Preview Endpoints:**
+
+- `GET /api/pdf/{pdf_id}/preview` - Returns JSON with page count, page metadata (image_url, width, height, links)
+- `GET /api/pdf/{pdf_id}/preview/{page}.png` - Returns the rendered PNG for a specific page
+
+**Route Map Images:**
+
+- PDF map placeholders now use locally-generated route map images instead of fpdf2-drawn placeholders
+- Route map images are generated using Pillow from stop coordinates
+- Known hub coordinates (Virac, San Andres) are supported as starting points
+- Map styling: dark water, gray land, blue route line, colored stop dots, distinct start/end markers
+- Fallback image is used if fewer than 2 valid coordinates are available
+- Map images are embedded directly into the PDF as PNGs
+
+**Overlay Metadata:**
+
+- During PDF generation, map link positions are recorded as normalized page coordinates (x, y, w, h from 0 to 1)
+- Overlay metadata includes: page, type (map), href (launcher URL), target, coordinates, label
+- Overlay metadata is stored in `backend/data/generated_pdfs/previews/{pdf_id}/overlays.json`
+- The frontend renders these as absolutely-positioned transparent anchor elements over page images
+
+**Why Backend-Rendered Preview:**
+
+Chromium's built-in PDF viewer does not allow forcing `target="_blank"` on PDF annotations. By rendering pages as images and using HTML overlays, we gain full control over link behavior while preserving the exact PDF appearance. This approach also avoids the need for frontend PDF libraries (pdfjs-dist, jsPDF) which would add complexity and performance overhead.
+
+**Dependencies:**
+
+- Pillow>=10,<12 - For route map image generation
+- pypdfium2>=4,<5 - For PDF page rendering to PNG
+
+Run smoke test:
+
+```bash
+python -m backend.tools.pdf_smoke
+```
+
 ## QR PDF Sharing
 
 Pathfinder Lite generates QR codes on the backend and returns SVG markup to the frontend. No frontend QR package, canvas QR renderer, PNG QR renderer, or external service is used.

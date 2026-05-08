@@ -490,6 +490,73 @@
 - No changes to frontend JavaScript, CSS, or QR sharing
 - No Google API key or online API calls are used for launcher functionality
 
+**Phase 13E.1: Backend-Rendered PDF Page Preview with HTML Map Overlays**
+- Added Pillow>=10,<12 to backend/requirements.txt for route map image generation
+- Added pypdfium2>=4,<5 to backend/requirements.txt for PDF page rendering to PNG
+- Created `backend/app/map_renderer.py` for local route map image generation using Pillow
+  - Supports various coordinate formats ([lng, lat], lng/lat, longitude/latitude)
+  - Supports hub coordinates (Virac, San Andres) as starting points
+  - Generates local route image with dark water, gray land, blue route line, colored stop dots, distinct start/end markers
+  - Fits coordinates into image bounds with padding
+  - Generates fallback image if fewer than 2 valid coordinates
+- Created `backend/app/pdf_preview.py` for PDF page image rendering using pypdfium2
+  - Renders generated PDF pages into PNG images stored in `backend/data/generated_pdfs/previews/{pdf_id}/page-X.png`
+  - Stores overlay metadata in `backend/data/generated_pdfs/previews/{pdf_id}/overlays.json`
+  - Provides functions for preview metadata retrieval and overlay management
+  - Provides functions for preview image cleanup
+- Updated `backend/app/pdf_generator.py` to:
+  - Import map_renderer functions for route map image generation
+  - Change `generate_itinerary_pdf()` return type to include overlay_metadata
+  - Update `draw_day()` to accept overlay_metadata parameter and return map_overlay
+  - Replace fpdf2-drawn map placeholder with generated PNG route image using `pdf.image()`
+  - Record normalized page coordinates (x, y, w, h from 0 to 1) for map link overlays during PDF generation
+  - Keep map rectangle/link clickable and "Click map image for directions." text
+- Updated `backend/app/main.py` to:
+  - Import pdf_preview functions for preview image management
+  - Update `POST /api/pdf/generate` to handle new return type from generate_itinerary_pdf
+  - Call `render_pdf_pages_to_images()` after PDF generation
+  - Call `add_map_link_overlay()` for each map link from overlay_metadata
+  - Add `GET /api/pdf/{pdf_id}/preview` endpoint returning JSON with pdf_id, page_count, pages (image_url, width, height, links)
+  - Add `GET /api/pdf/{pdf_id}/preview/{page}.png` endpoint returning the rendered page image
+  - Update `DELETE /api/pdf/{pdf_id}` to call `delete_preview_images()`
+  - Update `POST /api/session/finish` to call `delete_preview_images()`
+- Updated `src/pages/last.js` to:
+  - Stop using native PDF iframe as primary preview
+  - Add `getPdfPreviewMetadataUrl()` function for preview API endpoint
+  - Add `loadPreviewImages()` function to fetch preview metadata and render page images
+  - Add `renderPreviewPages()` function to render page images with transparent HTML anchor overlays
+  - Add `attachFallbackHandler()` function for fallback to iframe if preview fails
+  - Update `renderPdfPreview()` to return a container div instead of iframe
+  - Update `renderPreviewUnavailable()` to include fallback button to open PDF iframe
+  - Update `generatePdfForPreview()` to call `loadPreviewImages()` after PDF generation
+  - Update initial render to call `loadPreviewImages()` when pdf_id exists from localStorage
+  - Keep Download PDF button using real PDF endpoint
+  - Keep QR sharing using real PDF endpoint
+  - Keep localStorage pdf_id recovery
+- Updated `src/styles/last.css` to:
+  - Add `.pdf-preview-pages` for vertical scrolling preview container
+  - Add `.pdf-preview-pages-inner` for page images layout
+  - Add `.pdf-preview-loading` for loading state
+  - Add `.pdf-preview-image-page` for individual page containers with CSS variables for dimensions
+  - Add `.pdf-preview-page-image` for page images
+  - Add `.pdf-preview-hotspot` for transparent anchor overlays with absolute positioning
+- Updated `backend/tools/pdf_smoke.py` to:
+  - Import map_renderer and pdf_preview functions
+  - Update generate_itinerary_pdf call to handle new return type with overlay_metadata
+  - Add test for route map image generation with coordinates
+  - Add test for fallback map image generation
+  - Add test for preview image rendering
+  - Add test for preview metadata retrieval
+  - Add test for preview JSON endpoint
+  - Add test for preview page image endpoint
+  - Add test for preview image cleanup
+  - Add verification that preview images are deleted by session finish
+- Updated `backend/README.md` with documentation for backend-rendered PDF page preview, route map images, and new dependencies (Pillow, pypdfium2)
+- Backend-rendered preview overcomes Chromium PDF viewer limitations by using HTML overlays for reliable `target="_blank"` behavior
+- No frontend PDF libraries (pdfjs-dist, jsPDF) or external APIs are used
+- Preview images are cleaned up on PDF deletion and session finish
+- All smoke tests pass, dependencies installed, backend compiles, frontend builds successfully
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract

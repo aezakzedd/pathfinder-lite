@@ -25,6 +25,7 @@ from .map_link import (
     get_map_link_base_url,
     invalidate_pdf_map_links,
 )
+from .pdf_preview import delete_preview_images, get_page_image_path, get_preview_with_overlays
 from .dialogue_state import dialogue_store
 
 
@@ -101,7 +102,30 @@ def generate_pdf(request: PdfGenerateRequest, http_request: Request):
     try:
         payload = request.model_dump() if hasattr(request, "model_dump") else request.dict()
         base_url = get_map_link_base_url(http_request)
-        pdf_id, download_url = generate_itinerary_pdf(payload, base_url=base_url)
+        pdf_id, download_url, overlay_metadata = generate_itinerary_pdf(payload, base_url=base_url)
+
+        # Generate preview images
+        from .pdf_preview import render_pdf_pages_to_images, add_map_link_overlay
+        try:
+            render_pdf_pages_to_images(pdf_id)
+            # Add map link overlays from overlay_metadata
+            for map_link in overlay_metadata.get("map_links", []):
+                add_map_link_overlay(
+                    pdf_id,
+                    map_link["page"],
+                    map_link["href"].split("/")[-1],
+                    map_link["x"],
+                    map_link["y"],
+                    map_link["w"],
+                    map_link["h"],
+                    map_link["label"],
+                )
+        except Exception as preview_error:
+            import traceback
+            traceback.print_exc()
+            # Preview generation failure should not block PDF generation
+            print(f"Warning: Preview generation failed: {preview_error}")
+
         return {
             "pdf_id": pdf_id,
             "download_url": download_url
@@ -136,6 +160,31 @@ def get_pdf(pdf_id: str, download: bool = False):
     )
 
 
+@app.get("/api/pdf/{pdf_id}/preview")
+def get_pdf_preview(pdf_id: str):
+    if not pdf_exists(pdf_id):
+        raise HTTPException(status_code=404, detail="PDF not found")
+
+    preview_metadata = get_preview_with_overlays(pdf_id)
+    if not preview_metadata:
+        raise HTTPException(status_code=404, detail="Preview not available")
+
+    return preview_metadata
+
+
+@app.get("/api/pdf/{pdf_id}/preview/{page}.png")
+def get_pdf_preview_page(pdf_id: str, page: int):
+    if not pdf_exists(pdf_id):
+        raise HTTPException(status_code=404, detail="PDF not found")
+
+    page_image_path = get_page_image_path(pdf_id, page)
+    if not page_image_path:
+        raise HTTPException(status_code=404, detail="Page image not found")
+
+    from fastapi.responses import FileResponse
+    return FileResponse(page_image_path, media_type="image/png")
+
+
 @app.delete("/api/pdf/{pdf_id}")
 def delete_pdf_endpoint(pdf_id: str):
     if not pdf_exists(pdf_id):
@@ -145,6 +194,7 @@ def delete_pdf_endpoint(pdf_id: str):
     if deleted:
         invalidate_pdf_share(pdf_id)
         invalidate_pdf_map_links(pdf_id)
+        delete_preview_images(pdf_id)
         return {"message": "PDF deleted successfully"}
     else:
         raise HTTPException(status_code=500, detail="Failed to delete PDF")
@@ -205,6 +255,7 @@ def finish_session(request: SessionFinishRequest):
     if request.pdf_id:
         invalidate_pdf_share(request.pdf_id)
         invalidate_pdf_map_links(request.pdf_id)
+        delete_preview_images(request.pdf_id)
         if pdf_exists(request.pdf_id):
             deleted = delete_pdf(request.pdf_id)
             deleted_pdf = deleted

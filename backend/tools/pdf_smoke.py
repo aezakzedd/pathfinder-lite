@@ -15,6 +15,8 @@ from app.pdf_generator import generate_itinerary_pdf
 from app.pdf_store import pdf_exists, get_pdf_size, get_pdf_path
 from app.main import app
 from app.map_link import get_map_link, cleanup_expired_map_links
+from app.map_renderer import generate_route_map_image, generate_fallback_map_image
+from app.pdf_preview import render_pdf_pages_to_images, delete_preview_images, get_preview_with_overlays
 from fastapi.testclient import TestClient
 
 try:
@@ -306,10 +308,11 @@ def main():
     print("Generating PDF...")
     try:
         base_url = "http://testserver"
-        pdf_id, download_url = generate_itinerary_pdf(payload, base_url=base_url)
+        pdf_id, download_url, overlay_metadata = generate_itinerary_pdf(payload, base_url=base_url)
         print(f"[OK] PDF generated successfully")
         print(f"  PDF ID: {pdf_id}")
         print(f"  Download URL: {download_url}")
+        print(f"  Overlay metadata: {len(overlay_metadata.get('map_links', []))} map links")
         print()
         
         # Verify PDF exists
@@ -487,6 +490,141 @@ def main():
         else:
             print(f"[WARN] Map links still exist after finish: {remaining_map_links}")
             # This is not a failure since map links have their own TTL
+
+        # Verify preview images are also deleted
+        from app.pdf_preview import PREVIEWS_DIR
+        preview_dir = PREVIEWS_DIR / pdf_id
+        if not preview_dir.exists():
+            print("[OK] Preview images deleted by session finish")
+        else:
+            print(f"[WARN] Preview directory still exists after finish: {preview_dir}")
+            # This is not a failure since preview cleanup is best-effort
+
+        print()
+
+        # Test map image generation
+        print("=== Map Image Generation Smoke Test ===")
+        print()
+
+        # Test route map image generation with coordinates
+        stops = payload["days"]["1"]
+        try:
+            map_image_bytes = generate_route_map_image(stops, "Virac")
+            if map_image_bytes and len(map_image_bytes) > 0:
+                print("[OK] Route map image generated successfully")
+                print(f"  Image size: {len(map_image_bytes)} bytes")
+            else:
+                print("[FAIL] Route map image generation failed")
+                return False
+        except Exception as e:
+            print(f"[FAIL] Route map image generation error: {e}")
+            return False
+
+        # Test fallback map image generation
+        try:
+            fallback_image_bytes = generate_fallback_map_image()
+            if fallback_image_bytes and len(fallback_image_bytes) > 0:
+                print("[OK] Fallback map image generated successfully")
+                print(f"  Image size: {len(fallback_image_bytes)} bytes")
+            else:
+                print("[FAIL] Fallback map image generation failed")
+                return False
+        except Exception as e:
+            print(f"[FAIL] Fallback map image generation error: {e}")
+            return False
+
+        print()
+
+        # Test preview image generation
+        print("=== PDF Preview Image Generation Smoke Test ===")
+        print()
+
+        # Regenerate PDF for preview testing
+        print("Regenerating PDF for preview testing...")
+        try:
+            pdf_id_2, download_url_2, overlay_metadata_2 = generate_itinerary_pdf(payload, base_url=base_url)
+            print(f"[OK] PDF regenerated for preview testing: {pdf_id_2}")
+            print()
+        except Exception as e:
+            print(f"[FAIL] PDF regeneration failed: {e}")
+            return False
+
+        # Test preview image rendering
+        try:
+            pages_metadata = render_pdf_pages_to_images(pdf_id_2)
+            if pages_metadata and len(pages_metadata) > 0:
+                print(f"[OK] Preview images generated successfully")
+                print(f"  Page count: {len(pages_metadata)}")
+                for page_num, page_meta in pages_metadata.items():
+                    print(f"  Page {page_num}: {page_meta['width']}x{page_meta['height']}")
+            else:
+                print("[FAIL] Preview image generation failed")
+                return False
+        except Exception as e:
+            print(f"[FAIL] Preview image generation error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+        # Test preview metadata retrieval
+        try:
+            preview_metadata = get_preview_with_overlays(pdf_id_2)
+            if preview_metadata and preview_metadata.get("page_count") > 0:
+                print(f"[OK] Preview metadata retrieved successfully")
+                print(f"  Page count: {preview_metadata['page_count']}")
+                print(f"  Pages with links: {len([p for p in preview_metadata['pages'] if p.get('links')])}")
+            else:
+                print("[FAIL] Preview metadata retrieval failed")
+                return False
+        except Exception as e:
+            print(f"[FAIL] Preview metadata retrieval error: {e}")
+            return False
+
+        # Test preview image endpoint
+        try:
+            preview_response = client.get(f"/api/pdf/{pdf_id_2}/preview")
+            if preview_response.status_code == 200:
+                preview_data = preview_response.json()
+                print(f"[OK] Preview endpoint returned JSON")
+                print(f"  Page count: {preview_data.get('page_count', 0)}")
+            else:
+                print(f"[FAIL] Preview endpoint failed: {preview_response.status_code}")
+                return False
+        except Exception as e:
+            print(f"[FAIL] Preview endpoint error: {e}")
+            return False
+
+        # Test preview page image endpoint
+        try:
+            page_response = client.get(f"/api/pdf/{pdf_id_2}/preview/1.png")
+            if page_response.status_code == 200:
+                print(f"[OK] Preview page image endpoint returned PNG")
+                print(f"  Content type: {page_response.headers.get('content-type')}")
+            else:
+                print(f"[FAIL] Preview page image endpoint failed: {page_response.status_code}")
+                return False
+        except Exception as e:
+            print(f"[FAIL] Preview page image endpoint error: {e}")
+            return False
+
+        # Test preview image cleanup
+        print()
+        print("Testing preview image cleanup...")
+        deleted_count = delete_preview_images(pdf_id_2)
+        print(f"[OK] Preview images deleted: {deleted_count} files")
+
+        # Verify preview directory is removed
+        preview_dir_2 = PREVIEWS_DIR / pdf_id_2
+        if not preview_dir_2.exists():
+            print("[OK] Preview directory removed")
+        else:
+            print("[WARN] Preview directory still exists")
+
+        # Clean up the test PDF
+        from app.pdf_store import delete_pdf
+        delete_pdf(pdf_id_2)
+
+        print()
 
         # Call session finish again (should not crash)
         print("Calling /api/session/finish again (should not crash)...")

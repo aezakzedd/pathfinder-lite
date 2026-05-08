@@ -101,6 +101,7 @@ export function renderLast(container) {
       }
     });
   } else if (pdfReady) {
+    loadPreviewImages(currentPdfId, pdfPreviewContainer);
     createShareForPdf(currentPdfId, shareElements);
   } else {
     setSharePreparing(shareElements);
@@ -121,7 +122,8 @@ async function generatePdfForPreview(exportPayload, elements) {
     setPdfId(pdfId);
 
     setDownloadReady(pdfDownloadLink, getPdfDownloadUrl(previewUrl), pdfId);
-    pdfPreviewContainer.innerHTML = renderPdfPreview(previewUrl);
+    pdfPreviewContainer.innerHTML = renderPdfPreview(pdfId);
+    await loadPreviewImages(pdfId, pdfPreviewContainer);
     await createShareForPdf(pdfId, shareElements);
   } catch (error) {
     console.error('PDF generation error:', error);
@@ -273,6 +275,10 @@ function getPdfPreviewUrl(pdfId) {
   return apiUrl(`/api/pdf/${pdfId}.pdf`);
 }
 
+function getPdfPreviewMetadataUrl(pdfId) {
+  return apiUrl(`/api/pdf/${pdfId}/preview`);
+}
+
 function getPdfIframeUrl(pdfUrl) {
   return `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
 }
@@ -282,13 +288,13 @@ function getPdfDownloadUrl(url) {
   return `${url}${separator}download=1`;
 }
 
-function renderPdfPreview(pdfUrl) {
+function renderPdfPreview(pdfId) {
   return `
-    <iframe
-      src="${getPdfIframeUrl(pdfUrl)}"
-      class="pdf-preview-frame"
-      title="Pathfinder itinerary PDF preview"
-    ></iframe>
+    <div class="pdf-preview-pages" id="pdf-preview-pages" role="img" aria-label="PDF preview pages">
+      <div class="pdf-preview-loading" role="status" aria-live="polite">
+        <span>Loading preview...</span>
+      </div>
+    </div>
   `;
 }
 
@@ -314,6 +320,9 @@ function renderPreviewUnavailable() {
       ${iconDocument()}
       <h2>Preview unavailable</h2>
       <p>Preview unavailable on this browser. Use Download PDF.</p>
+      <a href="#" id="fallback-pdf-iframe" class="last-control-btn last-finish-btn">
+        <span>Open PDF Preview</span>
+      </a>
     </div>
   `;
 }
@@ -338,4 +347,90 @@ function iconDocument() {
       <path d="M14 3v5h5M9.5 13h5M9.5 16h5M9.5 10h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
     </svg>
   `;
+}
+
+async function loadPreviewImages(pdfId, container) {
+  if (!pdfId || !container) return;
+
+  try {
+    const previewUrl = getPdfPreviewMetadataUrl(pdfId);
+    const response = await fetch(previewUrl);
+
+    if (!response.ok) {
+      container.innerHTML = renderPreviewUnavailable();
+      attachFallbackHandler(pdfId, container);
+      return;
+    }
+
+    const previewData = await response.json();
+    renderPreviewPages(previewData, container);
+  } catch (error) {
+    console.error('Preview loading error:', error);
+    container.innerHTML = renderPreviewUnavailable();
+    attachFallbackHandler(pdfId, container);
+  }
+}
+
+function renderPreviewPages(previewData, container) {
+  const pages = previewData.pages || [];
+  if (pages.length === 0) {
+    container.innerHTML = renderPreviewUnavailable();
+    return;
+  }
+
+  const pagesHtml = pages.map((page) => {
+    const pageImage = page.image_url || '';
+    const pageWidth = page.width || 794;
+    const pageHeight = page.height || 1123;
+    const links = page.links || [];
+
+    const overlaysHtml = links.map((link) => {
+      const href = link.href || '#';
+      const target = link.target || '_blank';
+      const x = (link.x || 0) * 100;
+      const y = (link.y || 0) * 100;
+      const w = (link.w || 0) * 100;
+      const h = (link.h || 0) * 100;
+      const label = link.label || 'Open map';
+
+      return `
+        <a
+          class="pdf-preview-hotspot map-hotspot"
+          href="${href}"
+          target="${target}"
+          rel="noopener noreferrer"
+          style="left:${x}%;top:${y}%;width:${w}%;height:${h}%;"
+          aria-label="${label}"
+          title="${label}"
+        ></a>
+      `;
+    }).join('');
+
+    return `
+      <article class="pdf-preview-image-page" style="--page-w:${pageWidth}px;--page-h:${pageHeight}px;">
+        <img class="pdf-preview-page-image" src="${pageImage}" alt="PDF page ${page.page}" loading="lazy">
+        ${overlaysHtml}
+      </article>
+    `;
+  }).join('');
+
+  container.innerHTML = `<div class="pdf-preview-pages-inner">${pagesHtml}</div>`;
+}
+
+function attachFallbackHandler(pdfId, container) {
+  const fallbackLink = container.querySelector('#fallback-pdf-iframe');
+  if (fallbackLink) {
+    fallbackLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      const pdfUrl = getPdfPreviewUrl(pdfId);
+      const iframeUrl = getPdfIframeUrl(pdfUrl);
+      container.innerHTML = `
+        <iframe
+          src="${iframeUrl}"
+          class="pdf-preview-frame"
+          title="Pathfinder itinerary PDF preview"
+        ></iframe>
+      `;
+    });
+  }
 }
