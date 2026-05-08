@@ -19,11 +19,9 @@ export function renderLast(container) {
       <section class="last-export-controls" aria-label="Export controls">
         <div class="last-export-actions">
           <button class="last-control-btn last-back-btn" type="button" data-navigate="#/itinerary">
-            ${iconArrowLeft()}
             <span>Back to Itinerary</span>
           </button>
           <button class="last-control-btn last-finish-btn" type="button" id="finish-home-btn">
-            ${iconHome()}
             <span>Finish & Home</span>
           </button>
           <a
@@ -32,29 +30,18 @@ export function renderLast(container) {
             ${pdfReady ? `href="${currentPdfUrl}"` : 'aria-disabled="true" tabindex="-1"'}
             download="${currentPdfId ? `pathfinder-itinerary-${currentPdfId}.pdf` : 'pathfinder-itinerary.pdf'}"
           >
-            ${iconDownload()}
             <span>Download PDF</span>
           </a>
-        </div>
-
-        <div class="last-status-card ${pdfReady ? 'is-ready' : hasItinerary ? 'is-generating' : 'is-unavailable'}" id="pdf-status-card">
-          <span class="last-status-label">${pdfReady ? 'PDF Ready' : hasItinerary ? 'Generating PDF' : 'Preview unavailable'}</span>
-          <span class="last-status-detail">${pdfReady ? 'Download is available.' : hasItinerary ? 'Creating the document preview now.' : 'No itinerary export data was found.'}</span>
-        </div>
-
-        <div class="send-phone-panel" aria-disabled="true">
-          <div class="send-phone-title">Send to Phone</div>
-          <div class="send-phone-status" id="send-phone-status">Coming next</div>
         </div>
       </section>
 
       <main class="pdf-preview-stage" id="pdf-preview-stage">
         <section class="pdf-document-wrap" id="pdf-preview-container" aria-label="PDF preview">
-          ${hasItinerary
-            ? pdfReady
-              ? renderPdfPreview(currentPdfUrl)
-              : renderGeneratingPreview()
-            : renderEmptyPreview()
+          ${pdfReady
+            ? renderPdfPreview(currentPdfUrl)
+            : hasItinerary
+              ? renderGeneratingPreview()
+              : renderEmptyPreview()
           }
         </section>
       </main>
@@ -66,7 +53,6 @@ export function renderLast(container) {
     </div>
   `;
 
-  const pdfStatusCard = document.getElementById('pdf-status-card');
   const pdfPreviewContainer = document.getElementById('pdf-preview-container');
   const pdfDownloadLink = document.getElementById('pdf-download-link');
   const finishHomeBtn = document.getElementById('finish-home-btn');
@@ -94,7 +80,6 @@ export function renderLast(container) {
 
   if (hasItinerary && !pdfReady) {
     generatePdfForPreview(exportPayload, {
-      pdfStatusCard,
       pdfPreviewContainer,
       pdfDownloadLink,
       setPdfId: (pdfId) => {
@@ -106,8 +91,7 @@ export function renderLast(container) {
 }
 
 async function generatePdfForPreview(exportPayload, elements) {
-  const { pdfStatusCard, pdfPreviewContainer, pdfDownloadLink, setPdfId } = elements;
-  setPdfStatus(pdfStatusCard, 'generating', 'Generating PDF', 'Creating the document preview now.');
+  const { pdfPreviewContainer, pdfDownloadLink, setPdfId } = elements;
   setDownloadDisabled(pdfDownloadLink);
   pdfPreviewContainer.innerHTML = renderGeneratingPreview();
 
@@ -117,12 +101,10 @@ async function generatePdfForPreview(exportPayload, elements) {
     localStorage.setItem(PDF_ID_KEY, response.pdf_id);
     setPdfId(response.pdf_id);
 
-    setPdfStatus(pdfStatusCard, 'ready', 'PDF Ready', 'Download is available.');
     setDownloadReady(pdfDownloadLink, fullDownloadUrl, response.pdf_id);
     pdfPreviewContainer.innerHTML = renderPdfPreview(fullDownloadUrl);
   } catch (error) {
     console.error('PDF generation error:', error);
-    setPdfStatus(pdfStatusCard, 'error', 'Error state', 'PDF generation failed. Try returning to the itinerary and saving again.');
     setDownloadDisabled(pdfDownloadLink);
     pdfPreviewContainer.innerHTML = renderPreviewUnavailable();
   }
@@ -174,15 +156,6 @@ function loadExportState() {
   return { exportPayload, savedPdfId };
 }
 
-function setPdfStatus(element, state, label, detail) {
-  if (!element) return;
-  element.className = `last-status-card is-${state}`;
-  element.innerHTML = `
-    <span class="last-status-label">${label}</span>
-    <span class="last-status-detail">${detail}</span>
-  `;
-}
-
 function setDownloadReady(link, url, pdfId) {
   if (!link) return;
   link.href = url;
@@ -202,9 +175,7 @@ function setDownloadDisabled(link) {
 
 function renderPdfPreview(pdfUrl) {
   return `
-    <object data="${pdfUrl}" type="application/pdf" class="pdf-preview-frame" aria-label="Pathfinder itinerary PDF preview">
-      ${renderPreviewUnavailable()}
-    </object>
+    <iframe src="${pdfUrl}" class="pdf-preview-frame" title="Pathfinder itinerary PDF preview"></iframe>
   `;
 }
 
@@ -242,35 +213,9 @@ function renderEmptyPreview() {
       <h2>No itinerary export found</h2>
       <p>Return to the itinerary and save a trip to create a PDF preview.</p>
       <button class="last-control-btn last-finish-btn" type="button" data-navigate="#/itinerary">
-        ${iconArrowLeft()}
         <span>Go to Itinerary</span>
       </button>
     </div>
-  `;
-}
-
-function iconArrowLeft() {
-  return `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
-  `;
-}
-
-function iconHome() {
-  return `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="m3 11 9-8 9 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-      <path d="M5 10v10h14V10M9 20v-6h6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
-  `;
-}
-
-function iconDownload() {
-  return `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 3v12M7 10l5 5 5-5M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
   `;
 }
 

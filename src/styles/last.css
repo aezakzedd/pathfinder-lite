@@ -21,7 +21,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: 0;
   pointer-events: auto;
 }
 
@@ -29,64 +29,62 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px;
-  border: 1px solid rgba(148, 163, 184, 0.26);
-  border-radius: 18px;
-  background: rgba(10, 14, 22, 0.88);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .last-control-btn {
   min-height: 52px;
   padding: 0 18px;
-  border: 1px solid transparent;
+  border: 1px solid rgba(226, 232, 240, 0.28);
   border-radius: 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
   color: #f8fafc;
   font-size: 15px;
   font-weight: 800;
   line-height: 1;
   text-decoration: none;
   cursor: pointer;
+  background: transparent;
   transition: background 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
 }
 
-.last-control-btn svg {
-  flex: 0 0 auto;
-}
-
 .last-back-btn {
-  background: #1f2937;
-  border-color: rgba(148, 163, 184, 0.24);
+  background: transparent;
 }
 
 .last-back-btn:hover {
-  background: #273244;
+  background: rgba(31, 41, 55, 0.5);
+  border-color: rgba(226, 232, 240, 0.42);
 }
 
 .last-finish-btn {
-  background: #2458d8;
-  border-color: rgba(147, 197, 253, 0.28);
+  background: transparent;
+  border-color: rgba(147, 197, 253, 0.32);
 }
 
 .last-finish-btn:hover {
-  background: #1d4ed8;
+  background: rgba(37, 99, 235, 0.54);
+  border-color: rgba(191, 219, 254, 0.52);
 }
 
 .last-download-btn {
-  background: #0f9f6e;
-  border-color: rgba(110, 231, 183, 0.34);
+  background: transparent;
+  border-color: rgba(110, 231, 183, 0.36);
 }
 
 .last-download-btn:hover {
-  background: #059669;
+  background: rgba(5, 150, 105, 0.54);
+  border-color: rgba(167, 243, 208, 0.52);
 }
 
 .last-download-btn.is-disabled {
-  background: rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.08);
   border-color: rgba(110, 231, 183, 0.16);
   color: rgba(240, 253, 244, 0.58);
   cursor: not-allowed;
@@ -96,78 +94,6 @@
 .last-control-btn:disabled {
   cursor: not-allowed;
   opacity: 0.62;
-}
-
-.last-status-card,
-.send-phone-panel {
-  width: min(360px, calc(100vw - 36px));
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 16px;
-  background: rgba(12, 18, 32, 0.92);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
-}
-
-.last-status-card {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 14px 16px;
-}
-
-.last-status-label {
-  font-size: 16px;
-  font-weight: 900;
-  letter-spacing: 0.01em;
-}
-
-.last-status-detail {
-  color: rgba(226, 232, 240, 0.78);
-  font-size: 14px;
-  font-weight: 650;
-  line-height: 1.35;
-}
-
-.last-status-card.is-ready {
-  border-color: rgba(74, 222, 128, 0.4);
-}
-
-.last-status-card.is-ready .last-status-label {
-  color: #4ade80;
-}
-
-.last-status-card.is-generating .last-status-label {
-  color: #fbbf24;
-}
-
-.last-status-card.is-error,
-.last-status-card.is-unavailable {
-  border-color: rgba(248, 113, 113, 0.4);
-}
-
-.last-status-card.is-error .last-status-label,
-.last-status-card.is-unavailable .last-status-label {
-  color: #f87171;
-}
-
-.send-phone-panel {
-  min-height: 92px;
-  padding: 16px;
-  background: linear-gradient(145deg, rgba(17, 24, 54, 0.96), rgba(14, 30, 65, 0.9));
-}
-
-.send-phone-title {
-  color: #dbeafe;
-  font-size: 15px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.send-phone-status {
-  margin-top: 9px;
-  color: rgba(191, 219, 254, 0.78);
-  font-size: 15px;
-  font-weight: 700;
 }
 
 .pdf-preview-stage {
@@ -313,23 +239,16 @@
   .last-export-controls {
     top: 14px;
     left: 14px;
-    gap: 10px;
   }
 
   .last-export-actions {
     gap: 8px;
-    padding: 8px;
   }
 
   .last-control-btn {
     min-height: 48px;
     padding: 0 14px;
     font-size: 13px;
-  }
-
-  .last-status-card,
-  .send-phone-panel {
-    width: 320px;
   }
 
   .pdf-preview-stage {
@@ -372,11 +291,6 @@
     min-height: 58px;
     padding: 0 22px;
     font-size: 16px;
-  }
-
-  .last-status-card,
-  .send-phone-panel {
-    width: 390px;
   }
 
   .pdf-document-wrap {

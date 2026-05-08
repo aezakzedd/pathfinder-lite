@@ -368,11 +368,13 @@
 - Reworked export controls into a fixed upper-left control panel that remains visible while the PDF preview scrolls
 - Toolbar controls now match the original grouping: Back to Itinerary, Finish & Home, Download PDF in a horizontal row
 - Removed the global site navbar from the Last page so export controls are not covered
-- Added a clear Send to Phone panel below the main button row with "Coming next" status
+- Removed the Send to Phone and PDF Ready status cards from the visible export viewer after UI parity review
+- Removed icons from Back to Itinerary, Finish & Home, Download PDF, and Go to Itinerary controls
+- Made the export control row transparent so it floats over the viewer without a heavy card background
 - Download PDF remains visible at all times; it is disabled while generating and enabled immediately once the PDF is ready
 - Last page now auto-generates the backend PDF when export payload exists and no saved PDF ID is available
-- Refresh recovery reads `pathfinder-lite-pdf-id` from localStorage, shows PDF Ready, restores the preview URL, and enables Download PDF
-- PDF state messages are now large/readable: Generating PDF, PDF Ready, Preview unavailable, and Error state
+- Refresh recovery reads `pathfinder-lite-pdf-id` from localStorage, restores the iframe preview URL, and enables Download PDF even when the export payload has already been cleared
+- PDF state messages now live in the preview area only; the fixed toolbar is reduced to the three core actions
 - Preview fallback message says "Preview unavailable on this browser. Use Download PDF."
 - Kept Back to Itinerary behavior non-destructive and kept Finish & Home session/local cleanup behavior
 - Kept the existing backend-generated PDF flow without adding frontend PDF libraries, QR libraries, canvas capture, or new dependencies
@@ -433,16 +435,16 @@
 
 ## Current Bundle Size
 
-Latest build (Phase 13B.4):
+Latest build (Phase 13B.4 export viewer cleanup):
 - HTML: 0.56 kB
 - Main CSS: 93.98 kB
-- Main JS: 99.40 kB
+- Main JS: 99.41 kB
 - Leaflet async JS chunk: 149.47 kB
-- Last page CSS chunk: 5.90 kB
-- Last page JS chunk: 7.38 kB
+- Last page CSS chunk: 4.45 kB
+- Last page JS chunk: 5.29 kB
 - Lazy route CSS chunks: 14.84 kB total
-- Lazy route JS chunks: 20.41 kB total
-- Full built JS/CSS assets: ~378.10 kB
+- Lazy route JS chunks: 13.03 kB total
+- Full built JS/CSS assets: ~374.57 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
