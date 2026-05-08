@@ -8,92 +8,92 @@
   --app-text: #0b0b0b;
 
   /* === Home Page Colors === */
-  --home-bg: #fefcf8;
+  --home-bg: #f8fafc;
   --home-surface: #ffffff;
-  --home-surface-subtle: rgba(102, 102, 102, 0.75);
-  --home-text: #0b0b0b;
-  --home-text-rgb: 11, 11, 11;
-  --home-muted: #475569;
-  --home-muted-2: #64748b;
-  --home-border: #e2e8f0;
-  --home-border-strong: #cbd5e1;
-  --home-shadow: rgba(15, 23, 42, 0.15);
-  --home-shadow-strong: rgba(15, 23, 42, 0.25);
-  --home-glass: rgba(255, 255, 255, 0.75);
-  --home-glass-strong: rgba(255, 255, 255, 0.4);
-  --home-down-bg: #e5e7eb;
-  --home-down-border: #cbd5e1;
+  --home-surface-subtle: #f1f5f9;
+  --home-text: #0f172a;
+  --home-text-rgb: 15, 23, 42;
+  --home-muted: #64748b;
+  --home-muted-2: #475569;
+  --home-border: rgba(15, 23, 42, 0.12);
+  --home-border-strong: rgba(15, 23, 42, 0.2);
+  --home-shadow: rgba(15, 23, 42, 0.1);
+  --home-shadow-strong: rgba(15, 23, 42, 0.15);
+  --home-glass: rgba(255, 255, 255, 0.8);
+  --home-glass-strong: rgba(255, 255, 255, 0.9);
+  --home-down-bg: rgba(15, 23, 42, 0.05);
+  --home-down-border: rgba(15, 23, 42, 0.1);
 
   /* === Navbar Colors === */
-  --navbar-glass: rgba(255, 255, 255, 0.6);
-  --navbar-glass-strong: rgba(255, 255, 255, 0.4);
-  --navbar-border: rgba(15, 23, 42, 0.06);
-  --navbar-text: #0b0b0b;
-  --navbar-muted: #475569;
+  --navbar-glass: rgba(255, 255, 255, 0.8);
+  --navbar-glass-strong: rgba(255, 255, 255, 0.9);
+  --navbar-border: rgba(15, 23, 42, 0.08);
+  --navbar-text: #0f172a;
+  --navbar-muted: #64748b;
   --navbar-cta-bg: #0f172a;
-  --navbar-cta-bg-hover: #0b1220;
+  --navbar-cta-bg-hover: #1e293b;
   --navbar-cta-text: #ffffff;
-  --navbar-surface-subtle: rgba(102, 102, 102, 0.75);
-  --navbar-shadow: rgba(15, 23, 42, 0.15);
-  --navbar-toggle-track: #0f172a;
+  --navbar-surface-subtle: #f1f5f9;
+  --navbar-shadow: rgba(15, 23, 42, 0.1);
+  --navbar-toggle-track: #cbd5e1;
   --navbar-toggle-thumb: #ffffff;
 
   /* === Itinerary Colors === */
-  --itinerary-bg: #e8efe5;
-  --itinerary-grid-line: rgba(15, 23, 42, 0.04);
+  --itinerary-bg: #f8fafc;
+  --itinerary-grid-line: rgba(15, 23, 42, 0.05);
   --itinerary-surface: #ffffff;
-  --itinerary-surface-subtle: rgba(102, 102, 102, 0.75);
-  --itinerary-border-strong: #cbd5e1;
-  --itinerary-shadow: rgba(15, 23, 42, 0.15);
-  --itinerary-text: #0b0b0b;
-  --itinerary-muted: #475569;
-  --itinerary-glass: rgba(255, 255, 255, 0.75);
+  --itinerary-surface-subtle: #f1f5f9;
+  --itinerary-border-strong: rgba(15, 23, 42, 0.2);
+  --itinerary-shadow: rgba(15, 23, 42, 0.1);
+  --itinerary-text: #0f172a;
+  --itinerary-muted: #64748b;
+  --itinerary-glass: rgba(255, 255, 255, 0.8);
   --itinerary-slider-track: #cbd5e1;
 
   /* === Itinerary Chat Colors === */
-  --itinerary-chat-glass: rgba(255, 255, 255, 0.75);
-  --itinerary-chat-glass-strong: rgba(255, 255, 255, 0.4);
-  --itinerary-chat-border: #e2e8f0;
-  --itinerary-chat-border-strong: #cbd5e1;
-  --itinerary-chat-text: #0b0b0b;
-  --itinerary-chat-muted: #475569;
-  --itinerary-chat-shadow: rgba(15, 23, 42, 0.15);
+  --itinerary-chat-glass: rgba(255, 255, 255, 0.9);
+  --itinerary-chat-glass-strong: rgba(255, 255, 255, 0.95);
+  --itinerary-chat-border: rgba(15, 23, 42, 0.12);
+  --itinerary-chat-border-strong: rgba(15, 23, 42, 0.2);
+  --itinerary-chat-text: #0f172a;
+  --itinerary-chat-muted: #64748b;
+  --itinerary-chat-shadow: rgba(15, 23, 42, 0.1);
   --itinerary-chat-surface: #ffffff;
-  --itinerary-chat-surface-subtle: rgba(102, 102, 102, 0.75);
+  --itinerary-chat-surface-subtle: #f1f5f9;
 
   /* === Itinerary Map Colors === */
-  --itinerary-map-panel-bg: rgba(255, 255, 255, 0.92);
-  --itinerary-map-panel-border: #e2e8f0;
-  --itinerary-map-panel-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
-  --itinerary-map-panel-bg-contrast: rgba(15, 23, 42, 0.08);
-  --itinerary-map-panel-border-contrast: rgba(15, 23, 42, 0.16);
-  --itinerary-map-shadow: rgba(15, 23, 42, 0.15);
-  --itinerary-map-surface-subtle: rgba(102, 102, 102, 0.75);
-  --itinerary-map-muted: #475569;
-  --itinerary-map-muted-2: #64748b;
+  --itinerary-map-panel-bg: rgba(255, 255, 255, 0.98);
+  --itinerary-map-panel-border: rgba(15, 23, 42, 0.15);
+  --itinerary-map-panel-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+  --itinerary-map-panel-bg-contrast: rgba(255, 255, 255, 0.98);
+  --itinerary-map-panel-border-contrast: rgba(15, 23, 42, 0.15);
+  --itinerary-map-shadow: rgba(15, 23, 42, 0.1);
+  --itinerary-map-surface-subtle: #f1f5f9;
+  --itinerary-map-muted: #64748b;
+  --itinerary-map-muted-2: #475569;
   --itinerary-map-slider-track: #cbd5e1;
-  --itinerary-map-slider-thumb: #0f172a;
-  --itinerary-map-border: #e2e8f0;
-  --itinerary-map-border-strong: #cbd5e1;
-  --itinerary-map-text: #0b0b0b;
-  --itinerary-map-input-bg: #f5ede0;
-  --itinerary-map-input-border: #e2d3bd;
-  --itinerary-map-input-hover-bg: #efe4d2;
-  --itinerary-map-chip-bg: #f8fafc;
-  --itinerary-map-chip-border: #e2e8f0;
-  --itinerary-map-chip-hover-bg: #eef2f6;
+  --itinerary-map-slider-thumb: #ffffff;
+  --itinerary-map-border: rgba(15, 23, 42, 0.12);
+  --itinerary-map-border-strong: rgba(15, 23, 42, 0.2);
+  --itinerary-map-text: #0f172a;
+  --itinerary-map-input-bg: rgba(255, 255, 255, 0.9);
+  --itinerary-map-input-border: #cbd5e1;
+  --itinerary-map-input-hover-bg: rgba(241, 245, 249, 0.95);
+  --itinerary-map-chip-bg: rgba(241, 245, 249, 0.8);
+  --itinerary-map-chip-border: rgba(203, 213, 225, 0.5);
+  --itinerary-map-chip-hover-bg: rgba(226, 232, 240, 0.9);
   --itinerary-map-surface: #ffffff;
-  --itinerary-map-overlay: rgba(15, 23, 42, 0.08);
-  --itinerary-map-popup-bg: #ffffff;
+  --itinerary-map-overlay: rgba(15, 23, 42, 0.1);
+  --itinerary-map-popup-bg: rgba(255, 255, 255, 0.95);
   --itinerary-map-popup-text: #0f172a;
-  --itinerary-map-popup-border: #e2e8f0;
-  --itinerary-map-popup-shadow: rgba(15, 23, 42, 0.15);
+  --itinerary-map-popup-border: rgba(15, 23, 42, 0.12);
+  --itinerary-map-popup-shadow: rgba(15, 23, 42, 0.1);
 
   /* === Itinerary Card Colors === */
-  --itinerary-card-panel-bg: #d5dbe3;
-  --itinerary-card-border: #c2c9d3;
-  --itinerary-card-text: #0b0b0b;
-  --itinerary-card-shadow: rgba(15, 23, 42, 0.18);
+  --itinerary-card-panel-bg: rgba(255, 255, 255, 0.95);
+  --itinerary-card-border: rgba(15, 23, 42, 0.12);
+  --itinerary-card-text: #0f172a;
+  --itinerary-card-shadow: rgba(15, 23, 42, 0.1);
   --itinerary-card-surface-02: rgba(15, 23, 42, 0.02);
   --itinerary-card-surface-03: rgba(15, 23, 42, 0.03);
   --itinerary-card-surface-04: rgba(15, 23, 42, 0.04);
@@ -111,7 +111,7 @@
   --itinerary-card-text-85: rgba(15, 23, 42, 0.85);
   --itinerary-card-text-90: rgba(15, 23, 42, 0.9);
   --itinerary-card-text-white: #ffffff;
-  --itinerary-card-text-offwhite: #0b0b0b;
+  --itinerary-card-text-offwhite: rgb(15, 23, 42);
   --itinerary-card-shadow-15: rgba(15, 23, 42, 0.15);
   --itinerary-card-shadow-20: rgba(15, 23, 42, 0.2);
   --itinerary-card-shadow-30: rgba(15, 23, 42, 0.3);
@@ -316,121 +316,5 @@
   --itinerary-card-shadow-15: rgba(0, 0, 0, 0.15);
   --itinerary-card-shadow-20: rgba(0, 0, 0, 0.2);
   --itinerary-card-shadow-30: rgba(0, 0, 0, 0.3);
-  --itinerary-card-transparent: rgba(0, 0, 0, 0);
-}
-
-[data-theme='light'] {
-  /* === Base Colors (Light Theme) === */
-  --app-bg: #f8fafc;
-  --app-text: #0f172a;
-
-  /* === Home Page Colors === */
-  --home-bg: #f8fafc;
-  --home-surface: #ffffff;
-  --home-surface-subtle: #f1f5f9;
-  --home-text: #0f172a;
-  --home-text-rgb: 15, 23, 42;
-  --home-muted: #64748b;
-  --home-muted-2: #475569;
-  --home-border: rgba(15, 23, 42, 0.12);
-  --home-border-strong: rgba(15, 23, 42, 0.2);
-  --home-shadow: rgba(15, 23, 42, 0.1);
-  --home-shadow-strong: rgba(15, 23, 42, 0.15);
-  --home-glass: rgba(255, 255, 255, 0.8);
-  --home-glass-strong: rgba(255, 255, 255, 0.9);
-  --home-down-bg: rgba(15, 23, 42, 0.05);
-  --home-down-border: rgba(15, 23, 42, 0.1);
-
-  /* === Navbar Colors === */
-  --navbar-glass: rgba(255, 255, 255, 0.8);
-  --navbar-glass-strong: rgba(255, 255, 255, 0.9);
-  --navbar-border: rgba(15, 23, 42, 0.08);
-  --navbar-text: #0f172a;
-  --navbar-muted: #64748b;
-  --navbar-cta-bg: #0f172a;
-  --navbar-cta-bg-hover: #1e293b;
-  --navbar-cta-text: #ffffff;
-  --navbar-surface-subtle: #f1f5f9;
-  --navbar-shadow: rgba(15, 23, 42, 0.1);
-  --navbar-toggle-track: #cbd5e1;
-  --navbar-toggle-thumb: #ffffff;
-
-  /* === Itinerary Colors === */
-  --itinerary-bg: #f8fafc;
-  --itinerary-grid-line: rgba(15, 23, 42, 0.05);
-  --itinerary-surface: #ffffff;
-  --itinerary-surface-subtle: #f1f5f9;
-  --itinerary-border-strong: rgba(15, 23, 42, 0.2);
-  --itinerary-shadow: rgba(15, 23, 42, 0.1);
-  --itinerary-text: #0f172a;
-  --itinerary-muted: #64748b;
-  --itinerary-glass: rgba(255, 255, 255, 0.8);
-  --itinerary-slider-track: #cbd5e1;
-
-  /* === Itinerary Chat Colors === */
-  --itinerary-chat-glass: rgba(255, 255, 255, 0.9);
-  --itinerary-chat-glass-strong: rgba(255, 255, 255, 0.95);
-  --itinerary-chat-border: rgba(15, 23, 42, 0.12);
-  --itinerary-chat-border-strong: rgba(15, 23, 42, 0.2);
-  --itinerary-chat-text: #0f172a;
-  --itinerary-chat-muted: #64748b;
-  --itinerary-chat-shadow: rgba(15, 23, 42, 0.1);
-  --itinerary-chat-surface: #ffffff;
-  --itinerary-chat-surface-subtle: #f1f5f9;
-
-  /* === Itinerary Map Colors === */
-  --itinerary-map-panel-bg: rgba(255, 255, 255, 0.98);
-  --itinerary-map-panel-border: rgba(15, 23, 42, 0.15);
-  --itinerary-map-panel-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
-  --itinerary-map-panel-bg-contrast: rgba(255, 255, 255, 0.98);
-  --itinerary-map-panel-border-contrast: rgba(15, 23, 42, 0.15);
-  --itinerary-map-shadow: rgba(15, 23, 42, 0.1);
-  --itinerary-map-surface-subtle: #f1f5f9;
-  --itinerary-map-muted: #64748b;
-  --itinerary-map-muted-2: #475569;
-  --itinerary-map-slider-track: #cbd5e1;
-  --itinerary-map-slider-thumb: #ffffff;
-  --itinerary-map-border: rgba(15, 23, 42, 0.12);
-  --itinerary-map-border-strong: rgba(15, 23, 42, 0.2);
-  --itinerary-map-text: #0f172a;
-  --itinerary-map-input-bg: rgba(255, 255, 255, 0.9);
-  --itinerary-map-input-border: #cbd5e1;
-  --itinerary-map-input-hover-bg: rgba(241, 245, 249, 0.95);
-  --itinerary-map-chip-bg: rgba(241, 245, 249, 0.8);
-  --itinerary-map-chip-border: rgba(203, 213, 225, 0.5);
-  --itinerary-map-chip-hover-bg: rgba(226, 232, 240, 0.9);
-  --itinerary-map-surface: #ffffff;
-  --itinerary-map-overlay: rgba(15, 23, 42, 0.1);
-  --itinerary-map-popup-bg: rgba(255, 255, 255, 0.95);
-  --itinerary-map-popup-text: #0f172a;
-  --itinerary-map-popup-border: rgba(15, 23, 42, 0.12);
-  --itinerary-map-popup-shadow: rgba(15, 23, 42, 0.1);
-
-  /* === Itinerary Card Colors === */
-  --itinerary-card-panel-bg: rgba(255, 255, 255, 0.95);
-  --itinerary-card-border: rgba(15, 23, 42, 0.12);
-  --itinerary-card-text: #0f172a;
-  --itinerary-card-shadow: rgba(15, 23, 42, 0.1);
-  --itinerary-card-surface-02: rgba(15, 23, 42, 0.02);
-  --itinerary-card-surface-03: rgba(15, 23, 42, 0.03);
-  --itinerary-card-surface-04: rgba(15, 23, 42, 0.04);
-  --itinerary-card-surface-05: rgba(15, 23, 42, 0.05);
-  --itinerary-card-surface-06: rgba(15, 23, 42, 0.06);
-  --itinerary-card-surface-08: rgba(15, 23, 42, 0.08);
-  --itinerary-card-surface-10: rgba(15, 23, 42, 0.1);
-  --itinerary-card-surface-12: rgba(15, 23, 42, 0.12);
-  --itinerary-card-surface-15: rgba(15, 23, 42, 0.15);
-  --itinerary-card-surface-20: rgba(15, 23, 42, 0.2);
-  --itinerary-card-surface-25: rgba(15, 23, 42, 0.25);
-  --itinerary-card-text-50: rgba(15, 23, 42, 0.5);
-  --itinerary-card-text-60: rgba(15, 23, 42, 0.6);
-  --itinerary-card-text-70: rgba(15, 23, 42, 0.7);
-  --itinerary-card-text-85: rgba(15, 23, 42, 0.85);
-  --itinerary-card-text-90: rgba(15, 23, 42, 0.9);
-  --itinerary-card-text-white: #ffffff;
-  --itinerary-card-text-offwhite: rgb(15, 23, 42);
-  --itinerary-card-shadow-15: rgba(15, 23, 42, 0.15);
-  --itinerary-card-shadow-20: rgba(15, 23, 42, 0.2);
-  --itinerary-card-shadow-30: rgba(15, 23, 42, 0.3);
   --itinerary-card-transparent: rgba(0, 0, 0, 0);
 }
