@@ -21,7 +21,7 @@ body[data-route='about'] .page-container {
 }
 
 .about-original-lead strong {
-  color: #67e8f9;
+  color: var(--accent-blue);
   font-weight: 780;
 }
 

@@ -247,7 +247,7 @@ body[data-route='home'] .page-container {
   align-items: center;
   padding: 0 16px;
   border-radius: 999px;
-  background: rgba(5, 8, 12, 0.68);
+  background: var(--home-glass);
   color: rgba(var(--home-text-rgb), 0.92);
   border: 1px solid rgba(var(--home-text-rgb), 0.18);
   font-size: 13px;
@@ -409,13 +409,13 @@ body[data-route='home'] .page-container {
   padding: 18px;
   border: 1px solid rgba(var(--home-text-rgb), 0.14);
   border-radius: 22px;
-  background: rgba(6, 8, 12, 0.82);
-  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42);
+  background: var(--home-glass);
+  box-shadow: var(--shadow-2xl);
   backdrop-filter: blur(14px);
 }
 
 .home-chat-float span {
-  color: #74f5d0;
+  color: var(--accent-green);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.1em;
