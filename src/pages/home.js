@@ -2,164 +2,67 @@
 export function renderHome(container) {
   container.innerHTML = `
     <div class="page page-home">
-      <!-- Hero Section -->
-      <section class="hero">
-        <div class="hero-bg"></div>
-        <div class="hero-content">
-          <div class="debug-badge">PATHFINDER-LITE ACTIVE</div>
-          <div class="status-badge">
-            <span class="status-dot"></span>
-            <span>Live · Catanduanes Tourism</span>
-          </div>
-          <h1 class="headline">
-            Discover<br />
-            <em>Catanduanes.</em>
-          </h1>
-          <p class="lead">
-            Your AI-powered travel guide to the island of happiness. Explore pristine beaches, hidden waterfalls, and local culture with smart itineraries.
-          </p>
-          <div class="cta-group">
-            <button class="btn-primary" data-navigate="#/itinerary">
-              Start Planning
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 12h14M12 5l7 7-7 7" />
+      <div class="home-glow" aria-hidden="true"></div>
+      <div class="home-stars" aria-hidden="true"></div>
+      <div class="home-vignette" aria-hidden="true"></div>
+
+      <main class="home-stage">
+        <section class="home-hero" aria-labelledby="home-headline">
+          <div class="home-version-label">
+            <span class="home-version-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path d="M4 17 17 4m0 0h-7m7 0v7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M5 20c3.7-3.4 8-4.8 13-4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
               </svg>
+            </span>
+            <span>PATHFINDER // v1.0.21</span>
+          </div>
+
+          <h1 class="home-headline" id="home-headline">
+            Explore with<br />
+            every click.
+          </h1>
+
+          <p class="home-subtitle">
+            Pathfinder is the AI travel guide for Catanduanes.
+            Make personalized itineraries or find hidden spots.
+            Plan your entire trip with real-time local data.
+          </p>
+
+          <div class="home-hero-actions" aria-label="Home actions">
+            <button class="home-primary-action" type="button" data-navigate="#/itinerary">
+              <span>Start Exploring</span>
+              <span aria-hidden="true">↗</span>
             </button>
-            <button class="btn-secondary" data-navigate="#/about">
-              Learn More
+            <button class="home-secondary-action" type="button" data-navigate="#/contact">
+              Work with us
             </button>
           </div>
-        </div>
-      </section>
 
-      <!-- Tourism Visual Section -->
-      <section class="tourism-section">
-        <div class="section-header text-center">
-          <span class="section-label">Explore</span>
-          <h2 class="section-title">Island Destinations</h2>
-          <p class="section-subtitle">From surfing beaches to hidden waterfalls, discover the best of Catanduanes</p>
-        </div>
-        <div class="carousel-container">
-          <div class="carousel-track">
-            <div class="carousel-card carousel-card-center">
-              <div class="carousel-card-image">
-                <div class="carousel-placeholder">
-                  <span class="carousel-placeholder-icon">🏄</span>
-                  <span class="carousel-placeholder-text">Puraran Beach</span>
-                </div>
-              </div>
-              <div class="carousel-card-content">
-                <span class="carousel-tag">Surf · P50-300</span>
-                <h3>Puraran Beach</h3>
-                <p>Famous for its "Majestic" waves on the east coast. An iconic destination for surfers worldwide.</p>
-              </div>
-            </div>
-            <div class="carousel-card carousel-card-left">
-              <div class="carousel-card-image">
-                <div class="carousel-placeholder">
-                  <span class="carousel-placeholder-icon">🥾</span>
-                  <span class="carousel-placeholder-text">Binurong Point</span>
-                </div>
-              </div>
-              <div class="carousel-card-content">
-                <span class="carousel-tag">Hike · P50-200</span>
-                <h3>Binurong Point</h3>
-                <p>Breathtaking journey through rolling pastoral hills built for discovery.</p>
-              </div>
-            </div>
-            <div class="carousel-card carousel-card-right">
-              <div class="carousel-card-image">
-                <div class="carousel-placeholder">
-                  <span class="carousel-placeholder-icon">🏖️</span>
-                  <span class="carousel-placeholder-text">Twin Rock</span>
-                </div>
-              </div>
-              <div class="carousel-card-content">
-                <span class="carousel-tag">Beach · P100-500</span>
-                <h3>Twin Rock Beach Resort</h3>
-                <p>Perfect for families with calm waters and rock formations. Ideal for kayaking.</p>
-              </div>
-            </div>
+          <div class="home-partners" aria-label="Tourism partners">
+            <span>CATANDUANES</span>
+            <span>TOURISM</span>
+            <span>VIRAC</span>
+            <span>BARAS</span>
+            <span>LOCAL GUIDES</span>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Bento Feature Cards -->
-      <section class="bento-section">
-        <div class="section-header text-center">
-          <span class="section-label">Features</span>
-          <h2 class="section-title">Smart Travel Tools</h2>
-          <p class="section-subtitle">Everything you need for the perfect island adventure</p>
-        </div>
-        <div class="bento-grid">
-          <div class="bento-card">
-            <div class="bento-card-icon">🤖</div>
-            <h3 class="bento-card-title">AI Tourism Assistant</h3>
-            <p class="bento-card-description">Chat with our AI to get personalized recommendations, local tips, and real-time guidance.</p>
-          </div>
-          <div class="bento-card">
-            <div class="bento-card-icon">🗺️</div>
-            <h3 class="bento-card-title">Interactive Map Board</h3>
-            <p class="bento-card-description">Explore destinations with an interactive map featuring points of interest and routes.</p>
-          </div>
-          <div class="bento-card">
-            <div class="bento-card-icon">📋</div>
-            <h3 class="bento-card-title">Itinerary Planning</h3>
-            <p class="bento-card-description">Build custom itineraries based on your interests, time, and budget preferences.</p>
-          </div>
-          <div class="bento-card">
-            <div class="bento-card-icon">🔍</div>
-            <h3 class="bento-card-title">Local Discovery</h3>
-            <p class="bento-card-description">Find hidden gems and local favorites that tourists often miss.</p>
-          </div>
-          <div class="bento-card">
-            <div class="bento-card-icon">📱</div>
-            <h3 class="bento-card-title">QR/PDF Sharing</h3>
-            <p class="bento-card-description">Share your itinerary instantly via QR code or download as PDF.</p>
-          </div>
-          <div class="bento-card">
-            <div class="bento-card-icon">🖥️</div>
-            <h3 class="bento-card-title">Raspberry Pi Kiosk</h3>
-            <p class="bento-card-description">Deploy as a touch-screen kiosk for tourism centers and hotels.</p>
-          </div>
-        </div>
-      </section>
+        <section class="home-destination-strip" aria-label="Featured Catanduanes destinations">
+          <article class="home-destination-card home-destination-side home-destination-left" aria-label="Puraran Beach">
+            <img src="/images/puraran_beach.webp" alt="Puraran Beach coastline" loading="eager" />
+          </article>
 
-      <!-- Stats Strip -->
-      <section class="stats-section">
-        <div class="stats-strip">
-          <div class="stat">
-            <span class="stat-value">11</span>
-            <span class="stat-label">Municipalities</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">200+</span>
-            <span class="stat-label">Destinations</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">Offline</span>
-            <span class="stat-label">Ready</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">Touch</span>
-            <span class="stat-label">First</span>
-          </div>
-        </div>
-      </section>
+          <article class="home-destination-card home-destination-main" aria-label="Binurong Point">
+            <img src="/images/binurong_point.webp" alt="Binurong Point rolling hills and coastline" loading="eager" />
+            <span class="home-destination-label">Binurong Point</span>
+          </article>
 
-      <!-- CTA Footer Section -->
-      <section class="cta-section">
-        <div class="cta-content">
-          <h2 class="cta-title">Ready to Explore?</h2>
-          <p class="cta-subtitle">Start planning your Catanduanes adventure today with AI-powered guidance.</p>
-          <button class="btn-primary btn-large" data-navigate="#/itinerary">
-            Begin Your Journey
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </section>
+          <article class="home-destination-card home-destination-side home-destination-right" aria-label="Twin Rock Beach Resort">
+            <img src="/images/twin_rock.webp" alt="Twin Rock Beach Resort" loading="eager" />
+          </article>
+        </section>
+      </main>
     </div>
   `;
 }

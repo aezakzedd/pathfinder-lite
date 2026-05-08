@@ -23,6 +23,7 @@ export function renderNavbar() {
               <path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3a1 1 0 0 1-1 1h-5a2 2 0 0 0-2 2v2"/>
             </svg>
           </span>
+          <span class="brand-word">PATHFINDER</span>
         </button>
       </div>
       <div class="navbar-center">

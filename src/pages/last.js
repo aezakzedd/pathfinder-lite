@@ -12,6 +12,7 @@ export function renderLast(container) {
   const hasItinerary = Boolean(exportPayload && Number(exportPayload.totalStops) > 0);
   let currentPdfId = savedPdfId;
   let currentPdfUrl = currentPdfId ? apiUrl(`/api/pdf/${currentPdfId}.pdf`) : '';
+  let currentPdfDownloadUrl = currentPdfId ? getPdfDownloadUrl(currentPdfUrl) : '';
   const pdfReady = Boolean(currentPdfId);
 
   container.innerHTML = `
@@ -27,7 +28,7 @@ export function renderLast(container) {
           <a
             class="last-control-btn last-download-btn ${pdfReady ? '' : 'is-disabled'}"
             id="pdf-download-link"
-            ${pdfReady ? `href="${currentPdfUrl}"` : 'aria-disabled="true" tabindex="-1"'}
+            ${pdfReady ? `href="${currentPdfDownloadUrl}"` : 'aria-disabled="true" tabindex="-1"'}
             download="${currentPdfId ? `pathfinder-itinerary-${currentPdfId}.pdf` : 'pathfinder-itinerary.pdf'}"
           >
             <span>Download PDF</span>
@@ -85,6 +86,7 @@ export function renderLast(container) {
       setPdfId: (pdfId) => {
         currentPdfId = pdfId;
         currentPdfUrl = apiUrl(`/api/pdf/${pdfId}.pdf`);
+        currentPdfDownloadUrl = getPdfDownloadUrl(currentPdfUrl);
       }
     });
   }
@@ -101,7 +103,7 @@ async function generatePdfForPreview(exportPayload, elements) {
     localStorage.setItem(PDF_ID_KEY, response.pdf_id);
     setPdfId(response.pdf_id);
 
-    setDownloadReady(pdfDownloadLink, fullDownloadUrl, response.pdf_id);
+    setDownloadReady(pdfDownloadLink, getPdfDownloadUrl(fullDownloadUrl), response.pdf_id);
     pdfPreviewContainer.innerHTML = renderPdfPreview(fullDownloadUrl);
   } catch (error) {
     console.error('PDF generation error:', error);
@@ -171,6 +173,11 @@ function setDownloadDisabled(link) {
   link.setAttribute('aria-disabled', 'true');
   link.setAttribute('tabindex', '-1');
   link.classList.add('is-disabled');
+}
+
+function getPdfDownloadUrl(url) {
+  const separator = String(url).includes('?') ? '&' : '?';
+  return `${url}${separator}download=1`;
 }
 
 function renderPdfPreview(pdfUrl) {

@@ -371,6 +371,8 @@
 - Removed the Send to Phone and PDF Ready status cards from the visible export viewer after UI parity review
 - Removed icons from Back to Itinerary, Finish & Home, Download PDF, and Go to Itinerary controls
 - Made the export control row transparent so it floats over the viewer without a heavy card background
+- Restored solid button fills for Back to Itinerary, Finish & Home, and Download PDF after readability review
+- Updated the backend PDF endpoint to serve inline previews by default and attachment downloads only with `?download=1`, fixing blank iframe previews in Chromium
 - Download PDF remains visible at all times; it is disabled while generating and enabled immediately once the PDF is ready
 - Last page now auto-generates the backend PDF when export payload exists and no saved PDF ID is available
 - Refresh recovery reads `pathfinder-lite-pdf-id` from localStorage, restores the iframe preview URL, and enables Download PDF even when the export payload has already been cleared
@@ -378,6 +380,17 @@
 - Preview fallback message says "Preview unavailable on this browser. Use Download PDF."
 - Kept Back to Itinerary behavior non-destructive and kept Finish & Home session/local cleanup behavior
 - Kept the existing backend-generated PDF flow without adding frontend PDF libraries, QR libraries, canvas capture, or new dependencies
+
+**Phase 13C.1: Original Pathfinder Home Page Visual Layout Port**
+- Replaced the previous Lite "Discover Catanduanes" multi-section home page with an original Pathfinder-style dark fullscreen landing page
+- Added centered hero copy matching the original: `PATHFINDER // v1.0.21`, `Explore with every click.`, the Catanduanes AI travel guide subtitle, and compact Start Exploring / Work with us actions
+- Restyled the home navbar to match the original composition: Pathfinder logo on the left, Creators / What we do / Contact centered, circular theme control, and white Start button on the right
+- Added CSS-only dark background effects with radial color glow, subtle star/dot pattern, and vignette edges; no animation libraries or new dependencies were added
+- Added a static bottom destination card strip using local images: Binurong Point as the large center card, with Puraran Beach and Twin Rock side cards peeking in
+- Added a tourism/partner text mark row below the hero actions as a lightweight substitute for unavailable original partner logo files
+- Preserved hash navigation: top Start and hero Start Exploring both navigate to `#/itinerary`; Work with us navigates to `#/contact`
+- Removed old home bento cards, stats strip, placeholder badges, and emoji carousel placeholders from the active home layout
+- Kept the home page frontend-only, vanilla JS, plain CSS, and local assets only
 
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
@@ -435,16 +448,16 @@
 
 ## Current Bundle Size
 
-Latest build (Phase 13B.4 export viewer cleanup):
+Latest build (Phase 13C.1):
 - HTML: 0.56 kB
-- Main CSS: 93.98 kB
-- Main JS: 99.41 kB
+- Main CSS: 94.68 kB
+- Main JS: 95.14 kB
 - Leaflet async JS chunk: 149.47 kB
 - Last page CSS chunk: 4.45 kB
 - Last page JS chunk: 5.29 kB
 - Lazy route CSS chunks: 14.84 kB total
 - Lazy route JS chunks: 13.03 kB total
-- Full built JS/CSS assets: ~374.57 kB
+- Full built JS/CSS assets: ~371.00 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 

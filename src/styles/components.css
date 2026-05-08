@@ -52,6 +52,13 @@
   color: var(--navbar-text);
 }
 
+.brand-word {
+  color: var(--navbar-text);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
 .nav-links {
   display: flex;
   gap: var(--spacing-lg);

@@ -81,7 +81,7 @@ def ask(request: AskRequest):
 @app.post("/api/pdf/generate")
 def generate_pdf(request: PdfGenerateRequest):
     try:
-        payload = request.model_dump()
+        payload = request.model_dump() if hasattr(request, "model_dump") else request.dict()
         pdf_id, download_url = generate_itinerary_pdf(payload)
         return {
             "pdf_id": pdf_id,
@@ -94,7 +94,7 @@ def generate_pdf(request: PdfGenerateRequest):
 
 
 @app.get("/api/pdf/{pdf_id}.pdf")
-def get_pdf(pdf_id: str):
+def get_pdf(pdf_id: str, download: bool = False):
     pdf_bytes = load_pdf(pdf_id)
     if pdf_bytes is None:
         raise HTTPException(status_code=404, detail="PDF not found")
@@ -102,10 +102,12 @@ def get_pdf(pdf_id: str):
     from io import BytesIO
     from fastapi.responses import Response
     
+    disposition = "attachment" if download else "inline"
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=pathfinder-itinerary-{pdf_id}.pdf"}
+        headers={"Content-Disposition": f"{disposition}; filename=pathfinder-itinerary-{pdf_id}.pdf"}
     )
 
 

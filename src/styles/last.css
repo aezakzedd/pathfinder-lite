@@ -50,41 +50,41 @@
   line-height: 1;
   text-decoration: none;
   cursor: pointer;
-  background: transparent;
   transition: background 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
 }
 
 .last-back-btn {
-  background: transparent;
+  background: #1f2937;
+  border-color: rgba(148, 163, 184, 0.24);
 }
 
 .last-back-btn:hover {
-  background: rgba(31, 41, 55, 0.5);
+  background: #273244;
   border-color: rgba(226, 232, 240, 0.42);
 }
 
 .last-finish-btn {
-  background: transparent;
+  background: #2458d8;
   border-color: rgba(147, 197, 253, 0.32);
 }
 
 .last-finish-btn:hover {
-  background: rgba(37, 99, 235, 0.54);
+  background: #1d4ed8;
   border-color: rgba(191, 219, 254, 0.52);
 }
 
 .last-download-btn {
-  background: transparent;
+  background: #0f9f6e;
   border-color: rgba(110, 231, 183, 0.36);
 }
 
 .last-download-btn:hover {
-  background: rgba(5, 150, 105, 0.54);
+  background: #059669;
   border-color: rgba(167, 243, 208, 0.52);
 }
 
 .last-download-btn.is-disabled {
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(16, 185, 129, 0.28);
   border-color: rgba(110, 231, 183, 0.16);
   color: rgba(240, 253, 244, 0.58);
   cursor: not-allowed;
