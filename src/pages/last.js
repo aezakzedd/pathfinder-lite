@@ -1,288 +1,284 @@
 // Last/Share page module
 import { clearItinerary } from '../state/itineraryStore.js';
-import { requestPdfGeneration, finishSession } from '../api.js';
+import { finishSession, requestPdfGeneration } from '../api.js';
 import { apiUrl } from '../config/apiConfig.js';
 
-export function renderLast(container) {
-  // Load export payload from localStorage
-  let exportPayload = null;
-  let currentPdfId = null;
-  try {
-    const saved = localStorage.getItem('pathfinder-lite-export-payload');
-    if (saved) {
-      exportPayload = JSON.parse(saved);
-    }
-    // Load current PDF ID if stored
-    const savedPdfId = localStorage.getItem('pathfinder-lite-pdf-id');
-    if (savedPdfId) {
-      currentPdfId = savedPdfId;
-    }
-  } catch (error) {
-    console.error('Error loading export payload:', error);
-  }
+const EXPORT_PAYLOAD_KEY = 'pathfinder-lite-export-payload';
+const PDF_ID_KEY = 'pathfinder-lite-pdf-id';
+const CHAT_MESSAGES_KEY = 'pathfinder-lite-chat-messages';
 
-  // Check if we have itinerary data
-  const hasItinerary = exportPayload && exportPayload.totalStops > 0;
-  const dayCount = Number(exportPayload?.dayCount) || Object.keys(exportPayload?.days || {}).length;
-  const dateRangeText = formatDateRange(exportPayload?.dateRange);
-  
-  // Determine initial PDF state
-  const pdfReady = !!currentPdfId;
-  const pdfUrl = pdfReady ? `${apiUrl('/api/pdf/' + currentPdfId + '.pdf')}` : '';
+export function renderLast(container) {
+  const { exportPayload, savedPdfId } = loadExportState();
+  const hasItinerary = Boolean(exportPayload && Number(exportPayload.totalStops) > 0);
+  let currentPdfId = savedPdfId;
+  let currentPdfUrl = currentPdfId ? apiUrl(`/api/pdf/${currentPdfId}.pdf`) : '';
+  const pdfReady = Boolean(currentPdfId);
 
   container.innerHTML = `
-    <div class="page page-last">
-      <div class="export-toolbar">
-        <div class="export-toolbar-left">
-          <button class="btn-secondary btn-large" id="back-itinerary-btn" data-navigate="#/itinerary">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Back to Itinerary
+    <div class="page page-last last-export-page">
+      <section class="last-export-controls" aria-label="Export controls">
+        <div class="last-export-actions">
+          <button class="last-control-btn last-back-btn" type="button" data-navigate="#/itinerary">
+            ${iconArrowLeft()}
+            <span>Back to Itinerary</span>
           </button>
-        </div>
-        
-        <div class="export-toolbar-center">
-          <div class="pdf-status" id="pdf-status">
-            ${pdfReady ? '<span class="status-ready">PDF Ready</span>' : '<span class="status-generating">Generating PDF...</span>'}
-          </div>
-        </div>
-        
-        <div class="export-toolbar-right">
-          <div id="pdf-button-container" class="pdf-button-container">
-            <button class="btn-primary btn-large" id="generate-pdf-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-              </svg>
-              Generate PDF
-            </button>
-          </div>
-          
-          <div id="pdf-download" class="pdf-download" style="display: ${pdfReady ? 'flex' : 'none'};">
-            <a id="pdf-download-link" class="btn-primary btn-large" href="${pdfUrl}" download="pathfinder-itinerary.pdf">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-              </svg>
-              Download PDF
-            </a>
-          </div>
-          
-          <button class="btn-secondary btn-large" id="send-phone-btn" disabled>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 18h-3l-5 5v-5H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3" />
-            </svg>
-            Send to Phone
-            <span class="btn-badge">Coming next</span>
+          <button class="last-control-btn last-finish-btn" type="button" id="finish-home-btn">
+            ${iconHome()}
+            <span>Finish & Home</span>
           </button>
-          
-          <button class="btn-secondary btn-large" id="finish-home-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            Finish & Home
-          </button>
+          <a
+            class="last-control-btn last-download-btn ${pdfReady ? '' : 'is-disabled'}"
+            id="pdf-download-link"
+            ${pdfReady ? `href="${currentPdfUrl}"` : 'aria-disabled="true" tabindex="-1"'}
+            download="${currentPdfId ? `pathfinder-itinerary-${currentPdfId}.pdf` : 'pathfinder-itinerary.pdf'}"
+          >
+            ${iconDownload()}
+            <span>Download PDF</span>
+          </a>
         </div>
-      </div>
-      
-      <div class="export-content">
-        ${hasItinerary ? `
-          <div class="export-main">
-            <div class="pdf-preview-container" id="pdf-preview-container">
-              ${pdfReady ? `
-                <iframe src="${pdfUrl}" class="pdf-preview-frame" id="pdf-preview-frame"></iframe>
-              ` : `
-                <div class="pdf-preview-placeholder">
-                  <div class="placeholder-content">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-                    </svg>
-                    <h3>PDF Preview</h3>
-                    <p>Generate a PDF to preview your itinerary.</p>
-                    <div class="preview-fallback">
-                      <span class="fallback-icon">⚠</span>
-                      <span class="fallback-text">Preview unavailable on this browser. Use Download PDF.</span>
-                    </div>
-                  </div>
-                </div>
-              `}
-            </div>
-            
-            <div class="trip-summary-panel">
-              <h2>Trip Summary</h2>
-              <div class="summary-stats">
-                <div class="stat-item">
-                  <span class="stat-label">Total Stops</span>
-                  <span class="stat-value">${exportPayload.totalStops}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Days Planned</span>
-                  <span class="stat-value">${dayCount}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Pace</span>
-                  <span class="stat-value">${exportPayload.timeWallet.pace}</span>
-                </div>
-              </div>
-              
-              <div class="day-breakdown">
-                <h3>Day Breakdown</h3>
-                ${Object.entries(exportPayload.days).map(([day, stops]) => `
-                  <div class="day-summary ${stops.length > 0 ? '' : 'day-empty'}">
-                    <div class="day-header">
-                      <span class="day-title">Day ${day}</span>
-                      <span class="day-count">${stops.length} stop${stops.length !== 1 ? 's' : ''}</span>
-                    </div>
-                    ${stops.length > 0 ? `
-                      <ul class="day-stops">
-                        ${stops.map(stop => `
-                          <li class="stop-item">
-                            <span class="stop-name">${stop.name}</span>
-                            <span class="stop-time">${stop.time}</span>
-                          </li>
-                        `).join('')}
-                      </ul>
-                    ` : '<p class="day-empty-text">No stops planned</p>'}
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          </div>
-        ` : `
-          <div class="export-empty">
-            <div class="empty-icon">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M9 17h6M9 13h6M9 9h6M12 3a9 9 0 1 0 9 9A10 10 0 0 0 12 3z" />
-              </svg>
-            </div>
-            <p class="empty-text">No itinerary data found. Start planning your trip to see it here.</p>
-            <button class="btn-primary btn-large" data-navigate="#/itinerary">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-              </svg>
-              Go to Itinerary
-            </button>
-          </div>
-        `}
-      </div>
-      
+
+        <div class="last-status-card ${pdfReady ? 'is-ready' : hasItinerary ? 'is-generating' : 'is-unavailable'}" id="pdf-status-card">
+          <span class="last-status-label">${pdfReady ? 'PDF Ready' : hasItinerary ? 'Generating PDF' : 'Preview unavailable'}</span>
+          <span class="last-status-detail">${pdfReady ? 'Download is available.' : hasItinerary ? 'Creating the document preview now.' : 'No itinerary export data was found.'}</span>
+        </div>
+
+        <div class="send-phone-panel" aria-disabled="true">
+          <div class="send-phone-title">Send to Phone</div>
+          <div class="send-phone-status" id="send-phone-status">Coming next</div>
+        </div>
+      </section>
+
+      <main class="pdf-preview-stage" id="pdf-preview-stage">
+        <section class="pdf-document-wrap" id="pdf-preview-container" aria-label="PDF preview">
+          ${hasItinerary
+            ? pdfReady
+              ? renderPdfPreview(currentPdfUrl)
+              : renderGeneratingPreview()
+            : renderEmptyPreview()
+          }
+        </section>
+      </main>
+
       <div id="finish-loading" class="finish-loading" style="display: none;">
-        <span>Cleaning up...</span>
+        <span>Cleaning up session...</span>
       </div>
       <div id="finish-error" class="finish-error" style="display: none;"></div>
     </div>
   `;
 
-  // Setup PDF generation handler
-  if (hasItinerary) {
-    const generatePdfBtn = document.getElementById('generate-pdf-btn');
-    const pdfButtonContainer = document.getElementById('pdf-button-container');
-    const pdfDownload = document.getElementById('pdf-download');
-    const pdfDownloadLink = document.getElementById('pdf-download-link');
-    const pdfStatus = document.getElementById('pdf-status');
-    const pdfPreviewContainer = document.getElementById('pdf-preview-container');
+  const pdfStatusCard = document.getElementById('pdf-status-card');
+  const pdfPreviewContainer = document.getElementById('pdf-preview-container');
+  const pdfDownloadLink = document.getElementById('pdf-download-link');
+  const finishHomeBtn = document.getElementById('finish-home-btn');
+  const finishLoading = document.getElementById('finish-loading');
+  const finishError = document.getElementById('finish-error');
 
-    if (generatePdfBtn && exportPayload) {
-      generatePdfBtn.addEventListener('click', async () => {
-        try {
-          // Show loading state
-          pdfButtonContainer.style.display = 'none';
-          pdfStatus.innerHTML = '<span class="status-generating">Generating PDF...</span>';
-          pdfDownload.style.display = 'none';
+  if (pdfDownloadLink) {
+    pdfDownloadLink.addEventListener('click', (event) => {
+      if (pdfDownloadLink.classList.contains('is-disabled')) {
+        event.preventDefault();
+      }
+    });
+  }
 
-          // Call backend to generate PDF
-          const response = await requestPdfGeneration(exportPayload);
-
-          // Build full download URL
-          const fullDownloadUrl = apiUrl(response.download_url);
-
-          // Store PDF ID for session cleanup
-          currentPdfId = response.pdf_id;
-          localStorage.setItem('pathfinder-lite-pdf-id', currentPdfId);
-
-          // Show download button and update status
-          pdfStatus.innerHTML = '<span class="status-ready">PDF Ready</span>';
-          pdfDownload.style.display = 'flex';
-          pdfDownloadLink.href = fullDownloadUrl;
-          pdfDownloadLink.download = `pathfinder-itinerary-${response.pdf_id}.pdf`;
-
-          // Update PDF preview
-          pdfPreviewContainer.innerHTML = `
-            <iframe src="${fullDownloadUrl}" class="pdf-preview-frame" id="pdf-preview-frame"></iframe>
-          `;
-        } catch (error) {
-          // Show error
-          pdfStatus.innerHTML = '<span class="status-error">Error generating PDF</span>';
-          pdfButtonContainer.style.display = 'block';
-          console.error('PDF generation error:', error);
-        }
+  if (finishHomeBtn) {
+    finishHomeBtn.addEventListener('click', async () => {
+      await handleFinishHome({
+        finishHomeBtn,
+        finishLoading,
+        finishError,
+        currentPdfId
       });
-    }
+    });
+  }
 
-    // Setup Finish & Home handler
-    const finishHomeBtn = document.getElementById('finish-home-btn');
-    const finishLoading = document.getElementById('finish-loading');
-    const finishError = document.getElementById('finish-error');
-
-    if (finishHomeBtn) {
-      finishHomeBtn.addEventListener('click', async () => {
-        try {
-          // Show loading state
-          finishHomeBtn.disabled = true;
-          finishLoading.style.display = 'block';
-          finishError.style.display = 'none';
-
-          // Call backend to finish session
-          const sessionId = 'kiosk'; // Default kiosk session ID
-          const payload = {};
-          if (currentPdfId) {
-            payload.pdf_id = currentPdfId;
-          }
-          if (sessionId) {
-            payload.session_id = sessionId;
-          }
-
-          await finishSession(payload);
-
-          // Clear local browser state
-          clearItinerary();
-          localStorage.removeItem('pathfinder-lite-export-payload');
-          localStorage.removeItem('pathfinder-lite-pdf-id');
-          sessionStorage.removeItem('pathfinder-lite-chat-messages');
-
-          // Navigate to home
-          window.location.hash = '#/';
-        } catch (error) {
-          // If backend fails, still clear local state and go home
-          console.warn('Backend session finish failed, clearing local state:', error);
-          finishLoading.style.display = 'none';
-          finishError.style.display = 'block';
-          finishError.textContent = 'Backend cleanup failed, but local data cleared.';
-
-          // Clear local state anyway
-          clearItinerary();
-          localStorage.removeItem('pathfinder-lite-export-payload');
-          localStorage.removeItem('pathfinder-lite-pdf-id');
-          sessionStorage.removeItem('pathfinder-lite-chat-messages');
-
-          // Navigate to home after a brief delay
-          setTimeout(() => {
-            window.location.hash = '#/';
-          }, 1500);
-        }
-      });
-    }
+  if (hasItinerary && !pdfReady) {
+    generatePdfForPreview(exportPayload, {
+      pdfStatusCard,
+      pdfPreviewContainer,
+      pdfDownloadLink,
+      setPdfId: (pdfId) => {
+        currentPdfId = pdfId;
+        currentPdfUrl = apiUrl(`/api/pdf/${pdfId}.pdf`);
+      }
+    });
   }
 }
 
-function formatDateRange(dateRange = {}) {
-  if (!dateRange.startDate || !dateRange.endDate) return '';
-  const start = formatDate(dateRange.startDate);
-  const end = formatDate(dateRange.endDate);
-  return start && end ? `${start} - ${end}` : '';
+async function generatePdfForPreview(exportPayload, elements) {
+  const { pdfStatusCard, pdfPreviewContainer, pdfDownloadLink, setPdfId } = elements;
+  setPdfStatus(pdfStatusCard, 'generating', 'Generating PDF', 'Creating the document preview now.');
+  setDownloadDisabled(pdfDownloadLink);
+  pdfPreviewContainer.innerHTML = renderGeneratingPreview();
+
+  try {
+    const response = await requestPdfGeneration(exportPayload);
+    const fullDownloadUrl = apiUrl(response.download_url);
+    localStorage.setItem(PDF_ID_KEY, response.pdf_id);
+    setPdfId(response.pdf_id);
+
+    setPdfStatus(pdfStatusCard, 'ready', 'PDF Ready', 'Download is available.');
+    setDownloadReady(pdfDownloadLink, fullDownloadUrl, response.pdf_id);
+    pdfPreviewContainer.innerHTML = renderPdfPreview(fullDownloadUrl);
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    setPdfStatus(pdfStatusCard, 'error', 'Error state', 'PDF generation failed. Try returning to the itinerary and saving again.');
+    setDownloadDisabled(pdfDownloadLink);
+    pdfPreviewContainer.innerHTML = renderPreviewUnavailable();
+  }
 }
 
-function formatDate(value) {
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+async function handleFinishHome({ finishHomeBtn, finishLoading, finishError, currentPdfId }) {
+  try {
+    finishHomeBtn.disabled = true;
+    finishLoading.style.display = 'block';
+    finishError.style.display = 'none';
+
+    const payload = { session_id: 'kiosk' };
+    if (currentPdfId) payload.pdf_id = currentPdfId;
+    await finishSession(payload);
+
+    clearLocalExportSession();
+    window.location.hash = '#/';
+  } catch (error) {
+    console.warn('Backend session finish failed, clearing local state:', error);
+    finishLoading.style.display = 'none';
+    finishError.style.display = 'block';
+    finishError.textContent = 'Backend cleanup failed, but local data was cleared.';
+    clearLocalExportSession();
+    setTimeout(() => {
+      window.location.hash = '#/';
+    }, 1200);
+  }
+}
+
+function clearLocalExportSession() {
+  clearItinerary();
+  localStorage.removeItem(EXPORT_PAYLOAD_KEY);
+  localStorage.removeItem(PDF_ID_KEY);
+  sessionStorage.removeItem(CHAT_MESSAGES_KEY);
+}
+
+function loadExportState() {
+  let exportPayload = null;
+  let savedPdfId = null;
+
+  try {
+    const savedPayload = localStorage.getItem(EXPORT_PAYLOAD_KEY);
+    if (savedPayload) exportPayload = JSON.parse(savedPayload);
+    savedPdfId = localStorage.getItem(PDF_ID_KEY);
+  } catch (error) {
+    console.error('Error loading export payload:', error);
+  }
+
+  return { exportPayload, savedPdfId };
+}
+
+function setPdfStatus(element, state, label, detail) {
+  if (!element) return;
+  element.className = `last-status-card is-${state}`;
+  element.innerHTML = `
+    <span class="last-status-label">${label}</span>
+    <span class="last-status-detail">${detail}</span>
+  `;
+}
+
+function setDownloadReady(link, url, pdfId) {
+  if (!link) return;
+  link.href = url;
+  link.download = `pathfinder-itinerary-${pdfId}.pdf`;
+  link.classList.remove('is-disabled');
+  link.removeAttribute('aria-disabled');
+  link.removeAttribute('tabindex');
+}
+
+function setDownloadDisabled(link) {
+  if (!link) return;
+  link.removeAttribute('href');
+  link.setAttribute('aria-disabled', 'true');
+  link.setAttribute('tabindex', '-1');
+  link.classList.add('is-disabled');
+}
+
+function renderPdfPreview(pdfUrl) {
+  return `
+    <object data="${pdfUrl}" type="application/pdf" class="pdf-preview-frame" aria-label="Pathfinder itinerary PDF preview">
+      ${renderPreviewUnavailable()}
+    </object>
+  `;
+}
+
+function renderGeneratingPreview() {
+  return `
+    <div class="pdf-document-placeholder">
+      <div class="pdf-paper-skeleton">
+        <span class="skeleton-title"></span>
+        <span class="skeleton-line wide"></span>
+        <span class="skeleton-line"></span>
+        <span class="skeleton-line short"></span>
+        <span class="skeleton-block"></span>
+        <span class="skeleton-line wide"></span>
+        <span class="skeleton-line"></span>
+      </div>
+      <p>Generating PDF preview...</p>
+    </div>
+  `;
+}
+
+function renderPreviewUnavailable() {
+  return `
+    <div class="pdf-preview-fallback">
+      ${iconDocument()}
+      <h2>Preview unavailable</h2>
+      <p>Preview unavailable on this browser. Use Download PDF.</p>
+    </div>
+  `;
+}
+
+function renderEmptyPreview() {
+  return `
+    <div class="pdf-preview-fallback">
+      ${iconDocument()}
+      <h2>No itinerary export found</h2>
+      <p>Return to the itinerary and save a trip to create a PDF preview.</p>
+      <button class="last-control-btn last-finish-btn" type="button" data-navigate="#/itinerary">
+        ${iconArrowLeft()}
+        <span>Go to Itinerary</span>
+      </button>
+    </div>
+  `;
+}
+
+function iconArrowLeft() {
+  return `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  `;
+}
+
+function iconHome() {
+  return `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="m3 11 9-8 9 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M5 10v10h14V10M9 20v-6h6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  `;
+}
+
+function iconDownload() {
+  return `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3v12M7 10l5 5 5-5M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  `;
+}
+
+function iconDocument() {
+  return `
+    <svg width="54" height="54" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7 3h7l5 5v13H7V3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+      <path d="M14 3v5h5M9.5 13h5M9.5 16h5M9.5 10h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+    </svg>
+  `;
 }

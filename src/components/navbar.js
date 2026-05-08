@@ -4,10 +4,10 @@ import { getState } from '../state.js';
 
 export function renderNavbar() {
   const currentRoute = getCurrentRoute();
-  const isItineraryPage = currentRoute === 'itinerary';
+  const isKioskFullscreenPage = currentRoute === 'itinerary' || currentRoute === 'last';
   
-  if (isItineraryPage) {
-    return ''; // No navbar on itinerary page
+  if (isKioskFullscreenPage) {
+    return ''; // No global navbar on fullscreen kiosk pages
   }
   
   const nav = document.createElement('nav');

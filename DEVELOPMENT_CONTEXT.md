@@ -360,6 +360,23 @@
 - Kept vanilla JS, Vite, plain CSS, and Leaflet stack
 - Visual style consistent with dark Pathfinder UI
 
+**Phase 13B.4: Original Pathfinder Last Page Export Viewer Recreation**
+- Replaced the Last page dashboard/split layout with an original Pathfinder-style export viewer
+- Removed the visible Trip Summary / Day Breakdown sidebar from the main Last page layout
+- Made the PDF preview the centered dominant stage on a dark fullscreen kiosk background
+- Added an independently scrollable full-screen PDF preview stage with a clean white document preview
+- Reworked export controls into a fixed upper-left control panel that remains visible while the PDF preview scrolls
+- Toolbar controls now match the original grouping: Back to Itinerary, Finish & Home, Download PDF in a horizontal row
+- Removed the global site navbar from the Last page so export controls are not covered
+- Added a clear Send to Phone panel below the main button row with "Coming next" status
+- Download PDF remains visible at all times; it is disabled while generating and enabled immediately once the PDF is ready
+- Last page now auto-generates the backend PDF when export payload exists and no saved PDF ID is available
+- Refresh recovery reads `pathfinder-lite-pdf-id` from localStorage, shows PDF Ready, restores the preview URL, and enables Download PDF
+- PDF state messages are now large/readable: Generating PDF, PDF Ready, Preview unavailable, and Error state
+- Preview fallback message says "Preview unavailable on this browser. Use Download PDF."
+- Kept Back to Itinerary behavior non-destructive and kept Finish & Home session/local cleanup behavior
+- Kept the existing backend-generated PDF flow without adding frontend PDF libraries, QR libraries, canvas capture, or new dependencies
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
@@ -416,14 +433,16 @@
 
 ## Current Bundle Size
 
-Latest build (Phase 12C):
+Latest build (Phase 13B.4):
 - HTML: 0.56 kB
 - Main CSS: 93.98 kB
-- Main JS: 98.95 kB
+- Main JS: 99.40 kB
 - Leaflet async JS chunk: 149.47 kB
-- Lazy route CSS chunks: 13.21 kB total
-- Lazy route JS chunks: 18.90 kB total
-- Full built JS/CSS assets: ~374.51 kB
+- Last page CSS chunk: 5.90 kB
+- Last page JS chunk: 7.38 kB
+- Lazy route CSS chunks: 14.84 kB total
+- Lazy route JS chunks: 20.41 kB total
+- Full built JS/CSS assets: ~378.10 kB
 
 Leaflet is dynamically imported by the itinerary map adapter. No online map tiles, external CDNs, or remote routing services are used.
 
