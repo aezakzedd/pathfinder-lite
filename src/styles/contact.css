@@ -1,7 +1,7 @@
 /* Original Pathfinder-style Contact page */
 
 body[data-route='contact'] {
-  background: #050608;
+  background: var(--home-bg);
 }
 
 body[data-route='contact'] .page-container {
@@ -16,7 +16,7 @@ body[data-route='contact'] .page-container {
 .contact-original-hero p {
   max-width: 520px;
   margin: 28px 0 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--home-text-rgb), 0.6);
   font-size: clamp(17px, 2vw, 22px);
   line-height: 1.62;
 }
@@ -24,7 +24,7 @@ body[data-route='contact'] .page-container {
 .contact-original-channels {
   display: grid;
   margin-top: 70px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(var(--home-text-rgb), 0.1);
 }
 
 .contact-original-row {
@@ -34,7 +34,7 @@ body[data-route='contact'] .page-container {
   align-items: center;
   min-height: 116px;
   padding: 24px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(var(--home-text-rgb), 0.1);
   transition: opacity 180ms ease, padding-left 180ms ease;
 }
 
@@ -50,7 +50,7 @@ body[data-route='contact'] .page-container {
 .contact-original-row span:first-child,
 .contact-original-copy span {
   display: block;
-  color: rgba(255, 255, 255, 0.36);
+  color: rgba(var(--home-text-rgb), 0.36);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -61,19 +61,19 @@ body[data-route='contact'] .page-container {
 .contact-original-copy strong {
   display: block;
   margin-top: 8px;
-  color: #ffffff;
+  color: var(--home-text);
   font-size: clamp(19px, 3vw, 28px);
   line-height: 1.1;
 }
 
 .contact-original-row p {
   margin: 10px 0 0;
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(var(--home-text-rgb), 0.48);
   font-size: 14px;
 }
 
 .contact-original-row > span:last-child {
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(var(--home-text-rgb), 0.42);
   font-size: 22px;
 }
 
@@ -84,9 +84,9 @@ body[data-route='contact'] .page-container {
   align-items: center;
   margin-top: 44px;
   padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(var(--home-text-rgb), 0.12);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.055);
+  background: rgba(var(--home-text-rgb), 0.055);
 }
 
 .contact-original-copy strong {
@@ -101,8 +101,8 @@ body[data-route='contact'] .page-container {
   justify-content: center;
   padding: 0 18px;
   border-radius: 999px;
-  background: #ffffff;
-  color: #050608;
+  background: var(--home-text);
+  color: var(--home-bg);
   font-size: 13px;
   font-weight: 850;
 }

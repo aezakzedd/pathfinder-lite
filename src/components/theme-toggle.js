@@ -36,7 +36,7 @@ export function renderThemeToggle() {
   return container;
 }
 
-function applyTheme(theme) {
+export function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const toggle = document.querySelector('.theme-toggle-button');
   if (toggle) {

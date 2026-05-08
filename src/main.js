@@ -1,9 +1,10 @@
 // Main entry point for pathfinder-lite
 import { onRouteChange, navigateTo } from './router.js';
 import { renderNavbar } from './components/navbar.js';
-import { renderThemeToggle } from './components/theme-toggle.js';
+import { renderThemeToggle, applyTheme } from './components/theme-toggle.js';
 import { renderHome, cleanupHome } from './pages/home.js';
 import { renderItinerary, cleanupItinerary } from './pages/itinerary.js';
+import { getState } from './state.js';
 
 // Import CSS
 import './styles/tokens.css';
@@ -12,6 +13,10 @@ import './styles/components.css';
 import './styles/home.css';
 import './styles/itinerary.css';
 import './styles/kiosk.css';
+
+// Apply initial theme before rendering
+const initialTheme = getState('theme') || 'light';
+applyTheme(initialTheme);
 
 const routeLoaders = {
   home: async () => ({ render: renderHome, cleanup: cleanupHome }),
