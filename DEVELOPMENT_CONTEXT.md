@@ -450,6 +450,24 @@
 - No Google API key or online API calls are used; only standard Google Maps URLs are generated
 - Map screenshots remain as drawn route-style placeholders; actual map imagery is not implemented in this phase
 
+**Phase 13D.5: Remove Double Scrollbar from Last Page PDF Preview**
+- Changed `.pdf-preview-stage` from `overflow: auto` to `overflow: hidden` to remove outer page scrollbar
+- Removed bottom padding from `.pdf-preview-stage` (was `48px`, now just `22px 44px`)
+- Updated `.pdf-document-wrap` to have `height: calc(100vh - 44px)` and `overflow: hidden`
+- Updated `.pdf-document-wrap` width from `min(72vw, 940px)` to `min(70vw, 980px)` to match iframe width
+- Changed `.pdf-preview-frame` from fixed width with min-height to `width: 100%` and `height: 100%`
+- Removed `min-height: 920px` from `.pdf-preview-frame` (was forcing outer container to overflow)
+- Removed `min-height: 820px` from 1366px breakpoint
+- Removed `min-height: 760px` from 980px breakpoint
+- Removed `min-height: 1180px` from 1920px breakpoint
+- The PDF iframe is now the only scrollable area with its internal Chromium PDF viewer scrollbar
+- Outer Last page remains `position: fixed`, `inset: 0`, `overflow: hidden` with dark background
+- Controls remain fixed and clickable above the iframe with z-index 1000
+- Send to Phone QR panel does not create page scroll
+- No horizontal scrolling created
+- Kept iframe centered with flex layout
+- No changes to backend PDF generation, QR sharing, Download PDF, or Finish & Home
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
