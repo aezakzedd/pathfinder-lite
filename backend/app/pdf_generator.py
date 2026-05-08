@@ -318,7 +318,7 @@ def draw_day(
     )
     current_y += 16
 
-    return current_y, stops[-1] if stops else None
+    return current_y, stops[-1] if stops else None, map_overlay
 
 
 def draw_day_header(
