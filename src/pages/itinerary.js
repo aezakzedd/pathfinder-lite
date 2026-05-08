@@ -46,6 +46,7 @@ import {
   generateItinerary
 } from '../utils/generateItinerary.js';
 import { buildPreviewRouteCoordinates, buildRouteCoordinates, getHubByName } from '../utils/visualRoute.js';
+import { initKioskKeyboard } from '../ui/kioskKeyboard.js';
 
 let mapInitialized = false;
 let stateUnsubscribe = null;
@@ -401,6 +402,16 @@ function initializeUI() {
   
   // Setup chat handlers
   setupChatHandlers();
+  
+  // Initialize kiosk virtual keyboard
+  initKioskKeyboard({
+    inputSelector: '#chatbot-input',
+    onSubmit: (message) => {
+      if (!isSending) {
+        sendMessage(message);
+      }
+    }
+  });
   
   // Setup export handlers
   setupExportHandlers();

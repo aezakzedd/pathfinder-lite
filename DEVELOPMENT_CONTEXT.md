@@ -775,6 +775,26 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
   - Downloaded PDF links work correctly; iframe preview links now have popup permission to allow new tab opening
 
 **Phase 14: QR/Share Link Integration**
+- Phase 14A: Kiosk virtual keyboard and centered text input modal ✓
+  - Created src/ui/kioskKeyboard.js module with reusable virtual keyboard system
+  - Created src/styles/kiosk-keyboard.css with dark and light theme support
+  - Integrated keyboard with itinerary page chat input
+  - Implemented centered modal with blurred/dimmed background
+  - Implemented virtual keyboard with alpha and numeric layouts
+  - Keyboard includes: q w e r t y u i o p, a s d f g h j k l, shift z x c v b n m backspace, 123 globe space . enter
+  - Numeric layout includes: 1-0, symbols, punctuation
+  - Keys support: shift (uppercase/lowercase), backspace, space, enter, 123/abc toggle
+  - Globe key is disabled (visual only)
+  - Modal input prevents native keyboard with inputmode="none"
+  - Original chat input also prevents native keyboard
+  - Physical keyboard typing still works in modal input
+  - Escape key closes overlay without submitting
+  - Clicking outside modal closes overlay
+  - Submit calls existing sendMessage function
+  - Dark theme: navy/black keyboard panel, slate keys, white text
+  - Light theme: pale blue/gray keyboard panel, light keys, dark text
+  - Responsive design for 1920x1080, 1366x768, and smaller viewports
+  - All tests passing: npm run build
 - Connect placeholder QR to backend share endpoint
 - Implement share link generation
 

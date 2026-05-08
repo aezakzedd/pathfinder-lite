@@ -13,6 +13,7 @@ import './styles/components.css';
 import './styles/home.css';
 import './styles/itinerary.css';
 import './styles/kiosk.css';
+import './styles/kiosk-keyboard.css';
 
 // Apply initial theme before rendering
 const initialTheme = getState('theme') || 'light';

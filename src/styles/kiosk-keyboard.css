@@ -1,0 +1,299 @@
+/**
+ * Kiosk Virtual Keyboard Styles
+ * Provides a centered text input modal with virtual keyboard for kiosk touch interfaces.
+ */
+
+/* Overlay root */
+.kiosk-keyboard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.kiosk-keyboard-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Background scrim with blur */
+.kiosk-keyboard-scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Center input modal */
+.kiosk-input-modal {
+  position: relative;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+}
+
+/* Modal input */
+.kiosk-modal-input {
+  flex: 1;
+  padding: 14px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  color: #1f2937;
+  font-size: 18px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.kiosk-modal-input:focus {
+  border-color: #3b82f6;
+  background: white;
+}
+
+.kiosk-modal-input::placeholder {
+  color: #9ca3af;
+}
+
+/* Send button */
+.kiosk-modal-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border: none;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.kiosk-modal-send:hover {
+  transform: scale(1.05);
+}
+
+.kiosk-modal-send:active {
+  transform: scale(0.95);
+}
+
+/* Keyboard panel */
+.kiosk-keyboard-panel {
+  position: relative;
+  z-index: 10001;
+  width: 100%;
+  max-width: 1000px;
+  padding: 16px 20px 20px;
+  background: #1e293b;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Keyboard rows */
+.kiosk-keyboard-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kiosk-keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Keys */
+.kiosk-key {
+  min-width: 48px;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #334155;
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.kiosk-key:hover {
+  background: #475569;
+}
+
+.kiosk-key:active {
+  background: #64748b;
+  transform: scale(0.95);
+}
+
+.kiosk-key.active {
+  background: #3b82f6;
+}
+
+.kiosk-key:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Wide keys */
+.kiosk-key-wide {
+  min-width: 64px;
+}
+
+.kiosk-key-space {
+  min-width: 200px;
+}
+
+.kiosk-key-globe {
+  min-width: 64px;
+  opacity: 0.4;
+}
+
+/* Light theme */
+[data-theme='light'] .kiosk-input-modal {
+  background: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme='light'] .kiosk-modal-input {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #1f2937;
+}
+
+[data-theme='light'] .kiosk-modal-input:focus {
+  background: white;
+  border-color: #3b82f6;
+}
+
+[data-theme='light'] .kiosk-modal-input::placeholder {
+  color: #9ca3af;
+}
+
+[data-theme='light'] .kiosk-keyboard-panel {
+  background: #e2e8f0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='light'] .kiosk-key {
+  background: white;
+  color: #1f2937;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='light'] .kiosk-key:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+[data-theme='light'] .kiosk-key:active {
+  background: #e2e8f0;
+}
+
+[data-theme='light'] .kiosk-key.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+[data-theme='light'] .kiosk-key:disabled {
+  background: #f1f5f9;
+  color: #9ca3af;
+  border-color: #e2e8f0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1366px) {
+  .kiosk-keyboard-panel {
+    max-width: 100%;
+  }
+  
+  .kiosk-input-modal {
+    max-width: 500px;
+  }
+  
+  .kiosk-key {
+    min-width: 40px;
+    min-height: 48px;
+    font-size: 16px;
+  }
+  
+  .kiosk-key-wide {
+    min-width: 56px;
+  }
+  
+  .kiosk-key-space {
+    min-width: 160px;
+  }
+}
+
+@media (max-height: 768px) {
+  .kiosk-keyboard-panel {
+    padding: 12px 16px 16px;
+  }
+  
+  .kiosk-keyboard-row {
+    gap: 4px;
+  }
+  
+  .kiosk-key {
+    min-width: 36px;
+    min-height: 44px;
+    font-size: 15px;
+    padding: 10px 12px;
+  }
+  
+  .kiosk-input-modal {
+    margin-bottom: 12px;
+    padding: 12px 16px;
+  }
+  
+  .kiosk-modal-input {
+    font-size: 16px;
+  }
+  
+  .kiosk-modal-send {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Prevent scrolling when keyboard is open */
+.kiosk-keyboard-overlay.open {
+  overflow: hidden;
+}
+
+.kiosk-keyboard-overlay.open body {
+  overflow: hidden;
+}
