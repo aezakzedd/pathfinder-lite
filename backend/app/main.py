@@ -88,6 +88,8 @@ def generate_pdf(request: PdfGenerateRequest):
             "download_url": download_url
         }
     except Exception as error:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(error)) from error
 
 
