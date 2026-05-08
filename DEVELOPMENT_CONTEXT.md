@@ -273,6 +273,25 @@
 - Expanded backend smoke checks to cover generated beach itineraries, budget itineraries, 3-day Virac plans, cheaper follow-ups, add-to-day with active pin, and duplicate prevention
 - Kept Phase 12C deterministic and offline-capable without LLMs, embeddings, vector databases, online APIs, or new dependencies
 
+**Phase 13B.1: Lightweight Backend-Generated Itinerary PDF Download**
+- Added fpdf2 to backend/requirements.txt for lightweight backend PDF generation
+- Created backend/app/pdf_generator.py with itinerary PDF generation logic using fpdf2
+- Created backend/app/pdf_store.py for PDF storage management with UUID-based IDs
+- Created backend/data/generated_pdfs/ directory for PDF storage and added to .gitignore
+- Added POST /api/pdf/generate endpoint to accept frontend export payload and generate PDF
+- Added GET /api/pdf/{pdf_id}.pdf endpoint to download generated PDF files
+- Added DELETE /api/pdf/{pdf_id} endpoint to delete generated PDF files from storage
+- Updated src/pages/last.js with functional Generate PDF button, loading state, download link, and error handling
+- Created backend/tools/pdf_smoke.py smoke test with sample 2-day itinerary payload
+- Smoke test passed: PDF ID f0ccc287-dbb6-4111-995f-12e4a49f325e, file size 1740 bytes
+- Ran python -m compileall backend and npm run build successfully
+- Updated backend/README.md with PDF endpoint documentation, sample curl request, and storage location
+- PDF includes: title, timestamp, start hub, date range, day count, total stops, route source, day-by-day itinerary, stop details, drive time, visit duration, day status (Relaxed/Busy/Tight/Overloaded), and footer disclaimer
+- Kept PDF visually simple with readable headings, light section dividers, compact stop rows, no external fonts, and no image loading
+- Did not include locked/anchor labels unless stored in itinerary
+- Frontend remains a renderer only; PDF generation is entirely backend-side
+- Kept vanilla JS, Vite, plain CSS, and Leaflet stack without adding React, Tailwind, MapLibre, or frontend PDF libraries
+
 **Offline Routing Implementation Plan:**
 - Best short-term: generate precomputed local route GeoJSON between hubs and POIs, then serve exact route geometry from the local backend through `POST /api/route`
 - Best long-term: run a local OSRM, Valhalla, or GraphHopper service on localhost and have the FastAPI backend adapt its response to the Lite route contract
@@ -312,7 +331,7 @@
 - Empty state appears when no itinerary exists
 
 **Backend-Dependent Features:**
-- PDF generation (placeholder, requires backend)
+- PDF generation (backend PDF generation with fpdf2, frontend download button)
 - QR code generation (placeholder, requires backend)
 - Share link creation (placeholder API function ready)
 

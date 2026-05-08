@@ -1,5 +1,7 @@
 // Last/Share page module
 import { clearItinerary } from '../state/itineraryStore.js';
+import { requestPdfGeneration } from '../api.js';
+import { apiUrl } from '../config/apiConfig.js';
 
 export function renderLast(container) {
   // Load export payload from localStorage
@@ -76,13 +78,27 @@ export function renderLast(container) {
           <div class="share-actions">
             <div class="pdf-section">
               <h3>PDF Download</h3>
-              <p class="pdf-note">PDF generation will be handled by the local backend.</p>
-              <button class="btn-primary btn-disabled" disabled>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-                </svg>
-                Download PDF (Backend Required)
-              </button>
+              <p class="pdf-note">Generate a PDF of your itinerary to download.</p>
+              <div id="pdf-button-container">
+                <button class="btn-primary" id="generate-pdf-btn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                  </svg>
+                  Generate PDF
+                </button>
+              </div>
+              <div id="pdf-loading" class="pdf-loading" style="display: none;">
+                <span>Generating PDF...</span>
+              </div>
+              <div id="pdf-error" class="pdf-error" style="display: none;"></div>
+              <div id="pdf-download" class="pdf-download" style="display: none;">
+                <a id="pdf-download-link" class="btn-primary" href="#" download>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                  </svg>
+                  Download PDF
+                </a>
+              </div>
             </div>
             
             <div class="qr-section">
@@ -150,6 +166,44 @@ export function renderLast(container) {
         window.location.hash = '#/';
       };
       startNewBtn.addEventListener('click', clickHandler);
+    }
+
+    // Setup PDF generation handler
+    const generatePdfBtn = document.getElementById('generate-pdf-btn');
+    const pdfButtonContainer = document.getElementById('pdf-button-container');
+    const pdfLoading = document.getElementById('pdf-loading');
+    const pdfError = document.getElementById('pdf-error');
+    const pdfDownload = document.getElementById('pdf-download');
+    const pdfDownloadLink = document.getElementById('pdf-download-link');
+
+    if (generatePdfBtn && exportPayload) {
+      generatePdfBtn.addEventListener('click', async () => {
+        try {
+          // Show loading state
+          pdfButtonContainer.style.display = 'none';
+          pdfLoading.style.display = 'block';
+          pdfError.style.display = 'none';
+          pdfDownload.style.display = 'none';
+
+          // Call backend to generate PDF
+          const response = await requestPdfGeneration(exportPayload);
+
+          // Build full download URL
+          const fullDownloadUrl = apiUrl(response.download_url);
+
+          // Show download button
+          pdfLoading.style.display = 'none';
+          pdfDownload.style.display = 'block';
+          pdfDownloadLink.href = fullDownloadUrl;
+          pdfDownloadLink.download = `pathfinder-itinerary-${response.pdf_id}.pdf`;
+        } catch (error) {
+          // Show error
+          pdfLoading.style.display = 'none';
+          pdfError.style.display = 'block';
+          pdfError.textContent = `Failed to generate PDF: ${error.message}`;
+          console.error('PDF generation error:', error);
+        }
+      });
     }
   }
 }

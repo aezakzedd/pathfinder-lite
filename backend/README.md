@@ -193,3 +193,92 @@ Supported itinerary commands include:
 - `remove this place`
 - `replace it with another beach`
 - `clear itinerary`
+
+## PDF Generation Endpoint
+
+`POST /api/pdf/generate`
+
+Generate a PDF itinerary from the frontend export payload:
+
+```json
+{
+  "days": {
+    "1": [
+      {
+        "id": "1",
+        "name": "Puraran Beach",
+        "municipality": "Baras",
+        "category": "Beach",
+        "time": "9:00 AM",
+        "duration": "2-3 hours",
+        "driveTime": 45
+      }
+    ],
+    "2": [
+      {
+        "id": "2",
+        "name": "Twin Rock Beach Resort",
+        "municipality": "Virac",
+        "category": "Beach",
+        "time": "10:00 AM",
+        "duration": "3-4 hours",
+        "driveTime": 30
+      }
+    ]
+  },
+  "totalStops": 2,
+  "dayCount": 2,
+  "dateRange": {
+    "startDate": "2025-06-01",
+    "endDate": "2025-06-02"
+  },
+  "timeWallet": {
+    "pace": "Moderate"
+  },
+  "setup": {
+    "startPoint": "Virac",
+    "tripDate": "2025-06-01",
+    "tripEndDate": "2025-06-02",
+    "activities": ["Beach"],
+    "budget": "medium"
+  },
+  "routeSource": "local-road-router"
+}
+```
+
+Returns PDF ID and download URL:
+
+```json
+{
+  "pdf_id": "f0ccc287-dbb6-4111-995f-12e4a49f325e",
+  "download_url": "/api/pdf/f0ccc287-dbb6-4111-995f-12e4a49f325e.pdf"
+}
+```
+
+### PDF Download
+
+`GET /api/pdf/{pdf_id}.pdf`
+
+Download the generated PDF file. Returns binary PDF content with `Content-Type: application/pdf` and `Content-Disposition: attachment`.
+
+### PDF Deletion
+
+`DELETE /api/pdf/{pdf_id}`
+
+Delete a generated PDF from storage:
+
+```json
+{
+  "message": "PDF deleted successfully"
+}
+```
+
+### PDF Storage
+
+Generated PDFs are stored in `backend/data/generated_pdfs/`. This directory is gitignored. The PDF generator uses fpdf2 for lightweight backend PDF generation without increasing the frontend bundle.
+
+Run smoke test:
+
+```bash
+python -m backend.tools.pdf_smoke
+```

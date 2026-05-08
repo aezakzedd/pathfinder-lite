@@ -1,9 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from .chatbot import answer_question
 from .routing import build_route_response
+from .pdf_generator import generate_itinerary_pdf
+from .pdf_store import load_pdf, delete_pdf, pdf_exists
 
 
 class RouteRequest(BaseModel):
@@ -15,6 +18,16 @@ class AskRequest(BaseModel):
     active_pin: dict | None = None
     session_id: str | None = None
     preferences: dict | None = None
+
+
+class PdfGenerateRequest(BaseModel):
+    days: dict
+    totalStops: int
+    dayCount: int
+    dateRange: dict | None = None
+    timeWallet: dict | None = None
+    setup: dict | None = None
+    routeSource: str | None = None
 
 
 app = FastAPI(title="Pathfinder Lite Local API", version="0.1.0")
@@ -57,3 +70,44 @@ def ask(request: AskRequest):
         session_id=request.session_id,
         preferences=request.preferences,
     )
+
+
+@app.post("/api/pdf/generate")
+def generate_pdf(request: PdfGenerateRequest):
+    try:
+        payload = request.model_dump()
+        pdf_id, download_url = generate_itinerary_pdf(payload)
+        return {
+            "pdf_id": pdf_id,
+            "download_url": download_url
+        }
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
+
+
+@app.get("/api/pdf/{pdf_id}.pdf")
+def get_pdf(pdf_id: str):
+    pdf_bytes = load_pdf(pdf_id)
+    if pdf_bytes is None:
+        raise HTTPException(status_code=404, detail="PDF not found")
+    
+    from io import BytesIO
+    from fastapi.responses import Response
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=pathfinder-itinerary-{pdf_id}.pdf"}
+    )
+
+
+@app.delete("/api/pdf/{pdf_id}")
+def delete_pdf_endpoint(pdf_id: str):
+    if not pdf_exists(pdf_id):
+        raise HTTPException(status_code=404, detail="PDF not found")
+    
+    deleted = delete_pdf(pdf_id)
+    if deleted:
+        return {"message": "PDF deleted successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to delete PDF")
