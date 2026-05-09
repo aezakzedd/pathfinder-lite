@@ -549,9 +549,21 @@ body[data-route="itinerary"] .page-container {
   text-align: center;
   text-shadow:
     -1px -1px 0 var(--offline-map-label-stroke),
-    1px -1px 0 var(--offline-map-label-stroke),
-    -1px 1px 0 var(--offline-map-label-stroke),
-    1px 1px 0 var(--offline-map-label-stroke);
+     0px -1px 0 var(--offline-map-label-stroke),
+     1px -1px 0 var(--offline-map-label-stroke),
+    -1px  0px 0 var(--offline-map-label-stroke),
+     1px  0px 0 var(--offline-map-label-stroke),
+    -1px  1px 0 var(--offline-map-label-stroke),
+     0px  1px 0 var(--offline-map-label-stroke),
+     1px  1px 0 var(--offline-map-label-stroke),
+    -2px -2px 0 var(--offline-map-label-stroke),
+     0px -2px 0 var(--offline-map-label-stroke),
+     2px -2px 0 var(--offline-map-label-stroke),
+    -2px  0px 0 var(--offline-map-label-stroke),
+     2px  0px 0 var(--offline-map-label-stroke),
+    -2px  2px 0 var(--offline-map-label-stroke),
+     0px  2px 0 var(--offline-map-label-stroke),
+     2px  2px 0 var(--offline-map-label-stroke);
   pointer-events: none;
 }
 
@@ -612,34 +624,23 @@ body[data-route="itinerary"] .page-container {
   position: absolute;
   left: 50%;
   top: 0;
-  width: 34px;
-  height: 45px;
+  width: 32px;
+  height: 32px;
   transform: translateX(-50%);
-  filter: drop-shadow(0 8px 12px rgba(15, 23, 42, 0.3));
+  filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.4));
 }
 
 .offline-destination-marker.featured .offline-marker-pin {
-  width: 34px;
-  height: 45px;
-  filter: drop-shadow(0 10px 14px rgba(239, 68, 68, 0.28));
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.4));
 }
 
 .offline-marker-pin svg {
   display: block;
-  width: 34px;
-  height: 45px;
+  width: 32px;
+  height: 32px;
   overflow: visible;
-}
-
-.offline-marker-pin path {
-  fill: var(--marker-color, #ef4444);
-  stroke: #ffffff;
-  stroke-width: 4px;
-  paint-order: stroke fill;
-}
-
-.offline-marker-pin circle {
-  fill: #ffffff;
 }
 
 .offline-destination-marker.added .offline-marker-pin {
@@ -2870,4 +2871,122 @@ body[data-route="itinerary"] .page-container {
   .setup-budget-options {
     gap: 8px;
   }
+}
+
+
+/* Overrides for chat-itinerary-card layout */
+.chat-itinerary-card .itinerary-header {
+  cursor: pointer;
+}
+
+.chat-itinerary-card .spot-count {
+  font-size: 11px;
+  color: var(--itinerary-card-text);
+  font-weight: 700;
+  padding: 4px 8px;
+  border: 1px solid var(--itinerary-card-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.itinerary-optimize-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 4px;
+}
+
+.itinerary-optimize-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.itinerary-minimize-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chat-itinerary-card .itinerary-spots {
+  height: 250px;
+  max-height: none;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  transition: opacity 0.3s ease;
+}
+
+.chat-itinerary-card .itinerary-spots::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-itinerary-card .itinerary-spots::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+.chat-itinerary-card .itinerary-spots::-webkit-scrollbar-thumb {
+  background: #f59e0b;
+  border-radius: 3px;
+}
+
+.chat-itinerary-card.minimized .itinerary-header {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+
+/* Chat toggle hidden state */
+.itinerary-container.chat-hidden {
+  grid-template-columns: 1fr;
+}
+.itinerary-container.chat-hidden .chatbot-panel {
+  display: none;
+}
+
+.chat-toggle-btn, .chat-toggle-btn svg, .chat-toggle-btn path, .chat-toggle-btn circle {
+  cursor: none !important;
+}
+.chat-itinerary-card .itinerary-header {
+  align-items: center !important;
+}
+.chat-itinerary-card .itinerary-header h3 {
+  line-height: 1;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+/* Absolute height overrides for itinerary card */
+.chat-itinerary-card {
+  height: 500px !important;
+  min-height: 500px !important;
+  max-height: 500px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.chat-itinerary-card.minimized {
+  height: 64px !important;
+  min-height: 64px !important;
+  max-height: 64px !important;
+  padding: 16px !important;
+}
+
+.chat-itinerary-card .itinerary-spots {
+  height: auto !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin-bottom: 0 !important;
+}
+
+.chat-itinerary-card.minimized .itinerary-header {
+  padding-bottom: 0 !important;
 }

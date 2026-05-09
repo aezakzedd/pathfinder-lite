@@ -527,8 +527,8 @@ function createDestinationIcon(instance, destination, state) {
       ? renderFeaturedMarker(destination, color)
       : renderCompactMarker(destination, category, color, state),
     iconSize: state.isFeatured ? [104, 70] : [22, 22],
-    iconAnchor: state.isFeatured ? [52, 45] : [11, 11],
-    popupAnchor: [0, state.isFeatured ? -46 : -18]
+    iconAnchor: state.isFeatured ? [52, 32] : [11, 11],
+    popupAnchor: [0, state.isFeatured ? -32 : -18]
   });
 }
 
@@ -536,9 +536,8 @@ function renderFeaturedMarker(destination, color) {
   return `
     <span class="offline-marker-ring"></span>
     <span class="offline-marker-pin" style="--marker-color: ${color};">
-      <svg viewBox="0 0 42 56" aria-hidden="true">
-        <path d="M21 54C16.3 47.2 5 36.8 5 21.8 5 12.5 12.2 5 21 5s16 7.5 16 16.8C37 36.8 25.7 47.2 21 54Z" />
-        <circle cx="21" cy="21" r="7.4" />
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+        <path d="M136,127.42V232a8,8,0,0,1-16,0V127.42a56,56,0,1,1,16,0Z" fill="var(--marker-color)" stroke="#000000" stroke-width="16" stroke-linejoin="round"/>
       </svg>
     </span>
     <span class="offline-marker-label">${escapeHtml(destination.name)}</span>

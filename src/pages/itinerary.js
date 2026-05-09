@@ -137,18 +137,18 @@ export function renderItinerary(container) {
             <div class="chatbot-messages" id="chatbot-messages">
               <!-- Itinerary Preview as Chat Card -->
               <div class="chat-itinerary-card" id="chat-itinerary-card">
-                <div class="itinerary-header">
-                  <div class="itinerary-header-left">
-                    <h3>Itinerary Preview</h3>
-                    <span class="spot-count" id="chat-spot-count">0 spots</span>
-                  </div>
+                <div class="itinerary-header" id="itinerary-header-click">
+                  <h3 class="itinerary-title">Itinerary Preview</h3>
                   <div class="itinerary-header-right">
-                    <span class="itinerary-spark" aria-hidden="true">+</span>
-                    <button class="itinerary-minimize-btn" id="itinerary-minimize-btn" type="button" aria-label="Minimize itinerary">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 15l-6-6-6 6" />
+                    <span class="spot-count" id="chat-spot-count">0 spots</span>
+                    <button class="itinerary-optimize-btn" id="itinerary-optimize-btn" type="button" aria-label="Optimize Route" title="Optimize Route">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkle-icon lucide-sparkle">
+                        <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/>
                       </svg>
                     </button>
+                    <span class="itinerary-minimize-icon" id="itinerary-minimize-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </span>
                   </div>
                 </div>
                 <div class="itinerary-day-summary">
@@ -230,12 +230,13 @@ export function renderItinerary(container) {
           </div>
 
           <div class="setup-control-bar" aria-label="Map setup controls">
-            <button class="setup-icon-btn" type="button" id="toggle-map-title-btn" aria-label="Preview map">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
+            <button type="button" class="setup-icon-btn chat-toggle-btn" id="chat-toggle-btn" title="Hide Chat & Forecast" aria-label="Toggle Chat">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye">
+                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
+                <circle cx="12" cy="12" r="3"></circle>
               </svg>
             </button>
+
             <button class="setup-icon-btn map-theme-toggle" type="button" id="itinerary-theme-toggle" aria-label="Switch to night mode">
               <svg class="theme-day-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
@@ -535,6 +536,25 @@ function setupMapControls() {
     itineraryThemeToggle.addEventListener('click', clickHandler);
     eventListeners.push({ element: itineraryThemeToggle, event: 'click', handler: clickHandler });
     applyItineraryTheme(getAppState('theme') || 'light');
+  }
+
+  const chatToggleBtn = document.getElementById('chat-toggle-btn');
+  if (chatToggleBtn) {
+    const clickHandler = () => {
+      const container = document.querySelector('.itinerary-container');
+      if (container) {
+        const isHidden = container.classList.toggle('chat-hidden');
+        chatToggleBtn.setAttribute('title', isHidden ? 'Show Chat & Forecast' : 'Hide Chat & Forecast');
+        
+        chatToggleBtn.innerHTML = isHidden
+          ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-closed"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>';
+          
+        window.requestAnimationFrame(() => invalidateSize());
+      }
+    };
+    chatToggleBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatToggleBtn, event: 'click', handler: clickHandler });
   }
 }
 
@@ -1357,7 +1377,8 @@ function setupExportHandlers() {
   const chatBackBtn = document.getElementById('chat-back-btn');
   const chatNextBtn = document.getElementById('chat-next-btn');
   const checkItineraryBtn = document.getElementById('check-itinerary-btn');
-  const minimizeBtn = document.getElementById('itinerary-minimize-btn');
+  const minimizeBtn = document.getElementById('itinerary-header-click');
+  const optimizeBtn = document.getElementById('itinerary-optimize-btn');
   
   const handleExport = () => {
     const setup = getTripSetup();
@@ -1464,13 +1485,28 @@ function setupExportHandlers() {
   if (minimizeBtn) {
     const clickHandler = () => {
       const itineraryCard = document.getElementById('chat-itinerary-card');
+      const minimizeIcon = document.getElementById('itinerary-minimize-icon');
       if (itineraryCard) {
         const isMinimized = itineraryCard.classList.toggle('minimized');
         minimizeBtn.setAttribute('aria-label', isMinimized ? 'Expand itinerary' : 'Minimize itinerary');
+        if (minimizeIcon) {
+          minimizeIcon.innerHTML = isMinimized 
+            ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>'
+            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+        }
       }
     };
     minimizeBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: minimizeBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (optimizeBtn) {
+    const clickHandler = (e) => {
+      e.stopPropagation();
+      handleGenerate();
+    };
+    optimizeBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: optimizeBtn, event: 'click', handler: clickHandler });
   }
 
   if (chatBackBtn) {
