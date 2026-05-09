@@ -2990,3 +2990,20 @@ body[data-route="itinerary"] .page-container {
 .chat-itinerary-card.minimized .itinerary-header {
   padding-bottom: 0 !important;
 }
+/* Fix header jump on minimize */
+.chat-itinerary-card {
+  padding: 16px !important;
+}
+
+.chat-itinerary-card.minimized {
+  padding: 16px !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  max-height: 56px !important;
+}
+
+.chat-itinerary-card.minimized .itinerary-header {
+  border-bottom-color: transparent !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
