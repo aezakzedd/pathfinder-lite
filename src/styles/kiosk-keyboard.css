@@ -38,138 +38,160 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Center input modal - dark navy glass card */
-.kiosk-input-modal {
-  position: relative;
+/* Center input modal */
+.kiosk-input-modal-container {
+  position: fixed;
+  top: 0;
+  bottom: 400px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: auto;
   z-index: 10001;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 20px 24px;
-  background: rgba(15, 23, 42, 0.95);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  max-width: 640px;
-  width: calc(100% - 48px);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  flex-direction: column;
+  height: max-content;
+  width: 680px;
+  max-width: calc(100vw - 40px);
+  padding: 32px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-/* Modal input - dark slate */
+.kiosk-input-form {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 26px;
+  padding: 10px 10px 10px 18px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kiosk-input-form:focus-within {
+  border-color: rgba(138, 180, 248, 0.7);
+  box-shadow: 0 0 0 1px rgba(138, 180, 248, 0.3);
+}
+
+/* Modal input */
 .kiosk-modal-input {
   flex: 1;
-  padding: 16px 20px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  background: rgba(51, 65, 85, 0.8);
-  color: white;
-  font-size: 20px;
-  font-weight: 500;
+  padding: 12px 0;
+  border: none;
+  background: transparent;
+  color: #e2e8f0;
+  font-size: 1.4rem;
+  line-height: 1.5;
   font-family: inherit;
   outline: none;
   transition: all 0.2s ease;
+  min-height: 50px;
+  max-height: 88px;
+  overflow-y: auto;
 }
 
 .kiosk-modal-input:focus {
-  border-color: rgba(59, 130, 246, 0.6);
-  background: rgba(51, 65, 85, 0.95);
+  border-color: transparent;
+  background: transparent;
+  outline: none;
 }
 
 .kiosk-modal-input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(148, 163, 184, 0.7);
+  font-size: 1.05rem;
+  font-weight: 400;
 }
 
-/* Send button - circular slate/blue */
+/* Send button */
 .kiosk-modal-send {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: #8ab4f8;
   border: none;
-  color: white;
+  color: #0b1020;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .kiosk-modal-send:hover {
+  background: #a6c4fa;
   transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
 .kiosk-modal-send:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
-/* Keyboard panel - full-width bottom band, 35-40% of screen at 1080p */
+/* Keyboard panel - full-width bottom band */
 .kiosk-keyboard-panel {
-  position: relative;
+  position: fixed;
+  bottom: 0;
+  left: 0;
   z-index: 10001;
-  width: 100%;
-  max-width: 100%;
-  padding: 20px 24px 24px;
-  background: rgba(15, 23, 42, 0.98);
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
-  max-height: 45vh;
+  width: 100vw;
+  padding: 30px 0;
+  background: #0f172a;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Keyboard rows container - centered with max-width */
+/* Keyboard rows container */
 .kiosk-keyboard-rows {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 1120px;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 .kiosk-keyboard-row {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  margin-bottom: 12px;
 }
 
-/* Keys - large rounded rectangles, slate blue-gray */
+/* Keys */
 .kiosk-key {
-  min-width: 100px;
-  min-height: 62px;
-  padding: 14px 20px;
+  flex: 1;
+  height: 80px;
+  margin: 0 6px;
+  padding: 0;
   border: none;
-  border-radius: 12px;
-  background: rgba(51, 65, 85, 0.9);
-  color: white;
-  font-size: 22px;
-  font-weight: 500;
+  border-radius: 6px;
+  background: #334155;
+  color: #f8fafc;
+  font-size: 1.8rem;
+  font-weight: 400;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.1s ease;
+  transition: all 0.05s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 0px #1e293b;
 }
 
-.kiosk-key:hover {
-  background: rgba(71, 85, 105, 0.95);
-}
-
-.kiosk-key:active {
-  background: rgba(91, 105, 125, 0.95);
-  transform: scale(0.96);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
+.kiosk-key:active,
 .kiosk-key.active {
-  background: rgba(59, 130, 246, 0.9);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  background: #1e293b;
+  transform: translateY(4px);
+  box-shadow: 0 0px 0px #1e293b;
 }
 
 .kiosk-key:disabled {
@@ -179,75 +201,98 @@
 
 /* Wide keys */
 .kiosk-key-wide {
-  min-width: 120px;
+  flex-grow: 1.5;
+  max-width: 140px;
+  background: #1e293b;
+  box-shadow: 0 4px 0px #0f172a;
+  font-size: 1.3rem;
+}
+
+.kiosk-key-wide:active,
+.kiosk-key-wide.active {
+  background: #0f172a;
+  box-shadow: 0 0px 0px #0f172a;
 }
 
 .kiosk-key-space {
-  min-width: 280px;
+  flex-grow: 4;
+  max-width: 600px;
 }
 
 .kiosk-key-globe {
-  min-width: 100px;
+  flex-grow: 1.5;
+  max-width: 140px;
   opacity: 0.3;
 }
 
 /* Light theme */
 [data-theme='light'] .kiosk-keyboard-scrim {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.45);
 }
 
-[data-theme='light'] .kiosk-input-modal {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+[data-theme='light'] .kiosk-input-modal-container {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='light'] .kiosk-input-form {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(100, 116, 139, 0.28);
+}
+
+[data-theme='light'] .kiosk-input-form:focus-within {
+  border-color: rgba(66, 133, 244, 0.7);
+  box-shadow: 0 0 0 1px rgba(66, 133, 244, 0.28);
 }
 
 [data-theme='light'] .kiosk-modal-input {
-  background: rgba(243, 244, 246, 0.9);
-  border-color: #e5e7eb;
-  color: #1f2937;
-}
-
-[data-theme='light'] .kiosk-modal-input:focus {
-  background: white;
-  border-color: #3b82f6;
+  color: #0f172a;
 }
 
 [data-theme='light'] .kiosk-modal-input::placeholder {
-  color: #9ca3af;
+  color: rgba(100, 116, 139, 0.72);
+}
+
+[data-theme='light'] .kiosk-modal-send {
+  background: #4285f4;
+  color: #ffffff;
+}
+
+[data-theme='light'] .kiosk-modal-send:hover {
+  background: #5a95f5;
 }
 
 [data-theme='light'] .kiosk-keyboard-panel {
-  background: rgba(226, 232, 240, 0.98);
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.1);
+  background: #e2e8f0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme='light'] .kiosk-key {
-  background: white;
-  color: #1f2937;
-  border: 1px solid #cbd5e1;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: #e2e8f0;
+  color: #1e293b;
+  border: none;
+  box-shadow: 0 4px 0px #cbd5e1, 0 0 0 1px #cbd5e1;
 }
 
-[data-theme='light'] .kiosk-key:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-}
-
-[data-theme='light'] .kiosk-key:active {
-  background: #f1f5f9;
-}
-
+[data-theme='light'] .kiosk-key:active,
 [data-theme='light'] .kiosk-key.active {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  background: #cbd5e1;
+  transform: translateY(4px);
+  box-shadow: 0 0px 0px #cbd5e1;
 }
 
-[data-theme='light'] .kiosk-key:disabled {
-  background: #f1f5f9;
-  color: #9ca3af;
-  border-color: #e2e8f0;
+[data-theme='light'] .kiosk-key-wide {
+  background: #cbd5e1;
+  box-shadow: 0 4px 0px #94a3b8;
+}
+
+[data-theme='light'] .kiosk-key-wide:active,
+[data-theme='light'] .kiosk-key-wide.active {
+  background: #94a3b8;
+  box-shadow: 0 0px 0px #94a3b8;
 }
 
 /* Responsive adjustments */
@@ -255,60 +300,29 @@
   .kiosk-keyboard-rows {
     max-width: 960px;
   }
-  
-  .kiosk-input-modal {
-    max-width: 560px;
-  }
-  
   .kiosk-key {
-    min-width: 80px;
-    min-height: 56px;
-    font-size: 20px;
+    height: 64px;
+    font-size: 1.5rem;
   }
-  
   .kiosk-key-wide {
-    min-width: 100px;
-  }
-  
-  .kiosk-key-space {
-    min-width: 220px;
+    font-size: 1.1rem;
   }
 }
 
 @media (max-height: 768px) {
   .kiosk-keyboard-panel {
-    padding: 16px 20px 20px;
-    max-height: 50vh;
+    padding: 8px 0;
   }
-  
-  .kiosk-keyboard-rows {
-    gap: 8px;
-  }
-  
   .kiosk-keyboard-row {
-    gap: 6px;
+    margin-bottom: 8px;
   }
-  
   .kiosk-key {
-    min-width: 70px;
-    min-height: 50px;
-    font-size: 18px;
-    padding: 12px 16px;
+    height: 54px;
+    font-size: 1.3rem;
   }
-  
   .kiosk-input-modal {
-    margin-bottom: 16px;
-    padding: 16px 20px;
-  }
-  
-  .kiosk-modal-input {
-    font-size: 18px;
-    padding: 14px 18px;
-  }
-  
-  .kiosk-modal-send {
-    width: 52px;
-    height: 52px;
+    bottom: 300px;
+    padding: 24px;
   }
 }
 

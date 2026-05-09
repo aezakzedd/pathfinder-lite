@@ -22,10 +22,16 @@ const KEYBOARD_LAYOUTS = {
     ['shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'backspace'],
     ['123', 'globe', 'space', '.', 'enter']
   ],
+  shift: [
+    ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+    ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+    ['shift', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'backspace'],
+    ['123', 'globe', 'space', '.', 'enter']
+  ],
   numeric: [
     ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-    ['-', '/', ':', ';', '(', ')', '$', '&', '@', '"'],
-    ['#+=', '.', ',', '?', '!', "'", 'backspace'],
+    ['@', '#', '$', '%', '&', '*', '-', '+', '(', ')'],
+    ['shift', '!', '"', "'", ':', ';', '/', '?', 'backspace'],
     ['abc', 'globe', 'space', ',', 'enter']
   ]
 };
@@ -39,22 +45,24 @@ function createOverlay() {
   
   overlay.innerHTML = `
     <div class="kiosk-keyboard-scrim"></div>
-    <div class="kiosk-input-modal">
-      <input 
-        type="text" 
-        class="kiosk-modal-input" 
-        placeholder="Ask Pathfinder..." 
-        inputmode="none"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-      />
-      <button type="button" class="kiosk-modal-send" aria-label="Send message">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-      </button>
+    <div class="kiosk-input-modal-container">
+      <form class="kiosk-input-form" onsubmit="event.preventDefault();">
+        <input 
+          type="text" 
+          class="kiosk-modal-input" 
+          placeholder="Ask Pathfinder..." 
+          inputmode="none"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <button type="button" class="kiosk-modal-send" aria-label="Send message">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+            <path d="m21.854 2.147-10.94 10.939" />
+          </svg>
+        </button>
+      </form>
     </div>
     <div class="kiosk-keyboard-panel">
       <div class="kiosk-keyboard-rows"></div>
@@ -109,15 +117,14 @@ function renderKeyboardRows(container, layout) {
       if (key === 'shift') {
         keyBtn.setAttribute('aria-label', 'Shift');
         keyBtn.innerHTML = `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 14L4 9l5-5"/>
-            <path d="M4 9h11a4 4 0 0 1 0 8h-1"/>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7"/>
           </svg>
         `;
       } else if (key === 'backspace') {
         keyBtn.setAttribute('aria-label', 'Backspace');
         keyBtn.innerHTML = `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/>
             <line x1="18" y1="9" x2="12" y2="15"/>
             <line x1="12" y1="9" x2="18" y2="15"/>
@@ -126,9 +133,9 @@ function renderKeyboardRows(container, layout) {
       } else if (key === 'enter') {
         keyBtn.setAttribute('aria-label', 'Enter');
         keyBtn.innerHTML = `
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 10L4 15L9 20"/>
+            <path d="M20 4v7a4 4 0 0 1-4 4H4"/>
           </svg>
         `;
       } else if (key === 'globe') {
@@ -182,6 +189,7 @@ function getKeyClass(key) {
 function handleKeyClick(key) {
   if (key === 'shift') {
     isShiftActive = !isShiftActive;
+    renderKeyboardRows(overlay.querySelector('.kiosk-keyboard-rows'), isShiftActive ? 'shift' : 'alpha');
     updateShiftState();
     return;
   }
@@ -216,14 +224,7 @@ function handleKeyClick(key) {
   }
   
   // Regular character
-  let char = key;
-  if (isShiftActive) {
-    char = char.toUpperCase();
-    // Reset shift after typing one letter
-    isShiftActive = false;
-    updateShiftState();
-  }
-  insertCharacter(char);
+  insertCharacter(key);
 }
 
 function updateShiftState() {
