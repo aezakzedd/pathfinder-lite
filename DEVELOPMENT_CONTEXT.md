@@ -795,6 +795,35 @@ Leaflet is dynamically imported by the itinerary map adapter. No online map tile
   - Light theme: pale blue/gray keyboard panel, light keys, dark text
   - Responsive design for 1920x1080, 1366x768, and smaller viewports
   - All tests passing: npm run build
+- Phase 14B: Fix kiosk virtual keyboard behavior and match original Pathfinder design ✓
+  - Fixed persistent reopen loop by removing focus listener and adding suppression guard
+  - Root cause: keyboard opened on both click and focus; close() restored focus to original input, triggering focus listener
+  - Removed focus listener from original input; keyboard now opens only on click/tap
+  - Added suppressOpenUntil flag (300ms suppression window) to prevent immediate reopen
+  - close() now blurs original input instead of focusing it
+  - Added isSubmitting flag to prevent duplicate submits
+  - Fixed reversed text insertion by removing focus blur handler from modalInput
+  - Root cause: modalInput focus handler blurred and refocused, causing caret to stay at position 0
+  - Changed key button click to pointerdown to prevent focus stealing
+  - Fixed insertCharacter and deleteCharacter to properly manage caret with setSelectionRange
+  - Fixed Send behavior to sync with original input before calling sendMessage
+  - Submit now: sets originalInput.value, dispatches input/change events, calls onSubmitCallback, clears both inputs, closes overlay
+  - Added duplicate listener protection using WeakSet of initialized inputs
+  - Updated CSS to match original Pathfinder design:
+    - Dark theme: black scrim (rgba(0,0,0,0.7)) with stronger blur (12px)
+    - Dark theme: dark navy glass card modal (rgba(15,23,42,0.95))
+    - Dark theme: dark slate input (rgba(51,65,85,0.8))
+    - Dark theme: circular send button (60px, gradient)
+    - Dark theme: full-width bottom keyboard band (rgba(15,23,42,0.98))
+    - Light theme: white/frosted scrim (rgba(255,255,255,0.8))
+    - Light theme: white/frosted card modal
+    - Light theme: pale gray input
+    - Light theme: pale blue-gray keyboard band
+    - Layout: full viewport overlay, fixed modal above keyboard, fixed full-width keyboard at bottom
+    - At 1920x1080: keys ~100px wide, 62px high, keyboard 35-40% of screen (max-height: 45vh)
+    - At 1366x768: keys ~80px wide, 56px high, still touchable
+    - Keyboard rows container max-width: 1120px (centered)
+    - All tests passing: npm run build
 - Connect placeholder QR to backend share endpoint
 - Implement share link generation
 

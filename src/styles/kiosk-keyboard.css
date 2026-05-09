@@ -1,6 +1,7 @@
 /**
  * Kiosk Virtual Keyboard Styles
  * Provides a centered text input modal with virtual keyboard for kiosk touch interfaces.
+ * Matches original Pathfinder design with full-width bottom keyboard band.
  */
 
 /* Overlay root */
@@ -25,116 +26,124 @@
   pointer-events: auto;
 }
 
-/* Background scrim with blur */
+/* Background scrim with blur - dark theme: black with blur */
 .kiosk-keyboard-scrim {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-/* Center input modal */
+/* Center input modal - dark navy glass card */
 .kiosk-input-modal {
   position: relative;
   z-index: 10001;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 16px 20px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  max-width: 600px;
-  width: 90%;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-width: 640px;
+  width: calc(100% - 48px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-/* Modal input */
+/* Modal input - dark slate */
 .kiosk-modal-input {
   flex: 1;
-  padding: 14px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  background: #f9fafb;
-  color: #1f2937;
-  font-size: 18px;
+  padding: 16px 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(51, 65, 85, 0.8);
+  color: white;
+  font-size: 20px;
+  font-weight: 500;
   font-family: inherit;
   outline: none;
   transition: all 0.2s ease;
 }
 
 .kiosk-modal-input:focus {
-  border-color: #3b82f6;
-  background: white;
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(51, 65, 85, 0.95);
 }
 
 .kiosk-modal-input::placeholder {
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.4);
 }
 
-/* Send button */
+/* Send button - circular slate/blue */
 .kiosk-modal-send {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
   background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   border: none;
   color: white;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .kiosk-modal-send:hover {
   transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
 .kiosk-modal-send:active {
   transform: scale(0.95);
 }
 
-/* Keyboard panel */
+/* Keyboard panel - full-width bottom band, 35-40% of screen at 1080p */
 .kiosk-keyboard-panel {
   position: relative;
   z-index: 10001;
   width: 100%;
-  max-width: 1000px;
-  padding: 16px 20px 20px;
-  background: #1e293b;
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 100%;
+  padding: 20px 24px 24px;
+  background: rgba(15, 23, 42, 0.98);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+  max-height: 45vh;
 }
 
-/* Keyboard rows */
+/* Keyboard rows container - centered with max-width */
 .kiosk-keyboard-rows {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
 .kiosk-keyboard-row {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-/* Keys */
+/* Keys - large rounded rectangles, slate blue-gray */
 .kiosk-key {
-  min-width: 48px;
-  min-height: 52px;
-  padding: 12px 16px;
+  min-width: 100px;
+  min-height: 62px;
+  padding: 14px 20px;
   border: none;
-  border-radius: 8px;
-  background: #334155;
+  border-radius: 12px;
+  background: rgba(51, 65, 85, 0.9);
   color: white;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
@@ -145,49 +154,56 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .kiosk-key:hover {
-  background: #475569;
+  background: rgba(71, 85, 105, 0.95);
 }
 
 .kiosk-key:active {
-  background: #64748b;
-  transform: scale(0.95);
+  background: rgba(91, 105, 125, 0.95);
+  transform: scale(0.96);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .kiosk-key.active {
-  background: #3b82f6;
+  background: rgba(59, 130, 246, 0.9);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
 }
 
 .kiosk-key:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 /* Wide keys */
 .kiosk-key-wide {
-  min-width: 64px;
+  min-width: 120px;
 }
 
 .kiosk-key-space {
-  min-width: 200px;
+  min-width: 280px;
 }
 
 .kiosk-key-globe {
-  min-width: 64px;
-  opacity: 0.4;
+  min-width: 100px;
+  opacity: 0.3;
 }
 
 /* Light theme */
+[data-theme='light'] .kiosk-keyboard-scrim {
+  background: rgba(255, 255, 255, 0.8);
+}
+
 [data-theme='light'] .kiosk-input-modal {
-  background: white;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
 [data-theme='light'] .kiosk-modal-input {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: rgba(243, 244, 246, 0.9);
+  border-color: #e5e7eb;
   color: #1f2937;
 }
 
@@ -201,30 +217,31 @@
 }
 
 [data-theme='light'] .kiosk-keyboard-panel {
-  background: #e2e8f0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  background: rgba(226, 232, 240, 0.98);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme='light'] .kiosk-key {
   background: white;
   color: #1f2937;
   border: 1px solid #cbd5e1;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 [data-theme='light'] .kiosk-key:hover {
-  background: #f1f5f9;
+  background: #f8fafc;
   border-color: #94a3b8;
 }
 
 [data-theme='light'] .kiosk-key:active {
-  background: #e2e8f0;
+  background: #f1f5f9;
 }
 
 [data-theme='light'] .kiosk-key.active {
   background: #3b82f6;
   color: white;
   border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 [data-theme='light'] .kiosk-key:disabled {
@@ -235,57 +252,63 @@
 
 /* Responsive adjustments */
 @media (max-width: 1366px) {
-  .kiosk-keyboard-panel {
-    max-width: 100%;
+  .kiosk-keyboard-rows {
+    max-width: 960px;
   }
   
   .kiosk-input-modal {
-    max-width: 500px;
+    max-width: 560px;
   }
   
   .kiosk-key {
-    min-width: 40px;
-    min-height: 48px;
-    font-size: 16px;
+    min-width: 80px;
+    min-height: 56px;
+    font-size: 20px;
   }
   
   .kiosk-key-wide {
-    min-width: 56px;
+    min-width: 100px;
   }
   
   .kiosk-key-space {
-    min-width: 160px;
+    min-width: 220px;
   }
 }
 
 @media (max-height: 768px) {
   .kiosk-keyboard-panel {
-    padding: 12px 16px 16px;
+    padding: 16px 20px 20px;
+    max-height: 50vh;
+  }
+  
+  .kiosk-keyboard-rows {
+    gap: 8px;
   }
   
   .kiosk-keyboard-row {
-    gap: 4px;
+    gap: 6px;
   }
   
   .kiosk-key {
-    min-width: 36px;
-    min-height: 44px;
-    font-size: 15px;
-    padding: 10px 12px;
-  }
-  
-  .kiosk-input-modal {
-    margin-bottom: 12px;
+    min-width: 70px;
+    min-height: 50px;
+    font-size: 18px;
     padding: 12px 16px;
   }
   
+  .kiosk-input-modal {
+    margin-bottom: 16px;
+    padding: 16px 20px;
+  }
+  
   .kiosk-modal-input {
-    font-size: 16px;
+    font-size: 18px;
+    padding: 14px 18px;
   }
   
   .kiosk-modal-send {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
   }
 }
 

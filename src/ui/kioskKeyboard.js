@@ -11,6 +11,9 @@ let onSubmitCallback = null;
 let isShiftActive = false;
 let isNumericActive = false;
 let priorValue = '';
+let suppressOpenUntil = 0;
+let isSubmitting = false;
+const initializedInputs = new WeakSet();
 
 const KEYBOARD_LAYOUTS = {
   alpha: [
@@ -87,12 +90,6 @@ function createOverlay() {
       close();
     }
   });
-  
-  // Prevent native keyboard on focus
-  modalInput.addEventListener('focus', () => {
-    modalInput.blur();
-    setTimeout(() => modalInput.focus(), 0);
-  });
 }
 
 function renderKeyboardRows(container, layout) {
@@ -157,7 +154,7 @@ function renderKeyboardRows(container, layout) {
         keyBtn.textContent = key;
       }
       
-      keyBtn.addEventListener('click', (e) => {
+      keyBtn.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         handleKeyClick(key);
       });
@@ -241,38 +238,73 @@ function updateShiftState() {
 }
 
 function insertCharacter(char) {
-  const start = modalInput.selectionStart;
-  const end = modalInput.selectionEnd;
+  const start = modalInput.selectionStart ?? modalInput.value.length;
+  const end = modalInput.selectionEnd ?? modalInput.value.length;
   const text = modalInput.value;
   
   modalInput.value = text.slice(0, start) + char + text.slice(end);
-  modalInput.selectionStart = modalInput.selectionEnd = start + char.length;
+  const next = start + char.length;
+  modalInput.focus({ preventScroll: true });
+  modalInput.setSelectionRange(next, next);
+  modalInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 function deleteCharacter() {
-  const start = modalInput.selectionStart;
-  const end = modalInput.selectionEnd;
+  const start = modalInput.selectionStart ?? modalInput.value.length;
+  const end = modalInput.selectionEnd ?? modalInput.value.length;
   const text = modalInput.value;
   
   if (start === end && start > 0) {
     modalInput.value = text.slice(0, start - 1) + text.slice(end);
-    modalInput.selectionStart = modalInput.selectionEnd = start - 1;
+    modalInput.focus({ preventScroll: true });
+    modalInput.setSelectionRange(start - 1, start - 1);
   } else if (start !== end) {
     modalInput.value = text.slice(0, start) + text.slice(end);
-    modalInput.selectionStart = modalInput.selectionEnd = start;
+    modalInput.focus({ preventScroll: true });
+    modalInput.setSelectionRange(start, start);
   }
+  modalInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 function submit() {
+  if (isSubmitting) return;
+  
   const message = modalInput.value.trim();
-  if (message && onSubmitCallback) {
+  if (!message) return;
+  
+  isSubmitting = true;
+  
+  // Sync with original input
+  if (originalInput) {
+    originalInput.value = message;
+    originalInput.dispatchEvent(new Event('input', { bubbles: true }));
+    originalInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  
+  // Call submit callback
+  if (onSubmitCallback) {
     onSubmitCallback(message);
   }
+  
+  // Clear and close
+  modalInput.value = '';
+  if (originalInput) {
+    originalInput.value = '';
+  }
+  
   close();
+  
+  // Reset submit flag after a delay
+  setTimeout(() => {
+    isSubmitting = false;
+  }, 500);
 }
 
 function open(inputElement, onSubmit) {
   if (isOpen) return;
+  
+  // Check suppression guard
+  if (Date.now() < suppressOpenUntil) return;
   
   originalInput = inputElement;
   onSubmitCallback = onSubmit;
@@ -292,10 +324,12 @@ function open(inputElement, onSubmit) {
   inputElement.setAttribute('autocorrect', 'off');
   inputElement.setAttribute('spellcheck', 'false');
   
-  // Focus modal input
-  setTimeout(() => {
-    modalInput.focus();
-  }, 100);
+  // Focus modal input and place caret at end
+  requestAnimationFrame(() => {
+    modalInput.focus({ preventScroll: true });
+    const end = modalInput.value.length;
+    modalInput.setSelectionRange(end, end);
+  });
 }
 
 function close() {
@@ -304,17 +338,18 @@ function close() {
   overlay.classList.remove('open');
   isOpen = false;
   
-  // Restore original input if not submitted
+  // Set suppression guard to prevent immediate reopen
+  suppressOpenUntil = Date.now() + 300;
+  
+  // Sync modal value back to original input (for cancel case)
   if (originalInput && modalInput) {
     originalInput.value = modalInput.value;
   }
   
-  // Restore focus to original input
-  setTimeout(() => {
-    if (originalInput) {
-      originalInput.focus();
-    }
-  }, 100);
+  // Blur original input to prevent focus-triggered reopen
+  if (originalInput) {
+    originalInput.blur();
+  }
 }
 
 export function initKioskKeyboard({ inputSelector, onSubmit }) {
@@ -324,18 +359,16 @@ export function initKioskKeyboard({ inputSelector, onSubmit }) {
     return;
   }
   
-  // Open keyboard on click/tap
+  // Check if already initialized
+  if (initializedInputs.has(inputElement)) {
+    return;
+  }
+  initializedInputs.add(inputElement);
+  
+  // Open keyboard only on click/tap (not on focus to prevent reopen loop)
   inputElement.addEventListener('click', (e) => {
     e.preventDefault();
     open(inputElement, onSubmit);
-  });
-  
-  // Also open on focus (for accessibility)
-  inputElement.addEventListener('focus', (e) => {
-    if (!isOpen) {
-      e.preventDefault();
-      open(inputElement, onSubmit);
-    }
   });
   
   // Prevent native keyboard
