@@ -383,19 +383,40 @@ def draw_map_placeholder(
     image_stream = io.BytesIO(map_image_bytes)
     pdf.image(image_stream, x=x, y=y, w=content_width, h=image_h)
 
-    # Add clickable link to map image area if directions URL is available
+    # Add Google Maps directions button on lower right corner if directions URL is available
     if directions_url:
-        add_uri_link_new_window(pdf, x, y, content_width, image_h, directions_url)
+        button_w = 50
+        button_h = 8
+        button_x = x + content_width - button_w - 3
+        button_y = y + image_h - button_h - 3
+
+        # Draw button shadow for depth
+        pdf.set_fill_color(220, 220, 220)
+        draw_round_rect(pdf, button_x + 0.5, button_y + 0.5, button_w, button_h, 2, style="F")
+
+        # Draw button background with rounded corners - use a nice blue color
+        pdf.set_fill_color(66, 133, 244)  # Nice blue
+        draw_round_rect(pdf, button_x, button_y, button_w, button_h, 2, style="F")
+
+        # Draw button border - subtle
+        pdf.set_draw_color(51, 102, 204)  # Darker blue
+        pdf.set_line_width(0.3)
+        draw_round_rect(pdf, button_x, button_y, button_w, button_h, 2, style="D")
+
+        # Add button text with link using write() method
+        pdf.set_font("helvetica", "B", 6)
+        pdf.set_text_color(255, 255, 255)
+        button_text = "Open in Maps"
+
+        # Position cursor and write clickable text
+        pdf.set_xy(button_x, button_y + button_h / 2 + 1.5)
+        pdf.write(6, button_text, link=directions_url)
 
     y += image_h + 6
     pdf.set_font("helvetica", "B", 8)
     if directions_url:
         pdf.set_text_color(*BLUE)
-        draw_text(pdf, pdf.w / 2, y, "Click map image for directions.", align="C")
-        # Add clickable link to text area as well
-        text_width = pdf.get_string_width("Click map image for directions.")
-        text_x = (pdf.w - text_width) / 2
-        add_uri_link_new_window(pdf, text_x, y - 4, text_width, 7, directions_url)
+        draw_text(pdf, pdf.w / 2, y, "Click button for directions.", align="C")
     else:
         pdf.set_text_color(*SOFT_TEXT)
         draw_text(pdf, pdf.w / 2, y, "Directions unavailable: missing coordinates.", align="C")
