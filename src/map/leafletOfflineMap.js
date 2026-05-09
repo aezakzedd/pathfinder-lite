@@ -116,6 +116,7 @@ export function zoomIn() {
   mapInstance.map.zoomIn(1);
 }
 
+
 export function zoomOut() {
   if (!mapInstance?.map) return;
   mapInstance.map.zoomOut(1);
@@ -124,6 +125,30 @@ export function zoomOut() {
 export function resetView() {
   if (!mapInstance?.map) return;
   fitToCatanduanes(mapInstance);
+}
+
+export function fitToRoute() {
+  if (!mapInstance?.map) return;
+  const L = mapInstance.L;
+  const result = mapInstance.routeResult;
+  let latLngs = [];
+  
+  if (result && (result.coordinates || result.geometry)) {
+    latLngs = coordinatesToLatLngs(result.coordinates || result.geometry);
+  } else if (mapInstance.routeCoordinates && mapInstance.routeCoordinates.length > 0) {
+    latLngs = coordinatesToLatLngs(mapInstance.routeCoordinates);
+  }
+  
+  if (mapInstance.hub?.coordinates) {
+    latLngs.push(toLatLng(mapInstance.hub.coordinates));
+  }
+  
+  if (latLngs.length > 1) {
+    const bounds = L.latLngBounds(latLngs);
+    mapInstance.map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13, animate: false });
+  } else {
+    fitToCatanduanes(mapInstance);
+  }
 }
 
 export function invalidateSize() {

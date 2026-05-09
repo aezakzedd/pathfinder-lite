@@ -1,5 +1,5 @@
 // Itinerary page module
-import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState } from '../map/leafletOfflineMap.js';
+import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState, fitToRoute } from '../map/leafletOfflineMap.js';
 import { askPathfinder } from '../api.js';
 import { getState as getAppState, setState as setAppState } from '../state.js';
 import {
@@ -47,6 +47,7 @@ import {
 } from '../utils/generateItinerary.js';
 import { buildPreviewRouteCoordinates, buildRouteCoordinates, getHubByName } from '../utils/visualRoute.js';
 import { initKioskKeyboard } from '../ui/kioskKeyboard.js';
+import html2canvas from 'html2canvas';
 
 let mapInitialized = false;
 let stateUnsubscribe = null;
@@ -1319,7 +1320,7 @@ function renderChatMessages() {
   
   if (!messagesContainer) return;
   
-  const messages = getMessages();
+  const messages = getMessages().filter(m => !(m.content && m.content.includes('Generated a lightweight local itinerary')));
   
   // Render messages
   const existingMessages = messagesContainer.querySelectorAll('.chat-message');
@@ -1382,12 +1383,69 @@ function setupExportHandlers() {
   const minimizeBtn = document.getElementById('itinerary-header-click');
   const optimizeBtn = document.getElementById('itinerary-optimize-btn');
   
-  const handleExport = () => {
+  const handleExport = async () => {
+    let overlay = document.getElementById('pdf-export-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pdf-export-overlay';
+      overlay.innerHTML = `
+        <div class="pdf-export-spinner"></div>
+        <p>Capturing routes for PDF...</p>
+      `;
+      document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+
+    const generateBtn = document.getElementById('generate-pdf-btn');
+    if (generateBtn) generateBtn.classList.add('is-loading');
+
+    const originalActiveDay = getActiveDay();
+    const days = getAllDays();
+    const dayKeys = Object.keys(days).sort();
+    
+    // Hide UI elements so they don't appear in the screenshot
+    const uiElements = document.querySelectorAll('.setup-control-bar, .map-controls, .map-header, .destination-preview, #destination-preview');
+    uiElements.forEach(el => {
+      if(el) el.style.opacity = '0';
+    });
+
+    const mapScreenshots = {};
+    const mapElement = document.getElementById('pathfinder-map');
+    
+    if (mapElement) {
+      for (const day of dayKeys) {
+        // Set the active day so the map draws the specific route
+        setActiveDay(parseInt(day, 10));
+        
+        // Wait for map to update and animations to finish
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        fitToRoute();
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        try {
+          const canvas = await html2canvas(mapElement, { useCORS: true, logging: false });
+          mapScreenshots[day] = canvas.toDataURL('image/jpeg', 0.8);
+        } catch (err) {
+          console.error('Failed to capture map screenshot for day ' + day, err);
+        }
+      }
+    }
+    
+    // Restore UI
+    uiElements.forEach(el => {
+      if(el) el.style.opacity = '';
+    });
+    setActiveDay(originalActiveDay);
+    if (generateBtn) generateBtn.classList.remove('is-loading');
+    if (overlay) overlay.style.display = 'none';
+
     const setup = getTripSetup();
     const dayCount = getTripDayCount(setup);
     const timeWallet = buildCurrentTimeWalletInfo();
     // Prepare export payload
     const exportPayload = {
+      map_screenshots: mapScreenshots,
       days: getAllDays(),
       allStops: getAllStops(),
       totalStops: getAllStops().length,

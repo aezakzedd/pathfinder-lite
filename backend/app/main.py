@@ -38,6 +38,7 @@ class PdfGenerateRequest(BaseModel):
     timeWallet: dict | None = None
     setup: dict | None = None
     routeSource: str | None = None
+    map_screenshots: dict[str, str] | None = None
 
 
 class SessionFinishRequest(BaseModel):
