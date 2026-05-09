@@ -392,24 +392,28 @@ def draw_map_placeholder(
 
         # Draw button shadow for depth
         pdf.set_fill_color(220, 220, 220)
-        draw_round_rect(pdf, button_x + 0.5, button_y + 0.5, button_w, button_h, 2, style="F")
+        draw_round_rect(pdf, button_x + 0.5, button_y + 0.5, button_w, button_h, 4, style="F")
 
-        # Draw button background with rounded corners - use a nice blue color
+        # Draw button background with pill shape - use a nice blue color
         pdf.set_fill_color(66, 133, 244)  # Nice blue
-        draw_round_rect(pdf, button_x, button_y, button_w, button_h, 2, style="F")
+        draw_round_rect(pdf, button_x, button_y, button_w, button_h, 4, style="F")
 
         # Draw button border - subtle
         pdf.set_draw_color(51, 102, 204)  # Darker blue
         pdf.set_line_width(0.3)
-        draw_round_rect(pdf, button_x, button_y, button_w, button_h, 2, style="D")
+        draw_round_rect(pdf, button_x, button_y, button_w, button_h, 4, style="D")
 
         # Add button text with link using write() method
         pdf.set_font("helvetica", "B", 6)
         pdf.set_text_color(255, 255, 255)
         button_text = "Open in Maps"
 
-        # Position cursor and write clickable text
-        pdf.set_xy(button_x, button_y + button_h / 2 + 1.5)
+        # Calculate text width for centering
+        text_width = pdf.get_string_width(button_text)
+        text_x = button_x + (button_w - text_width) / 2
+
+        # Position cursor and write clickable text - centered vertically
+        pdf.set_xy(text_x, button_y + button_h / 2 + 0.5)
         pdf.write(6, button_text, link=directions_url)
 
     y += image_h + 6
