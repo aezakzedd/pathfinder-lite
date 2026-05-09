@@ -3007,3 +3007,41 @@ body[data-route="itinerary"] .page-container {
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
 }
+
+/* Final structure match for header */
+.chat-itinerary-card {
+  padding: 0 !important;
+}
+
+.chat-itinerary-card .itinerary-header {
+  padding: 14px 16px !important;
+  margin-bottom: 0 !important;
+  border-bottom: 1px solid var(--itinerary-card-border) !important;
+}
+
+.chat-itinerary-card.minimized .itinerary-header {
+  border-bottom-color: transparent !important;
+}
+
+.itinerary-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.chat-itinerary-card.minimized .itinerary-body {
+  display: none !important;
+}
+
+.chat-itinerary-card.minimized {
+  height: 56px !important;
+  min-height: 56px !important;
+  max-height: 56px !important;
+}
+.chat-itinerary-card.minimized {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}

@@ -151,35 +151,37 @@ export function renderItinerary(container) {
                     </span>
                   </div>
                 </div>
-                <div class="itinerary-day-summary">
-                  <div class="day-indicator" id="day-indicator">
-                    <span class="day-indicator-text" id="day-indicator-text">Day 1 of 3</span>
-                  </div>
-                  <div class="pace-indicator" id="pace-indicator">
-                    <span class="pace-text" id="pace-text">Relaxed pace</span>
-                    <div class="pace-bar">
-                      <div class="pace-fill" id="pace-fill" style="width: 0%;"></div>
+                <div class="itinerary-body" id="itinerary-body">
+                  <div class="itinerary-day-summary">
+                    <div class="day-indicator" id="day-indicator">
+                      <span class="day-indicator-text" id="day-indicator-text">Day 1 of 3</span>
+                    </div>
+                    <div class="pace-indicator" id="pace-indicator">
+                      <span class="pace-text" id="pace-text">Relaxed pace</span>
+                      <div class="pace-bar">
+                        <div class="pace-fill" id="pace-fill" style="width: 0%;"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div class="itinerary-spots" id="chat-itinerary-spots">
-                  <div class="itinerary-empty">Day 1 is empty. Select a map pin or generate a plan to begin.</div>
-                </div>
-                <div class="itinerary-actions">
-                  <button class="btn-secondary chat-back-btn" id="chat-back-btn" aria-label="Previous day">
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                  </button>
-                  <button class="btn-primary chat-generate-btn" id="chat-generate-btn">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="m14 4 6 6M4 20l9.5-9.5M13 5l6 6-2 2-6-6 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                      <path d="M5 5v4M3 7h4M19 17v4M17 19h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                    Generate
-                  </button>
-                  <button class="btn-primary" id="chat-next-btn" style="display: none;">Next</button>
-                  <button class="btn-primary" id="chat-save-btn" style="display: none;">Save</button>
+                  <div class="itinerary-spots" id="chat-itinerary-spots">
+                    <div class="itinerary-empty">Day 1 is empty. Select a map pin or generate a plan to begin.</div>
+                  </div>
+                  <div class="itinerary-actions">
+                    <button class="btn-secondary chat-back-btn" id="chat-back-btn" aria-label="Previous day">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button class="btn-primary chat-generate-btn" id="chat-generate-btn">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="m14 4 6 6M4 20l9.5-9.5M13 5l6 6-2 2-6-6 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M5 5v4M3 7h4M19 17v4M17 19h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                      </svg>
+                      Generate
+                    </button>
+                    <button class="btn-primary" id="chat-next-btn" style="display: none;">Next</button>
+                    <button class="btn-primary" id="chat-save-btn" style="display: none;">Save</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1437,10 +1439,6 @@ function setupExportHandlers() {
     }
 
     replaceItineraryDays(result.days, dayCount);
-    addMessage({
-      role: 'system',
-      content: `Generated a lightweight local itinerary for ${dayCount} day${dayCount !== 1 ? 's' : ''} from your selected activities and budget.`
-    });
   };
   
   if (generatePdfBtn) {
