@@ -242,7 +242,6 @@ function setShareReady(elements, share) {
     <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="send-phone-qr-box" title="Open share link">
       ${svg}
     </a>
-    <span class="send-phone-expiry">Expires in ${Number(share.expires_in_minutes || 60)} minutes</span>
   `;
 
   if (isLocalhostUrl(shareUrl)) {
