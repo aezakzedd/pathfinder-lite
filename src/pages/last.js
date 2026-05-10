@@ -35,8 +35,8 @@ export function renderLast(container) {
         </div>
         <div class="send-phone-panel" id="send-phone-panel" aria-live="polite">
           <span class="send-phone-label">SEND TO PHONE</span>
-          <p class="send-phone-status" id="send-phone-status">Preparing transfer link...</p>
           <div class="send-phone-qr" id="send-phone-qr" aria-label="Phone transfer QR code"></div>
+          <p class="send-phone-status" id="send-phone-status">Preparing transfer link...</p>
           <p class="send-phone-warning" id="send-phone-warning" hidden></p>
         </div>
       </section>
