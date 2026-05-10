@@ -385,36 +385,35 @@ def draw_map_placeholder(
 
     # Add Google Maps directions button on lower right corner if directions URL is available
     if directions_url:
-        button_w = 50
-        button_h = 8
+        button_text = "Open in Google Maps"
+        pdf.set_font("helvetica", "B", 8)
+        
+        button_w = pdf.get_string_width(button_text) + 10
+        button_h = 7
         button_x = x + content_width - button_w - 3
         button_y = y + image_h - button_h - 3
+        radius = button_h / 2
 
         # Draw button shadow for depth
         pdf.set_fill_color(220, 220, 220)
-        draw_round_rect(pdf, button_x + 0.5, button_y + 0.5, button_w, button_h, 4, style="F")
+        draw_round_rect(pdf, button_x + 0.5, button_y + 0.5, button_w, button_h, radius, style="F")
 
         # Draw button background with pill shape - use a nice blue color
         pdf.set_fill_color(66, 133, 244)  # Nice blue
-        draw_round_rect(pdf, button_x, button_y, button_w, button_h, 4, style="F")
+        draw_round_rect(pdf, button_x, button_y, button_w, button_h, radius, style="F")
 
         # Draw button border - subtle
         pdf.set_draw_color(51, 102, 204)  # Darker blue
         pdf.set_line_width(0.3)
-        draw_round_rect(pdf, button_x, button_y, button_w, button_h, 4, style="D")
+        draw_round_rect(pdf, button_x, button_y, button_w, button_h, radius, style="D")
 
-        # Add button text with link using write() method
-        pdf.set_font("helvetica", "B", 6)
+        # Make button clickable
+        pdf.link(button_x, button_y, button_w, button_h, directions_url)
+
+        # Draw text exactly centered
         pdf.set_text_color(255, 255, 255)
-        button_text = "Open in Maps"
-
-        # Calculate text width for centering
-        text_width = pdf.get_string_width(button_text)
-        text_x = button_x + (button_w - text_width) / 2
-
-        # Position cursor and write clickable text - centered vertically
-        pdf.set_xy(text_x, button_y + button_h / 2 + 0.5)
-        pdf.write(6, button_text, link=directions_url)
+        # Font size 8pt is approx 2.8mm cap height. Baseline is placed nicely at button_y + 4.8
+        draw_text(pdf, button_x + button_w / 2, button_y + 4.8, button_text, align="C")
 
     y += image_h + 6
     pdf.set_font("helvetica", "B", 8)
