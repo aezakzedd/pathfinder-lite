@@ -237,8 +237,6 @@ def generate_qr_svg(value: str) -> str:
     if svg.startswith("<?xml") and "?>" in svg:
         svg = svg.split("?>", 1)[1].strip()
         
-    # Beautify the SVG: Use Pathfinder blue and make it look premium
-    svg = svg.replace('fill="#000000"', 'fill="#2563eb"')
     return svg
 
 
