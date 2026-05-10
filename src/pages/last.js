@@ -236,12 +236,15 @@ function setShareReady(elements, share) {
   elements.panel.classList.remove('is-loading', 'is-error');
   elements.panel.classList.add('is-ready');
   elements.status.textContent = 'Scan with your phone';
+  const shareUrl = String(share?.share_url || '');
+
   elements.qr.innerHTML = `
-    <div class="send-phone-qr-box">${svg}</div>
+    <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="send-phone-qr-box" title="Open share link">
+      ${svg}
+    </a>
     <span class="send-phone-expiry">Expires in ${Number(share.expires_in_minutes || 60)} minutes</span>
   `;
 
-  const shareUrl = String(share?.share_url || '');
   if (isLocalhostUrl(shareUrl)) {
     elements.warning.hidden = false;
     elements.warning.textContent = 'Phone sharing requires the Raspberry Pi LAN/hotspot IP.';
