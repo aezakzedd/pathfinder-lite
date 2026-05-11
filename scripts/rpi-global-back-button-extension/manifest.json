@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Pathfinder-Lite Global Back Button",
+  "description": "Shows a back button on non-Pathfinder-Lite pages for kiosk navigation (e.g. Google Maps).",
+  "version": "1.0.0",
+  "permissions": ["storage"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ]
+}
