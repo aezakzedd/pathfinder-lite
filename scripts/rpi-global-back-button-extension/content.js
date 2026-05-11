@@ -5,11 +5,12 @@
   const LAST_PATHFINDER_PAGE_KEY = 'pathfinderLiteLastPageUrl';
 
   // Fallback when no previous page is known.
-  const DEFAULT_FALLBACK_URL = 'http://localhost:5173/#/last';
+  const DEFAULT_FALLBACK_URL = 'http://127.0.0.1:4173/#/last';
 
   const PATHFINDER_HOST_ALLOWLIST = new Set([
     'localhost',
-    '127.0.0.1'
+    '127.0.0.1',
+    '192.168.1.50'
   ]);
 
   const PRIVATE_IPV4_PATTERN = /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})$/;
