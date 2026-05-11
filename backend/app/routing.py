@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import heapq
+import json
 import math
-from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable
 
 from .route_cache import build_cached_route_response
@@ -10,79 +11,197 @@ from .route_cache import build_cached_route_response
 
 Coordinate = tuple[float, float]
 
-ROAD_SEGMENTS: list[list[Coordinate]] = [
-    [
-        (124.10, 13.60),
-        (124.16, 13.58),
-        (124.23, 13.58),
-        (124.28, 13.61),
-        (124.32, 13.64),
-        (124.35, 13.65),
-        (124.38, 13.70),
-        (124.39, 13.78),
-        (124.35, 13.81),
-        (124.30, 13.84),
-        (124.29, 13.89),
-        (124.31, 13.94),
-    ],
-    [
-        (124.31, 13.94),
-        (124.25, 13.99),
-        (124.17, 14.05),
-        (124.11, 14.02),
-        (124.07, 13.98),
-        (124.04, 13.88),
-        (124.04, 13.77),
-        (124.07, 13.68),
-        (124.10, 13.60),
-    ],
-    [
-        (124.10, 13.60),
-        (124.13, 13.68),
-        (124.17, 13.75),
-        (124.22, 13.80),
-        (124.30, 13.84),
-    ],
-    [
-        (124.23, 13.58),
-        (124.20, 13.64),
-        (124.17, 13.75),
-        (124.10, 13.86),
-        (124.07, 13.98),
-    ],
-    [
-        (124.28, 13.61),
-        (124.24, 13.68),
-        (124.22, 13.80),
-        (124.29, 13.89),
-    ],
-    [
-        (124.35, 13.65),
-        (124.30, 13.67),
-        (124.24, 13.68),
-        (124.17, 13.75),
-    ],
-]
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+ROAD_GRAPH_PATH = BACKEND_ROOT.parent / "public" / "data" / "road_graph.json"
 
 KEY_PRECISION = 5
 AVERAGE_SPEED_KMH = 32
 STOP_BUFFER_MINUTES = 3
-_BASE_GRAPH: Graph | None = None
+
+_DENSE_GRAPH: DenseRoadGraph | None = None
 
 
-@dataclass(frozen=True)
-class RoadSegment:
-    start: Coordinate
-    end: Coordinate
-    start_key: str
-    end_key: str
+class DenseRoadGraph:
+    """Compact road graph loaded from road_graph.json for A* routing."""
+
+    def __init__(self, data: dict):
+        self.nodes: list[Coordinate] = [tuple(n) for n in data["nodes"]]
+        self.adjacency: list[list[tuple[int, float]]] = [[] for _ in self.nodes]
+        self.edge_geometries: dict[str, list[list[float]]] = data.get("edge_geometries", {})
+        self.edges_raw: list[list] = data["edges"]
+
+        for edge in data["edges"]:
+            from_idx, to_idx, dist_km = int(edge[0]), int(edge[1]), float(edge[2])
+            self.adjacency[from_idx].append((to_idx, dist_km))
+            self.adjacency[to_idx].append((from_idx, dist_km))
+
+        # Spatial grid for fast nearest-node lookups
+        self._grid: dict[tuple[int, int], list[int]] = {}
+        self._grid_size = 0.01
+        for idx, (lng, lat) in enumerate(self.nodes):
+            cell = (int(lng / self._grid_size), int(lat / self._grid_size))
+            self._grid.setdefault(cell, []).append(idx)
+
+    def nearest_node(self, coord: Coordinate) -> int:
+        lng, lat = coord
+        cell_x = int(lng / self._grid_size)
+        cell_y = int(lat / self._grid_size)
+
+        best_idx = 0
+        best_dist = float("inf")
+
+        for dx in range(-2, 3):
+            for dy in range(-2, 3):
+                cell = (cell_x + dx, cell_y + dy)
+                for node_idx in self._grid.get(cell, []):
+                    d = haversine_distance(coord, self.nodes[node_idx])
+                    if d < best_dist:
+                        best_dist = d
+                        best_idx = node_idx
+
+        if best_dist == float("inf"):
+            for idx, node in enumerate(self.nodes):
+                d = haversine_distance(coord, node)
+                if d < best_dist:
+                    best_dist = d
+                    best_idx = idx
+
+        return best_idx
+
+    def astar(self, start_idx: int, end_idx: int) -> tuple[list[int], float]:
+        if start_idx == end_idx:
+            return [start_idx], 0.0
+
+        end_coord = self.nodes[end_idx]
+        open_set: list[tuple[float, float, int]] = [(0.0, 0.0, start_idx)]
+        came_from: dict[int, int] = {}
+        g_score: dict[int, float] = {start_idx: 0.0}
+
+        while open_set:
+            _, current_g, current = heapq.heappop(open_set)
+
+            if current == end_idx:
+                path = [current]
+                while current in came_from:
+                    current = came_from[current]
+                    path.append(current)
+                path.reverse()
+                return path, current_g
+
+            if current_g > g_score.get(current, float("inf")):
+                continue
+
+            for neighbor, edge_dist in self.adjacency[current]:
+                tentative_g = current_g + edge_dist
+                if tentative_g < g_score.get(neighbor, float("inf")):
+                    g_score[neighbor] = tentative_g
+                    came_from[neighbor] = current
+                    h = haversine_distance(self.nodes[neighbor], end_coord)
+                    heapq.heappush(open_set, (tentative_g + h, tentative_g, neighbor))
+
+        return [start_idx, end_idx], haversine_distance(self.nodes[start_idx], self.nodes[end_idx])
+
+    def find_edge_geometry(self, from_idx: int, to_idx: int) -> list[Coordinate] | None:
+        for edge_idx, edge in enumerate(self.edges_raw):
+            if edge[0] == from_idx and edge[1] == to_idx:
+                geom = self.edge_geometries.get(str(edge_idx))
+                return [tuple(c) for c in geom] if geom else None
+            elif edge[0] == to_idx and edge[1] == from_idx:
+                geom = self.edge_geometries.get(str(edge_idx))
+                return [tuple(c) for c in reversed(geom)] if geom else None
+        return None
+
+    def route(self, start: Coordinate, end: Coordinate) -> tuple[list[Coordinate], float]:
+        start_idx = self.nearest_node(start)
+        end_idx = self.nearest_node(end)
+
+        path_indices, distance_km = self.astar(start_idx, end_idx)
+
+        geometry: list[Coordinate] = [start]
+        start_node = self.nodes[start_idx]
+        if haversine_distance(start, start_node) > 0.01:
+            geometry.append(start_node)
+
+        for i in range(len(path_indices) - 1):
+            edge_geom = self.find_edge_geometry(path_indices[i], path_indices[i + 1])
+            if edge_geom:
+                geometry.extend(edge_geom)
+            geometry.append(self.nodes[path_indices[i + 1]])
+
+        end_node = self.nodes[end_idx]
+        if haversine_distance(end, end_node) > 0.01:
+            geometry.append(end)
+
+        distance_km += haversine_distance(start, start_node) + haversine_distance(end_node, end)
+
+        deduped = [geometry[0]]
+        for coord in geometry[1:]:
+            if coord != deduped[-1]:
+                deduped.append(coord)
+
+        return deduped, round(distance_km, 4)
 
 
-@dataclass
-class Graph:
-    nodes: dict[str, Coordinate]
-    edges: dict[str, list[tuple[str, float]]]
-    segments: list[RoadSegment]
+def get_dense_graph() -> DenseRoadGraph | None:
+    global _DENSE_GRAPH
+    if _DENSE_GRAPH is not None:
+        return _DENSE_GRAPH
+
+    if not ROAD_GRAPH_PATH.exists():
+        return None
+
+    try:
+        with open(ROAD_GRAPH_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        _DENSE_GRAPH = DenseRoadGraph(data)
+        return _DENSE_GRAPH
+    except Exception:
+        return None
+
+
+# --- Sparse fallback (original 30-point skeleton) ---
+
+ROAD_SEGMENTS: list[list[Coordinate]] = [
+    [
+        (124.10, 13.60), (124.16, 13.58), (124.23, 13.58), (124.28, 13.61),
+        (124.32, 13.64), (124.35, 13.65), (124.38, 13.70), (124.39, 13.78),
+        (124.35, 13.81), (124.30, 13.84), (124.29, 13.89), (124.31, 13.94),
+    ],
+    [
+        (124.31, 13.94), (124.25, 13.99), (124.17, 14.05), (124.11, 14.02),
+        (124.07, 13.98), (124.04, 13.88), (124.04, 13.77), (124.07, 13.68),
+        (124.10, 13.60),
+    ],
+    [
+        (124.10, 13.60), (124.13, 13.68), (124.17, 13.75), (124.22, 13.80),
+        (124.30, 13.84),
+    ],
+    [
+        (124.23, 13.58), (124.20, 13.64), (124.17, 13.75), (124.10, 13.86),
+        (124.07, 13.98),
+    ],
+    [
+        (124.28, 13.61), (124.24, 13.68), (124.22, 13.80), (124.29, 13.89),
+    ],
+    [
+        (124.35, 13.65), (124.30, 13.67), (124.24, 13.68), (124.17, 13.75),
+    ],
+]
+
+_SPARSE_SEGMENTS: list[tuple[Coordinate, Coordinate]] | None = None
+
+
+def _get_sparse_segments() -> list[tuple[Coordinate, Coordinate]]:
+    global _SPARSE_SEGMENTS
+    if _SPARSE_SEGMENTS is not None:
+        return _SPARSE_SEGMENTS
+
+    segments = []
+    for road in ROAD_SEGMENTS:
+        for i in range(len(road) - 1):
+            segments.append((road[i], road[i + 1]))
+    _SPARSE_SEGMENTS = segments
+    return _SPARSE_SEGMENTS
 
 
 def build_route_response(raw_waypoints: Iterable[Iterable[float]]) -> dict:
@@ -94,13 +213,53 @@ def build_route_response(raw_waypoints: Iterable[Iterable[float]]) -> dict:
     if cached_response:
         return cached_response
 
+    # Try dense graph first
+    dense = get_dense_graph()
+    if dense:
+        return _route_with_dense_graph(dense, waypoints)
+
+    # Fall back to sparse graph
+    return _route_with_sparse_graph(waypoints)
+
+
+def _route_with_dense_graph(graph: DenseRoadGraph, waypoints: list[Coordinate]) -> dict:
     geometry: list[Coordinate] = []
     distance_km = 0.0
 
-    for index in range(len(waypoints) - 1):
-        leg_geometry, leg_distance = build_leg_route(waypoints[index], waypoints[index + 1])
-        append_coordinates(geometry, leg_geometry)
-        distance_km += leg_distance
+    for i in range(len(waypoints) - 1):
+        leg_geom, leg_dist = graph.route(waypoints[i], waypoints[i + 1])
+        append_coordinates(geometry, leg_geom)
+        distance_km += leg_dist
+
+    distance_km = round(distance_km, 2)
+    duration_min = estimate_duration_minutes(distance_km, len(waypoints) - 1)
+
+    return {
+        "geometry": [[round(lng, 6), round(lat, 6)] for lng, lat in geometry],
+        "distance_km": distance_km,
+        "duration_min": duration_min,
+        "source": "local-road-router",
+        "is_fallback": False,
+    }
+
+
+def _route_with_sparse_graph(waypoints: list[Coordinate]) -> dict:
+    geometry: list[Coordinate] = []
+    distance_km = 0.0
+
+    segments = _get_sparse_segments()
+
+    for i in range(len(waypoints) - 1):
+        start = waypoints[i]
+        end = waypoints[i + 1]
+
+        # Snap to nearest segment endpoints and draw through them
+        start_snap = _snap_to_sparse(segments, start)
+        end_snap = _snap_to_sparse(segments, end)
+
+        leg = [start, start_snap, end_snap, end]
+        append_coordinates(geometry, leg)
+        distance_km += route_distance(leg)
 
     distance_km = round(distance_km, 2)
     duration_min = estimate_duration_minutes(distance_km, len(waypoints) - 1)
@@ -112,6 +271,18 @@ def build_route_response(raw_waypoints: Iterable[Iterable[float]]) -> dict:
         "source": "fallback-approximate-road-network",
         "is_fallback": True,
     }
+
+
+def _snap_to_sparse(segments: list[tuple[Coordinate, Coordinate]], coord: Coordinate) -> Coordinate:
+    best_dist = float("inf")
+    best_point = coord
+    for seg_start, seg_end in segments:
+        projected = project_point_to_segment(coord, seg_start, seg_end)
+        d = haversine_distance(coord, projected)
+        if d < best_dist:
+            best_dist = d
+            best_point = projected
+    return best_point
 
 
 def normalize_waypoints(raw_waypoints: Iterable[Iterable[float]]) -> list[Coordinate]:
@@ -132,90 +303,6 @@ def normalize_waypoints(raw_waypoints: Iterable[Iterable[float]]) -> list[Coordi
     return waypoints
 
 
-def build_leg_route(start: Coordinate, end: Coordinate) -> tuple[list[Coordinate], float]:
-    graph = clone_graph(get_base_graph())
-    start_key = add_waypoint_to_graph(graph, start, "start")
-    end_key = add_waypoint_to_graph(graph, end, "end")
-    path_keys = shortest_path(graph, start_key, end_key)
-
-    if len(path_keys) < 2:
-        geometry = [start, end]
-        return geometry, route_distance(geometry)
-
-    geometry = [graph.nodes[key] for key in path_keys]
-    return geometry, route_distance(geometry)
-
-
-def get_base_graph() -> Graph:
-    global _BASE_GRAPH
-    if _BASE_GRAPH is not None:
-        return _BASE_GRAPH
-
-    nodes: dict[str, Coordinate] = {}
-    edges: dict[str, list[tuple[str, float]]] = {}
-    segments: list[RoadSegment] = []
-
-    for road in ROAD_SEGMENTS:
-        for index, coordinate in enumerate(road):
-            add_node(nodes, edges, coordinate)
-            if index > 0:
-                start = road[index - 1]
-                end = coordinate
-                connect_coordinates(nodes, edges, start, end)
-                segments.append(
-                    RoadSegment(
-                        start=start,
-                        end=end,
-                        start_key=coordinate_key(start),
-                        end_key=coordinate_key(end),
-                    )
-                )
-
-    _BASE_GRAPH = Graph(nodes=nodes, edges=edges, segments=segments)
-    return _BASE_GRAPH
-
-
-def clone_graph(graph: Graph) -> Graph:
-    return Graph(
-        nodes=dict(graph.nodes),
-        edges={key: list(links) for key, links in graph.edges.items()},
-        segments=graph.segments,
-    )
-
-
-def add_waypoint_to_graph(graph: Graph, coordinate: Coordinate, prefix: str) -> str:
-    waypoint_key = f"{prefix}:{coordinate_key(coordinate)}"
-    graph.nodes[waypoint_key] = coordinate
-    graph.edges.setdefault(waypoint_key, [])
-
-    snap_coordinate, start_key, end_key = nearest_road_snap(graph.segments, coordinate)
-    snap_key = f"{prefix}:snap:{coordinate_key(snap_coordinate)}"
-    graph.nodes[snap_key] = snap_coordinate
-    graph.edges.setdefault(snap_key, [])
-
-    connect_keys(graph, waypoint_key, snap_key)
-    connect_keys(graph, snap_key, start_key)
-    connect_keys(graph, snap_key, end_key)
-
-    return waypoint_key
-
-
-def nearest_road_snap(segments: list[RoadSegment], coordinate: Coordinate) -> tuple[Coordinate, str, str]:
-    best: tuple[Coordinate, str, str, float] | None = None
-
-    for segment in segments:
-        projected = project_point_to_segment(coordinate, segment.start, segment.end)
-        candidate_distance = haversine_distance(coordinate, projected)
-        if best is None or candidate_distance < best[3]:
-            best = (projected, segment.start_key, segment.end_key, candidate_distance)
-
-    if best is None:
-        key = coordinate_key(coordinate)
-        return coordinate, key, key
-
-    return best[0], best[1], best[2]
-
-
 def project_point_to_segment(point: Coordinate, start: Coordinate, end: Coordinate) -> Coordinate:
     dx = end[0] - start[0]
     dy = end[1] - start[1]
@@ -226,84 +313,6 @@ def project_point_to_segment(point: Coordinate, start: Coordinate, end: Coordina
     raw_t = (((point[0] - start[0]) * dx) + ((point[1] - start[1]) * dy)) / length_squared
     t = max(0.0, min(1.0, raw_t))
     return (start[0] + (dx * t), start[1] + (dy * t))
-
-
-def shortest_path(graph: Graph, start_key: str, end_key: str) -> list[str]:
-    distances: dict[str, float] = {start_key: 0.0}
-    previous: dict[str, str] = {}
-    queue: list[tuple[float, str]] = [(0.0, start_key)]
-    visited: set[str] = set()
-
-    while queue:
-        current_distance, current_key = heapq.heappop(queue)
-        if current_key in visited:
-            continue
-
-        visited.add(current_key)
-        if current_key == end_key:
-            break
-
-        for next_key, weight in graph.edges.get(current_key, []):
-            if next_key in visited:
-                continue
-
-            next_distance = current_distance + weight
-            if next_distance < distances.get(next_key, math.inf):
-                distances[next_key] = next_distance
-                previous[next_key] = current_key
-                heapq.heappush(queue, (next_distance, next_key))
-
-    if end_key not in distances:
-        return []
-
-    path = [end_key]
-    current = end_key
-    while current != start_key:
-        current = previous.get(current)
-        if current is None:
-            return []
-        path.append(current)
-
-    path.reverse()
-    return path
-
-
-def add_node(nodes: dict[str, Coordinate], edges: dict[str, list[tuple[str, float]]], coordinate: Coordinate) -> str:
-    key = coordinate_key(coordinate)
-    nodes.setdefault(key, coordinate)
-    edges.setdefault(key, [])
-    return key
-
-
-def connect_coordinates(
-    nodes: dict[str, Coordinate],
-    edges: dict[str, list[tuple[str, float]]],
-    start: Coordinate,
-    end: Coordinate,
-) -> None:
-    start_key = add_node(nodes, edges, start)
-    end_key = add_node(nodes, edges, end)
-    connect_keys(Graph(nodes=nodes, edges=edges, segments=[]), start_key, end_key)
-
-
-def connect_keys(graph: Graph, start_key: str, end_key: str) -> None:
-    if start_key == end_key:
-        return
-
-    start = graph.nodes.get(start_key)
-    end = graph.nodes.get(end_key)
-    if start is None or end is None:
-        return
-
-    weight = haversine_distance(start, end)
-    add_directed_edge(graph.edges, start_key, end_key, weight)
-    add_directed_edge(graph.edges, end_key, start_key, weight)
-
-
-def add_directed_edge(edges: dict[str, list[tuple[str, float]]], start_key: str, end_key: str, weight: float) -> None:
-    links = edges.setdefault(start_key, [])
-    if not any(next_key == end_key for next_key, _ in links):
-        links.append((end_key, weight))
 
 
 def append_coordinates(target: list[Coordinate], coordinates: list[Coordinate]) -> None:

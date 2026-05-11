@@ -1,5 +1,5 @@
 import { estimateDriveMinutes, isValidCoordinates } from './distance.js';
-import { buildOfflineRouteGeometry } from './offlineRouting.js';
+import { buildOfflineRouteGeometry, buildOfflineRouteGeometryAsync, preloadRoadGraph } from './offlineRouting.js';
 import { apiUrl } from '../config/apiConfig.js';
 
 const ROUTE_ENDPOINT = '/api/route';
@@ -17,7 +17,7 @@ export async function requestRouteGeometry(waypoints = [], options = {}) {
     if (apiResult) return apiResult;
   }
 
-  return buildFallbackRoute(cleanWaypoints);
+  return buildFallbackRouteAsync(cleanWaypoints);
 }
 
 export function normalizeRouteResponse(response) {
@@ -39,8 +39,8 @@ export function normalizeRouteResponse(response) {
   };
 }
 
-export function buildFallbackRoute(waypoints = []) {
-  const fallback = buildOfflineRouteGeometry(waypoints);
+export async function buildFallbackRouteAsync(waypoints = []) {
+  const fallback = await buildOfflineRouteGeometryAsync(waypoints);
   const coordinates = normalizeWaypoints(fallback.coordinates || []);
   const distanceKm = normalizeNumber(fallback.distanceKm ?? fallback.distance_km);
   const durationMin = normalizeNumber(fallback.durationMin ?? fallback.duration_min) ||
@@ -114,7 +114,29 @@ function normalizeWaypoints(waypoints = []) {
     : [];
 }
 
+export function buildFallbackRoute(waypoints = []) {
+  const fallback = buildOfflineRouteGeometry(waypoints);
+  const coordinates = normalizeWaypoints(fallback.coordinates || []);
+  const distanceKm = normalizeNumber(fallback.distanceKm ?? fallback.distance_km);
+  const durationMin = normalizeNumber(fallback.durationMin ?? fallback.duration_min) ||
+    estimateDriveMinutes(distanceKm);
+
+  return {
+    coordinates,
+    geometry: coordinates,
+    distanceKm,
+    distance_km: distanceKm,
+    durationMin,
+    duration_min: durationMin,
+    source: 'fallback-approximate-road-network',
+    isFallback: true
+  };
+}
+
 function normalizeNumber(value) {
   const number = Number(value);
   return Number.isFinite(number) && number >= 0 ? number : 0;
 }
+
+// Preload dense road graph on module import
+preloadRoadGraph();
