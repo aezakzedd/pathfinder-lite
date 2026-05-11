@@ -3074,3 +3074,55 @@ body[data-route="itinerary"] .page-container {
   min-height: 0 !important;
   max-height: none !important;
 }
+.chat-itinerary-card.minimized {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+/* Absolute fix for the specificity bug causing header jump */
+.chat-itinerary-card.minimized .itinerary-header {
+  padding: 14px 16px !important;
+  margin-bottom: 0 !important;
+}
+
+/* PDF Export Loading Overlay */
+#pdf-export-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background: rgba(10, 10, 15, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.pdf-export-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-left-color: #12b7d4;
+  border-radius: 50%;
+  animation: pdf-spin 1s linear infinite;
+  margin-bottom: 24px;
+}
+
+#pdf-export-overlay p {
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  margin: 0;
+}
+
+@keyframes pdf-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

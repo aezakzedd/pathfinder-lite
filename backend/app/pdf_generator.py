@@ -59,6 +59,7 @@ def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple
     pdf_id = generate_pdf_id()
     itinerary_id = get_itinerary_id(payload)
     generated_label = format_generated_date(datetime.now())
+    map_screenshots = payload.get("map_screenshots") or {}
 
     days = normalize_days(payload.get("days", {}))
     sorted_day_keys = sorted(days.keys(), key=lambda value: int(value) if str(value).isdigit() else 0)
@@ -110,6 +111,17 @@ def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple
             or get_stop_name(previous_day_last_stop)
             or start_point
         )
+        
+        map_screenshot = map_screenshots.get(day_key) or map_screenshots.get(str(day_key))
+        map_image_bytes = None
+        if map_screenshot and map_screenshot.startswith("data:image"):
+            import base64
+            try:
+                b64_data = map_screenshot.split(",")[1]
+                map_image_bytes = base64.b64decode(b64_data)
+            except Exception:
+                pass
+
         current_y, previous_day_last_stop = draw_day(
             pdf,
             day_key=day_key,
@@ -118,6 +130,7 @@ def generate_itinerary_pdf(payload: dict[str, Any], base_url: str = "") -> tuple
             day_meta=day_meta,
             start_point=start_point,
             current_y=current_y,
+            map_image_bytes=map_image_bytes,
         )
 
     current_y += 6
@@ -235,6 +248,7 @@ def draw_day(
     day_meta: dict[str, Any],
     start_point: str,
     current_y: float,
+    map_image_bytes: bytes | None = None,
 ) -> tuple[float, dict[str, Any] | None]:
     day_num = int(day_key) if str(day_key).isdigit() else 1
     schedule = build_day_schedule(stops, day_meta)
@@ -259,6 +273,7 @@ def draw_day(
         google_maps_url,
         stops,
         start_label,
+        map_image_bytes,
     )
     current_y += 8
 
@@ -345,39 +360,66 @@ def draw_map_placeholder(
     directions_url: str = "",
     stops: list[dict[str, Any]] | None = None,
     start_label: str = "",
+    map_image_bytes: bytes | None = None,
 ) -> float:
     content_width = pdf.w - (PAGE_MARGIN * 2)
     image_h = 44
     x = PAGE_MARGIN
 
-    # Generate route map image if coordinates are available
-    map_image_bytes = None
-    if stops:
-        try:
-            map_image_bytes = generate_route_map_image(stops, start_label)
-        except Exception:
-            map_image_bytes = None
+    # Use provided screenshot, or generate route map image if coordinates are available
+    if not map_image_bytes:
+        if stops:
+            try:
+                map_image_bytes = generate_route_map_image(stops, start_label)
+            except Exception:
+                pass
 
     # Use fallback image if generation failed
     if not map_image_bytes:
         map_image_bytes = generate_fallback_map_image()
 
-    # Embed the map image
-    pdf.image(map_image_bytes, x=x, y=y, w=content_width, h=image_h, type="PNG")
+    # Embed the map image using BytesIO
+    import io
+    image_stream = io.BytesIO(map_image_bytes)
+    pdf.image(image_stream, x=x, y=y, w=content_width, h=image_h)
 
-    # Add clickable link to map image area if directions URL is available
+    # Add Google Maps directions button on lower right corner if directions URL is available
     if directions_url:
-        add_uri_link_new_window(pdf, x, y, content_width, image_h, directions_url)
+        button_text = "Open in Google Maps"
+        pdf.set_font("helvetica", "B", 8)
+        
+        button_w = pdf.get_string_width(button_text) + 10
+        button_h = 7
+        button_x = x + content_width - button_w - 3
+        button_y = y + image_h - button_h - 3
+        radius = button_h / 2
+
+        # Draw button shadow for depth
+        pdf.set_fill_color(220, 220, 220)
+        draw_round_rect(pdf, button_x + 0.5, button_y + 0.5, button_w, button_h, radius, style="F")
+
+        # Draw button background with pill shape - use a nice blue color
+        pdf.set_fill_color(66, 133, 244)  # Nice blue
+        draw_round_rect(pdf, button_x, button_y, button_w, button_h, radius, style="F")
+
+        # Draw button border - subtle
+        pdf.set_draw_color(51, 102, 204)  # Darker blue
+        pdf.set_line_width(0.3)
+        draw_round_rect(pdf, button_x, button_y, button_w, button_h, radius, style="D")
+
+        # Make button clickable
+        pdf.link(button_x, button_y, button_w, button_h, directions_url)
+
+        # Draw text exactly centered
+        pdf.set_text_color(255, 255, 255)
+        # Font size 8pt is approx 2.8mm cap height. Baseline is placed nicely at button_y + 4.8
+        draw_text(pdf, button_x + button_w / 2, button_y + 4.8, button_text, align="C")
 
     y += image_h + 6
     pdf.set_font("helvetica", "B", 8)
     if directions_url:
         pdf.set_text_color(*BLUE)
-        draw_text(pdf, pdf.w / 2, y, "Click map image for directions.", align="C")
-        # Add clickable link to text area as well
-        text_width = pdf.get_string_width("Click map image for directions.")
-        text_x = (pdf.w - text_width) / 2
-        add_uri_link_new_window(pdf, text_x, y - 4, text_width, 7, directions_url)
+        draw_text(pdf, pdf.w / 2, y, "Click button for directions.", align="C")
     else:
         pdf.set_text_color(*SOFT_TEXT)
         draw_text(pdf, pdf.w / 2, y, "Directions unavailable: missing coordinates.", align="C")

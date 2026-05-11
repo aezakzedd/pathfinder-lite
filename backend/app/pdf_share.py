@@ -28,15 +28,31 @@ _shares: dict[str, ShareSession] = {}
 _pdf_to_share: dict[str, str] = {}
 
 
+import socket
+
+def get_lan_ip() -> str:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
 def get_share_base_url(request) -> str:
     """Return public base URL for QR links.
 
-    PATHFINDER_SHARE_BASE_URL should be set to the Raspberry Pi LAN/hotspot IP
-    in kiosk mode. request.base_url is a useful dev fallback, but localhost
-    links will not open from a phone.
+    Automatically resolves LAN IP if running on localhost so the QR code
+    is functional for mobile phones.
     """
     configured = os.getenv("PATHFINDER_SHARE_BASE_URL", "").strip()
-    base_url = configured or str(request.base_url)
+    if configured:
+        return configured.rstrip("/")
+    base_url = str(request.base_url)
+    if "localhost" in base_url or "127.0.0.1" in base_url:
+        lan_ip = get_lan_ip()
+        base_url = base_url.replace("localhost", lan_ip).replace("127.0.0.1", lan_ip)
     return base_url.rstrip("/")
 
 
@@ -220,6 +236,7 @@ def generate_qr_svg(value: str) -> str:
     svg = buffer.getvalue().decode("utf-8").strip()
     if svg.startswith("<?xml") and "?>" in svg:
         svg = svg.split("?>", 1)[1].strip()
+        
     return svg
 
 
