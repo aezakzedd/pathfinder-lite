@@ -1,0 +1,822 @@
+import 'maptalks/dist/maptalks.css';
+import * as maptalks from 'maptalks';
+import { requestRouteGeometry as requestRouteFromService } from '../utils/routeService.js';
+
+const GEOJSON_URL = '/data/catanduanes_datafile.geojson';
+const LOCAL_TILE_URL = '/tiles/{z}/{x}/{y}.png';
+
+// Calibrated to visually match the original Pathfinder (MapLibre) initial view.
+// MapLibre zoom ≠ Maptalks zoom, so these are tuned by eye, not copied 1:1.
+const PATHFINDER_CAMERA = {
+  center: [124.22, 13.70],
+  zoom: 11.75,
+  pitch: 60,
+  bearing: -15
+};
+
+const MIN_ZOOM = 10.5;
+const MAX_ZOOM = 19;
+
+const CATEGORY_ICONS = {
+  Water: '<path d="M12 4c2.8 3.2 4.2 5.7 4.2 7.5A4.2 4.2 0 0 1 7.8 11.5C7.8 9.7 9.2 7.2 12 4Z" />',
+  Views: '<path d="M4 17.5 8.5 9l4 5.4 2.2-3.1 5.3 6.2H4Z" />',
+  Outdoor: '<path d="M4 18h16L12 5 4 18Zm8-6 2 3h-4l2-3Z" />',
+  Heritage: '<path d="M5 9h14v2H5V9Zm2 3h2v6H7v-6Zm4 0h2v6h-2v-6Zm4 0h2v6h-2v-6ZM4 19h16v2H4v-2ZM12 3l7 4H5l7-4Z" />',
+  Dining: '<path d="M7 3h1v7H7V3Zm3 0h1v7h-1V3ZM8.5 11h1v10h-1V11ZM15 3h2v18h-2V3Z" />',
+  Stay: '<path d="M4 20V9l8-5 8 5v11h-5v-6H9v6H4Z" />'
+};
+
+const MAP_LABELS = [
+  { name: 'Pandan', coordinates: [124.17, 14.05] },
+  { name: 'Caramoran', coordinates: [124.07, 13.98] },
+  { name: 'Bagamanoc', coordinates: [124.31, 13.94] },
+  { name: 'Panganiban', coordinates: [124.29, 13.89] },
+  { name: 'Viga', coordinates: [124.30, 13.84] },
+  { name: 'Gigmoto', coordinates: [124.39, 13.78] },
+  { name: 'Baras', coordinates: [124.35, 13.65] },
+  { name: 'Bato', coordinates: [124.28, 13.61] },
+  { name: 'San Andres', coordinates: [124.10, 13.60] },
+  { name: 'Virac', coordinates: [124.23, 13.58] }
+];
+
+let mapInstance = null;
+
+export function initMap(containerId, destinations = [], options = {}) {
+  destroyMap();
+
+  const container = document.getElementById(containerId);
+  if (!container) {
+    console.error(`Map container with id "${containerId}" not found`);
+    return null;
+  }
+
+  mapInstance = {
+    container,
+    destinations,
+    geojson: options.geojson || null,
+    ready: false,
+    map: null,
+    boundaryLayer: null,
+    markerLayer: null,
+    routeLayer: null,
+    previewLayer: null,
+    hubLayer: null,
+    labelLayer: null,
+    popupLayer: null,
+    popupDestination: null,
+    selectedDestinationId: null,
+    addedDestinationIds: new Set(),
+    hub: null,
+    routeCoordinates: [],
+    previewCoordinates: [],
+    routeCache: new Map(),
+    routeRequestId: 0,
+    previewRequestId: 0,
+    routeKey: '',
+    previewKey: '',
+    routeResult: null,
+    previewResult: null,
+    onRouteResult: typeof options.onRouteResult === 'function' ? options.onRouteResult : null,
+    initId: Date.now()
+  };
+
+  container.innerHTML = '';
+  container.classList.add('maptalks-offline-map');
+
+  setupMaptalksMap(mapInstance, options).catch(error => {
+    console.error('Failed to initialize Maptalks map:', error);
+    renderMapError(container);
+  });
+
+  return mapInstance;
+}
+
+export function addMarkers(destinations = []) {
+  if (!mapInstance) return;
+  mapInstance.destinations = destinations;
+  renderDynamicLayers();
+}
+
+export function updateMapState(updates = {}) {
+  if (!mapInstance) return;
+
+  let destinationsChanged = false;
+  let hubChanged = false;
+  let routeChanged = false;
+  let previewChanged = false;
+  let selectionChanged = false;
+
+  if (updates.destinations && updates.destinations !== mapInstance.destinations) {
+    mapInstance.destinations = updates.destinations;
+    destinationsChanged = true;
+  }
+  if ('hub' in updates) {
+    mapInstance.hub = updates.hub;
+    hubChanged = true;
+  }
+  if ('selectedDestinationId' in updates) {
+    if (mapInstance.selectedDestinationId !== updates.selectedDestinationId) {
+      mapInstance.selectedDestinationId = updates.selectedDestinationId;
+      selectionChanged = true;
+    }
+  }
+  if ('addedDestinationIds' in updates) {
+    mapInstance.addedDestinationIds = new Set(updates.addedDestinationIds || []);
+    selectionChanged = true;
+  }
+  if ('routeCoordinates' in updates) {
+    mapInstance.routeCoordinates = updates.routeCoordinates || [];
+    routeChanged = true;
+  }
+  if ('previewCoordinates' in updates) {
+    mapInstance.previewCoordinates = updates.previewCoordinates || [];
+    previewChanged = true;
+  }
+  if ('popupDestination' in updates) {
+    mapInstance.popupDestination = updates.popupDestination;
+  }
+
+  if (!mapInstance.ready || !mapInstance.map) return;
+
+  if (routeChanged) renderRouteLayer();
+  if (previewChanged) renderPreviewLayer();
+  if (hubChanged) renderHubLayer();
+  if (destinationsChanged) {
+    renderMarkerLayer();
+  } else if (selectionChanged) {
+    updateMarkerStates();
+  }
+  syncPopup();
+}
+
+export function zoomIn() {
+  if (!mapInstance?.map) return;
+  mapInstance.map.zoomIn();
+}
+
+export function zoomOut() {
+  if (!mapInstance?.map) return;
+  mapInstance.map.zoomOut();
+}
+
+export function resetView() {
+  if (!mapInstance?.map) return;
+  mapInstance.map.animateTo({
+    center: PATHFINDER_CAMERA.center,
+    zoom: PATHFINDER_CAMERA.zoom,
+    pitch: PATHFINDER_CAMERA.pitch,
+    bearing: PATHFINDER_CAMERA.bearing
+  }, { duration: 600 });
+}
+
+export function invalidateSize() {
+  if (!mapInstance?.map) return;
+  applyMapTheme(mapInstance);
+  mapInstance.map.checkSize();
+}
+
+export function getMap() {
+  return mapInstance?.map || null;
+}
+
+export function destroyMap() {
+  if (!mapInstance) return;
+
+  // Clean up UIMarkers
+  if (mapInstance._uiMarkers) {
+    mapInstance._uiMarkers.forEach(m => { try { m.remove(); } catch (_) { /* noop */ } });
+  }
+  if (mapInstance._hubUIMarker) {
+    try { mapInstance._hubUIMarker.remove(); } catch (_) { /* noop */ }
+  }
+  if (mapInstance._activePopup) {
+    try { mapInstance._activePopup.remove(); } catch (_) { /* noop */ }
+  }
+
+  if (mapInstance.map) {
+    mapInstance.map.remove();
+  }
+
+  mapInstance.container.classList.remove('maptalks-offline-map');
+  mapInstance.container.innerHTML = '';
+  mapInstance = null;
+}
+
+export async function requestRouteGeometry(waypoints = []) {
+  return requestRouteFromService(waypoints);
+}
+
+// ── Map setup ──────────────────────────────────────────────
+
+async function setupMaptalksMap(instance, options) {
+  if (mapInstance !== instance) return;
+
+  const seaColor = getCssMapValue('--offline-map-sea', '#a9d7e0');
+
+  instance.map = new maptalks.Map(instance.container, {
+    center: PATHFINDER_CAMERA.center,
+    zoom: PATHFINDER_CAMERA.zoom,
+    pitch: PATHFINDER_CAMERA.pitch,
+    bearing: PATHFINDER_CAMERA.bearing,
+    minZoom: MIN_ZOOM,
+    maxZoom: MAX_ZOOM,
+    dragPan: true,
+    dragRotate: true,
+    dragPitch: true,
+    dragRotatePitch: true,
+    touchPitch: true,
+    touchRotate: true,
+    attribution: false,
+    fog: false,
+    baseLayer: null
+  });
+
+  instance.container.style.background = seaColor;
+
+  // Create layers
+  instance.boundaryLayer = new maptalks.VectorLayer('boundaries', [], {
+    enableSimplify: true,
+    hitDetect: false,
+    forceRenderOnMoving: true,
+    forceRenderOnZooming: true
+  }).addTo(instance.map);
+
+  instance.routeLayer = new maptalks.VectorLayer('routes', [], {
+    hitDetect: false,
+    forceRenderOnMoving: true,
+    forceRenderOnZooming: true
+  }).addTo(instance.map);
+
+  instance.previewLayer = new maptalks.VectorLayer('previews', [], {
+    hitDetect: false,
+    forceRenderOnMoving: true,
+    forceRenderOnZooming: true
+  }).addTo(instance.map);
+
+  instance.hubLayer = new maptalks.VectorLayer('hubs', [], {
+    hitDetect: false,
+    forceRenderOnMoving: true,
+    forceRenderOnZooming: true
+  }).addTo(instance.map);
+
+  instance.markerLayer = new maptalks.VectorLayer('markers', [], {
+    hitDetect: true,
+    forceRenderOnMoving: true,
+    forceRenderOnZooming: true
+  }).addTo(instance.map);
+
+  instance.labelLayer = new maptalks.VectorLayer('labels', [], {
+    hitDetect: false,
+    forceRenderOnMoving: true,
+    forceRenderOnZooming: true
+  }).addTo(instance.map);
+
+  instance.popupLayer = new maptalks.VectorLayer('popups', [], {
+    hitDetect: true,
+    forceRenderOnMoving: true,
+    forceRenderOnZooming: true
+  }).addTo(instance.map);
+
+  // Try adding tile layer
+  addLocalTileLayerIfAvailable(instance);
+
+  // Bind map click to dismiss popups
+  instance.map.on('click', () => {
+    instance.popupDestination = null;
+    document.dispatchEvent(new CustomEvent('clear-destination'));
+    syncPopup();
+  });
+
+  // Load GeoJSON
+  const geojson = options.geojson || await fetchGeoJson();
+  if (mapInstance !== instance) return;
+
+  instance.geojson = geojson;
+  renderGeoJsonBase(instance, geojson);
+  renderMunicipalityLabels(instance);
+  applyMapTheme(instance);
+  instance.ready = true;
+  renderDynamicLayers();
+
+  // Force camera back to the Pathfinder view after all layers render
+  // so that no auto-fit or layer extent calculation can drift the view.
+  instance.map.setCenter(PATHFINDER_CAMERA.center);
+  instance.map.setZoom(PATHFINDER_CAMERA.zoom);
+  instance.map.setPitch(PATHFINDER_CAMERA.pitch);
+  instance.map.setBearing(PATHFINDER_CAMERA.bearing);
+
+  // Guard: if user zooms out below MIN_ZOOM, ease back to the Pathfinder camera
+  instance.map.on('zoomend', () => {
+    if (mapInstance !== instance) return;
+    if (instance.map.getZoom() < MIN_ZOOM) {
+      instance.map.animateTo({
+        center: PATHFINDER_CAMERA.center,
+        zoom: PATHFINDER_CAMERA.zoom,
+        pitch: PATHFINDER_CAMERA.pitch,
+        bearing: PATHFINDER_CAMERA.bearing
+      }, { duration: 400 });
+    }
+  });
+
+  window.requestAnimationFrame(() => invalidateSize());
+}
+
+async function fetchGeoJson() {
+  const response = await fetch(GEOJSON_URL);
+  if (!response.ok) throw new Error(`Unable to load ${GEOJSON_URL}`);
+  return response.json();
+}
+
+async function addLocalTileLayerIfAvailable(instance) {
+  const tileUrl = await findAvailableLocalTile();
+  if (!tileUrl || mapInstance !== instance || !instance.map) return;
+
+  const tileLayer = new maptalks.TileLayer('base-tiles', {
+    urlTemplate: LOCAL_TILE_URL,
+    subdomains: ['a', 'b', 'c'],
+    maxAvailableZoom: 15,
+    repeatWorld: false
+  });
+  instance.map.setBaseLayer(tileLayer);
+}
+
+async function findAvailableLocalTile() {
+  if (typeof fetch !== 'function') return null;
+
+  const candidates = [
+    '/tiles/0/0/0.png',
+    getCenterTileUrl(8),
+    getCenterTileUrl(9),
+    getCenterTileUrl(10),
+    getCenterTileUrl(11),
+    getCenterTileUrl(12)
+  ];
+
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, { method: 'GET', cache: 'no-store' });
+      const contentType = response.headers.get('content-type') || '';
+      if (response.ok && contentType.startsWith('image/')) return url;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function getCenterTileUrl(zoom) {
+  const lat = 13.75;
+  const lng = 124.25;
+  const latRad = lat * Math.PI / 180;
+  const n = 2 ** zoom;
+  const x = Math.floor(((lng + 180) / 360) * n);
+  const y = Math.floor((1 - Math.log(Math.tan(latRad) + (1 / Math.cos(latRad))) / Math.PI) / 2 * n);
+  return `/tiles/${zoom}/${x}/${y}.png`;
+}
+
+// ── GeoJSON rendering ──────────────────────────────────────
+
+function renderGeoJsonBase(instance, geojson) {
+  instance.boundaryLayer.clear();
+  if (!geojson?.features) return;
+
+  const geometries = [];
+  const landColor = getCssMapValue('--offline-map-land', '#164f3b');
+  const boundaryColor = getCssMapValue('--offline-map-boundary', 'rgba(3, 7, 18, 0.46)');
+  const lineColor = getCssMapValue('--offline-map-line', 'rgba(3, 7, 18, 0.42)');
+
+  for (const feature of geojson.features) {
+    const geom = feature.geometry;
+    if (!geom) continue;
+
+    if (geom.type === 'Polygon') {
+      geometries.push(new maptalks.Polygon(geom.coordinates, {
+        symbol: {
+          polygonFill: landColor,
+          polygonOpacity: 1,
+          lineColor: boundaryColor,
+          lineWidth: 1.5,
+          lineOpacity: 1
+        }
+      }));
+    } else if (geom.type === 'MultiPolygon') {
+      for (const coords of geom.coordinates) {
+        geometries.push(new maptalks.Polygon(coords, {
+          symbol: {
+            polygonFill: landColor,
+            polygonOpacity: 1,
+            lineColor: boundaryColor,
+            lineWidth: 1.5,
+            lineOpacity: 1
+          }
+        }));
+      }
+    } else if (geom.type === 'LineString') {
+      geometries.push(new maptalks.LineString(geom.coordinates, {
+        symbol: {
+          lineColor: lineColor,
+          lineWidth: 1.4,
+          lineOpacity: 0.75,
+          lineDasharray: [5, 7]
+        }
+      }));
+    } else if (geom.type === 'MultiLineString') {
+      for (const coords of geom.coordinates) {
+        geometries.push(new maptalks.LineString(coords, {
+          symbol: {
+            lineColor: lineColor,
+            lineWidth: 1.4,
+            lineOpacity: 0.75,
+            lineDasharray: [5, 7]
+          }
+        }));
+      }
+    }
+  }
+
+  instance.boundaryLayer.addGeometry(geometries);
+}
+
+function applyMapTheme(instance) {
+  if (!instance?.container) return;
+  const seaColor = getCssMapValue('--offline-map-sea', '#a9d7e0');
+  instance.container.style.background = seaColor;
+
+  if (instance.geojson && instance.boundaryLayer) {
+    renderGeoJsonBase(instance, instance.geojson);
+  }
+}
+
+function renderMunicipalityLabels(instance) {
+  instance.labelLayer.clear();
+
+  const labelColor = getCssMapValue('--offline-map-label', 'rgba(248, 250, 252, 0.92)');
+  const labelStroke = getCssMapValue('--offline-map-label-stroke', 'rgba(3, 7, 18, 0.78)');
+
+  const markers = MAP_LABELS.map(label =>
+    new maptalks.Marker(label.coordinates, {
+      properties: { name: label.name },
+      symbol: {
+        textFaceName: 'Open Sans, Inter, system-ui, sans-serif',
+        textName: '{name}',
+        textSize: 12,
+        textWeight: 'bold',
+        textFill: labelColor,
+        textOpacity: 0.9,
+        textHaloFill: labelStroke,
+        textHaloRadius: 3,
+        textHorizontalAlignment: 'middle',
+        textVerticalAlignment: 'middle'
+      },
+      zIndex: 2
+    })
+  );
+
+  instance.labelLayer.addGeometry(markers);
+}
+
+// ── Dynamic layers ─────────────────────────────────────────
+
+function renderDynamicLayers() {
+  if (!mapInstance?.ready || !mapInstance.map) return;
+
+  renderRouteLayer();
+  renderPreviewLayer();
+  renderHubLayer();
+  renderMarkerLayer();
+  syncPopup();
+}
+
+function renderRouteLayer() {
+  scheduleRouteRender(mapInstance, 'route', mapInstance.routeCoordinates);
+}
+
+function renderPreviewLayer() {
+  scheduleRouteRender(mapInstance, 'preview', mapInstance.previewCoordinates);
+}
+
+function scheduleRouteRender(instance, kind, coordinates) {
+  const routeCoordinates = Array.isArray(coordinates) ? coordinates : [];
+  const layer = kind === 'preview' ? instance.previewLayer : instance.routeLayer;
+  const requestField = kind === 'preview' ? 'previewRequestId' : 'routeRequestId';
+  const keyField = kind === 'preview' ? 'previewKey' : 'routeKey';
+  const resultField = kind === 'preview' ? 'previewResult' : 'routeResult';
+  const key = coordinatesKey(routeCoordinates);
+
+  if (!key || routeCoordinates.length < 2) {
+    layer.clear();
+    instance[keyField] = '';
+    instance[resultField] = null;
+    if (kind === 'route') notifyRouteResult(instance, null);
+    return;
+  }
+
+  if (instance[keyField] === key && instance[resultField]) {
+    return;
+  }
+
+  instance[keyField] = key;
+  const cached = instance.routeCache.get(key);
+  if (cached) {
+    instance[resultField] = cached;
+    drawRouteResult(instance, kind, cached);
+    if (kind === 'route') notifyRouteResult(instance, cached);
+    return;
+  }
+
+  layer.clear();
+  const requestId = instance[requestField] + 1;
+  instance[requestField] = requestId;
+
+  requestRouteFromService(routeCoordinates).then(result => {
+    if (mapInstance !== instance || instance[requestField] !== requestId || instance[keyField] !== key) return;
+    instance.routeCache.set(key, result);
+    instance[resultField] = result;
+    drawRouteResult(instance, kind, result);
+    if (kind === 'route') notifyRouteResult(instance, result);
+  });
+}
+
+function drawRouteResult(instance, kind, result) {
+  const layer = kind === 'preview' ? instance.previewLayer : instance.routeLayer;
+  layer.clear();
+
+  const coords = result?.coordinates || result?.geometry || [];
+  if (coords.length < 2) return;
+
+  const isPreview = kind === 'preview';
+  const isFallback = Boolean(result?.isFallback);
+  const useDash = isPreview || isFallback;
+
+  // Casing (outer line)
+  const casing = new maptalks.LineString(coords, {
+    symbol: {
+      lineColor: '#ffffff',
+      lineWidth: isPreview ? 7 : 8,
+      lineOpacity: isPreview ? 0.74 : 0.88,
+      lineCap: 'round',
+      lineJoin: 'round',
+      lineDasharray: useDash ? [10, 10] : null
+    }
+  });
+
+  // Inner line
+  const inner = new maptalks.LineString(coords, {
+    symbol: {
+      lineColor: isPreview ? '#f59e0b' : '#12b7d4',
+      lineWidth: isPreview ? 4 : 5,
+      lineOpacity: isPreview ? 0.9 : 0.92,
+      lineCap: 'round',
+      lineJoin: 'round',
+      lineDasharray: useDash ? [10, 10] : null
+    }
+  });
+
+  layer.addGeometry([casing, inner]);
+}
+
+function notifyRouteResult(instance, result) {
+  instance.onRouteResult?.({
+    kind: 'route',
+    result,
+    coordinates: instance.routeCoordinates
+  });
+}
+
+function renderHubLayer() {
+  const instance = mapInstance;
+  instance.hubLayer.clear();
+
+  // Remove old hub UIMarker
+  if (instance._hubUIMarker) {
+    try { instance._hubUIMarker.remove(); } catch (_) { /* noop */ }
+    instance._hubUIMarker = null;
+  }
+
+  if (!instance.hub?.coordinates) return;
+
+  const html = `
+    <div class="offline-hub-marker">
+      <span class="offline-hub-halo"></span>
+      <span class="offline-hub-dot"></span>
+      <span class="offline-hub-label">${escapeHtml(instance.hub.name)}</span>
+    </div>
+  `;
+
+  const hubMarker = new maptalks.ui.UIMarker(instance.hub.coordinates, {
+    content: html,
+    dy: 0,
+    single: false,
+    eventsPropagation: true
+  });
+
+  hubMarker.addTo(instance.map);
+  instance._hubUIMarker = hubMarker;
+}
+
+function renderMarkerLayer() {
+  const instance = mapInstance;
+
+  // Remove old UIMarkers
+  if (instance._uiMarkers) {
+    instance._uiMarkers.forEach(m => { try { m.remove(); } catch (_) { /* noop */ } });
+  }
+  instance._uiMarkers = [];
+  instance._markerCache = new Map();
+
+  instance.destinations.forEach(destination => {
+    if (!isValidCoordinate(destination.coordinates)) return;
+
+    const isFeatured = Boolean(destination.isTop10 || destination.is_top_10);
+    const category = destination.categoryGroup || destination.displayCategory || destination.category;
+    const color = isFeatured ? '#ef4444' : 'var(--offline-poi-color)';
+    const iconPath = CATEGORY_ICONS[category] || CATEGORY_ICONS.Outdoor;
+
+    // Build initial HTML — classes will be managed via DOM later
+    let innerHtml;
+    if (isFeatured) {
+      innerHtml = `
+        <span class="offline-marker-ring"></span>
+        <span class="offline-marker-pin" style="--marker-color: ${color};">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" aria-hidden="true">
+            <path d="M136,127.42V232a8,8,0,0,1-16,0V127.42a56,56,0,1,1,16,0Z" fill="var(--marker-color)" stroke="#000000" stroke-width="16" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="offline-marker-label">${escapeHtml(destination.name)}</span>
+      `;
+    } else {
+      innerHtml = `
+        <span class="offline-marker-ring"></span>
+        <span class="offline-marker-badge" style="--marker-color: ${color};">
+          <svg viewBox="0 0 24 24" aria-hidden="true">${iconPath}</svg>
+        </span>
+        <span class="offline-marker-label" style="display:none">${escapeHtml(destination.name)}</span>
+      `;
+    }
+
+    const html = `<div class="offline-destination-marker${isFeatured ? ' featured' : ''}">${innerHtml}</div>`;
+
+    const marker = new maptalks.ui.UIMarker(destination.coordinates, {
+      content: html,
+      dy: isFeatured ? -20 : 0,
+      single: false,
+      eventsPropagation: false
+    });
+
+    marker.__destinationData = destination;
+    marker.__isFeatured = isFeatured;
+    marker.addTo(instance.map);
+
+    const dom = marker.getDOM();
+    if (dom) {
+      dom.addEventListener('click', (e) => {
+        e.stopPropagation();
+        instance.popupDestination = destination;
+        document.dispatchEvent(new CustomEvent('select-destination', { detail: { destination } }));
+        syncPopup();
+      });
+    }
+
+    instance._uiMarkers.push(marker);
+    instance._markerCache.set(destination.id, marker);
+  });
+
+  // Apply current selection/added states
+  updateMarkerStates();
+}
+
+// Update only CSS classes and label visibility on existing cached markers
+function updateMarkerStates() {
+  const instance = mapInstance;
+  if (!instance?._uiMarkers) return;
+
+  instance._uiMarkers.forEach(marker => {
+    const dom = marker.getDOM();
+    if (!dom) return;
+
+    const dest = marker.__destinationData;
+    const isFeatured = marker.__isFeatured;
+    const isSelected = instance.selectedDestinationId === dest.id;
+    const isAdded = instance.addedDestinationIds.has(dest.id);
+
+    const wrapper = dom.querySelector('.offline-destination-marker');
+    if (!wrapper) return;
+
+    // Toggle classes without removing/recreating the element
+    wrapper.classList.toggle('selected', isSelected);
+    wrapper.classList.toggle('added', isAdded);
+
+    // For non-featured markers, show/hide label based on selection state
+    if (!isFeatured) {
+      const label = wrapper.querySelector('.offline-marker-label');
+      if (label) {
+        label.style.display = (isSelected || isAdded) ? '' : 'none';
+      }
+    }
+  });
+}
+
+function syncPopup() {
+  const instance = mapInstance;
+  if (!instance) return;
+
+  // Remove old popup
+  if (instance._activePopup) {
+    instance._activePopup.remove();
+    instance._activePopup = null;
+  }
+
+  if (!instance.popupDestination) return;
+
+  const destination = instance.popupDestination;
+  if (!isValidCoordinate(destination?.coordinates)) return;
+
+  const isAdded = instance.addedDestinationIds.has(destination.id);
+  const actionAttr = isAdded ? 'data-popup-remove' : 'data-popup-add';
+  const actionText = isAdded ? 'Remove Spot' : 'Add Spot';
+  const category = destination.displayCategory || destination.categoryGroup || destination.category || 'Spot';
+
+  const content = `
+    <div class="offline-map-popup">
+      <strong>${escapeHtml(destination.name)}</strong>
+      <span>${escapeHtml(category)} - ${escapeHtml(destination.budgetLabel || destination.min_budget || 'low')}</span>
+      <button type="button" ${actionAttr}="${escapeHtml(destination.id)}">${actionText}</button>
+    </div>
+  `;
+
+  const popup = new maptalks.ui.UIMarker(destination.coordinates, {
+    content: content,
+    dy: -50,
+    single: false,
+    eventsPropagation: false
+  });
+
+  popup.addTo(instance.map);
+
+  const dom = popup.getDOM();
+  if (dom) {
+    dom.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const addBtn = e.target.closest?.('[data-popup-add]');
+      const removeBtn = e.target.closest?.('[data-popup-remove]');
+      if (!addBtn && !removeBtn) return;
+
+      e.preventDefault();
+      const destinationId = addBtn?.dataset.popupAdd || removeBtn?.dataset.popupRemove;
+      const dest = findDestination(destinationId);
+      if (!dest) return;
+
+      const eventName = addBtn ? 'add-to-trip' : 'remove-from-trip';
+      instance.popupDestination = dest;
+      document.dispatchEvent(new CustomEvent(eventName, { detail: { destination: dest } }));
+    });
+  }
+
+  instance._activePopup = popup;
+}
+
+function findDestination(destinationId) {
+  return mapInstance?.destinations.find(d => d.id === destinationId) ||
+    (mapInstance?.popupDestination?.id === destinationId ? mapInstance.popupDestination : null);
+}
+
+// ── Utilities ──────────────────────────────────────────────
+
+function coordinatesKey(coordinates = []) {
+  const clean = coordinates.filter(isValidCoordinate);
+  if (clean.length < 2) return '';
+  return clean
+    .map(c => `${Number(c[0]).toFixed(5)},${Number(c[1]).toFixed(5)}`)
+    .join('|');
+}
+
+function isValidCoordinate(coordinates) {
+  if (!Array.isArray(coordinates) || coordinates.length < 2) return false;
+  return Number.isFinite(Number(coordinates[0])) && Number.isFinite(Number(coordinates[1]));
+}
+
+function getCssMapValue(name, fallback) {
+  if (typeof getComputedStyle !== 'function') return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||
+    getComputedStyle(mapInstance?.container || document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+}
+
+function renderMapError(container) {
+  container.innerHTML = `
+    <div class="offline-map-error">
+      <strong>Map unavailable</strong>
+      <span>Local map data could not be loaded.</span>
+    </div>
+  `;
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}

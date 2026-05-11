@@ -414,6 +414,35 @@ body[data-route="itinerary"] .page-container {
   overflow: hidden;
 }
 
+.maptalks-offline-map {
+  width: 100%;
+  height: 100%;
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+
+.maptalks-offline-map .maptalks-wrapper,
+.maptalks-offline-map .maptalks-map {
+  width: 100%;
+  height: 100%;
+}
+
+.maptalks-offline-map .offline-destination-marker {
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.maptalks-offline-map .offline-map-popup {
+  background: rgba(15, 17, 21, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.32);
+}
+
 .leaflet-container {
   width: 100%;
   height: 100%;
