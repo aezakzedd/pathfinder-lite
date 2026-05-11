@@ -1,5 +1,5 @@
 // Itinerary page module
-import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState } from '../map/maptalksOfflineMap.js';
+import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState, fitToRoute } from '../map/maptalksOfflineMap.js';
 import { askPathfinder } from '../api.js';
 import { getState as getAppState, setState as setAppState } from '../state.js';
 import {

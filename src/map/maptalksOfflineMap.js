@@ -169,6 +169,30 @@ export function resetView() {
   }, { duration: 600 });
 }
 
+export function fitToRoute() {
+  if (!mapInstance?.map) return;
+  const coords = [];
+
+  if (mapInstance.routeCoordinates && mapInstance.routeCoordinates.length > 0) {
+    mapInstance.routeCoordinates.forEach(c => {
+      if (Array.isArray(c) && c.length >= 2) coords.push(new maptalks.Coordinate(c[0], c[1]));
+    });
+  }
+
+  if (mapInstance.hub?.coordinates) {
+    const h = mapInstance.hub.coordinates;
+    coords.push(new maptalks.Coordinate(h[0], h[1]));
+  }
+
+  if (coords.length > 1) {
+    const extent = new maptalks.Extent(coords[0], coords[0]);
+    coords.forEach(c => extent._combine(c));
+    mapInstance.map.fitExtent(extent, -1, { padding: { left: 40, right: 40, top: 40, bottom: 40 }, animation: false });
+  } else {
+    resetView();
+  }
+}
+
 export function invalidateSize() {
   if (!mapInstance?.map) return;
   applyMapTheme(mapInstance);
