@@ -597,7 +597,6 @@ body[data-route="itinerary"] .page-container {
   background: rgba(20, 184, 166, 0.16);
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.82);
-  transition: opacity 160ms ease, transform 160ms ease;
 }
 
 .offline-destination-marker.selected .offline-marker-ring {

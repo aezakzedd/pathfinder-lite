@@ -111,8 +111,10 @@ export function updateMapState(updates = {}) {
     destinationsChanged = true;
   }
   if ('hub' in updates) {
-    mapInstance.hub = updates.hub;
-    hubChanged = true;
+    if (!hubEqual(updates.hub, mapInstance.hub)) {
+      mapInstance.hub = updates.hub;
+      hubChanged = true;
+    }
   }
   if ('selectedDestinationId' in updates) {
     if (mapInstance.selectedDestinationId !== updates.selectedDestinationId) {
@@ -125,15 +127,23 @@ export function updateMapState(updates = {}) {
     selectionChanged = true;
   }
   if ('routeCoordinates' in updates) {
-    mapInstance.routeCoordinates = updates.routeCoordinates || [];
-    routeChanged = true;
+    if (!coordsEqual(updates.routeCoordinates, mapInstance.routeCoordinates)) {
+      mapInstance.routeCoordinates = updates.routeCoordinates || [];
+      routeChanged = true;
+    }
   }
   if ('previewCoordinates' in updates) {
-    mapInstance.previewCoordinates = updates.previewCoordinates || [];
-    previewChanged = true;
+    if (!coordsEqual(updates.previewCoordinates, mapInstance.previewCoordinates)) {
+      mapInstance.previewCoordinates = updates.previewCoordinates || [];
+      previewChanged = true;
+    }
   }
+  let popupChanged = false;
   if ('popupDestination' in updates) {
-    mapInstance.popupDestination = updates.popupDestination;
+    if (mapInstance.popupDestination?.id !== updates.popupDestination?.id) {
+      mapInstance.popupDestination = updates.popupDestination;
+      popupChanged = true;
+    }
   }
 
   if (!mapInstance.ready || !mapInstance.map) return;
@@ -146,7 +156,7 @@ export function updateMapState(updates = {}) {
   } else if (selectionChanged) {
     updateMarkerStates();
   }
-  syncPopup();
+  if (popupChanged) syncPopup();
 }
 
 export function zoomIn() {
@@ -245,13 +255,14 @@ async function setupMaptalksMap(instance, options) {
     minZoom: MIN_ZOOM,
     maxZoom: MAX_ZOOM,
     dragPan: true,
-    dragRotate: true,
-    dragPitch: true,
-    dragRotatePitch: true,
-    touchPitch: true,
-    touchRotate: true,
+    dragRotate: false,
+    dragPitch: false,
+    dragRotatePitch: false,
+    touchPitch: false,
+    touchRotate: false,
     attribution: false,
     fog: false,
+    devicePixelRatio: 1,
     baseLayer: null
   });
 
@@ -267,12 +278,16 @@ async function setupMaptalksMap(instance, options) {
 
   instance.routeLayer = new maptalks.VectorLayer('routes', [], {
     hitDetect: false,
+    enableSimplify: true,
+    simplifyTolerance: 2,
     forceRenderOnMoving: false,
     forceRenderOnZooming: false
   }).addTo(instance.map);
 
   instance.previewLayer = new maptalks.VectorLayer('previews', [], {
     hitDetect: false,
+    enableSimplify: true,
+    simplifyTolerance: 2,
     forceRenderOnMoving: false,
     forceRenderOnZooming: false
   }).addTo(instance.map);
@@ -556,6 +571,10 @@ function scheduleRouteRender(instance, kind, coordinates) {
   requestRouteFromService(routeCoordinates).then(result => {
     if (mapInstance !== instance || instance[requestField] !== requestId || instance[keyField] !== key) return;
     instance.routeCache.set(key, result);
+    if (instance.routeCache.size > 50) {
+      const firstKey = instance.routeCache.keys().next().value;
+      instance.routeCache.delete(firstKey);
+    }
     instance[resultField] = result;
     drawRouteResult(instance, kind, result);
     if (kind === 'route') notifyRouteResult(instance, result);
@@ -816,6 +835,22 @@ function destinationsEqualById(a = [], b = []) {
     if (!idsB.has(id)) return false;
   }
   return true;
+}
+
+function coordsEqual(a = [], b = []) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const ca = a[i], cb = b[i];
+    if (!Array.isArray(ca) || !Array.isArray(cb) || ca.length < 2 || cb.length < 2) return false;
+    if (Math.abs(ca[0] - cb[0]) > 1e-9 || Math.abs(ca[1] - cb[1]) > 1e-9) return false;
+  }
+  return true;
+}
+
+function hubEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.id === b.id;
 }
 
 function decimateCoords(coords = [], threshold = 0.0004) {
