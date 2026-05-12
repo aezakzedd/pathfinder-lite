@@ -70,12 +70,12 @@ export function renderAbout(container) {
             <span>Who's behind it</span>
             <div>
               <p>
-                Pathfinder was built by three students as a thesis project, with the help of the
+                Pathfinder was built by five students as a thesis project, with the help of the
                 Catanduanes Tourism Promotion Office. The data is locally validated. The code is open source.
               </p>
               <p>
                 We believe infrastructure for tourism should be transparent and community-driven,
-                not locked behind mystery boxes.
+                not locked behind five clueless students (jokes aside).
               </p>
             </div>
           </article>

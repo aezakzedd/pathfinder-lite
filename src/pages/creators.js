@@ -23,6 +23,22 @@ const CREATORS = [
     tag: 'Bridge',
     accent: '#34d399',
     bio: 'Full-stack development and hardware integration. Bridged the software world with physical RPi infrastructure.'
+  },
+  {
+    name: 'Pat',
+    role: 'Hardware Engineer',
+    tag: 'Infrastructure',
+    accent: '#fb923c',
+    bio: 'Raspberry Pi configuration, networking, and hardware infrastructure that keeps the system running.',
+    hidden: true
+  },
+  {
+    name: 'Lee',
+    role: 'Researcher',
+    tag: 'Truth',
+    accent: '#f472b6',
+    bio: 'Destination data sourcing, tourism research, and documentation.',
+    hidden: true
   }
 ];
 
@@ -43,7 +59,7 @@ export function renderCreators(container) {
 
         <section class="creators-original-list editorial-rise" aria-label="Pathfinder creators">
           <div class="creators-list-label">Meet the team</div>
-          ${CREATORS.map((creator, index) => `
+          ${CREATORS.filter(c => !c.hidden).map((creator, index) => `
             <article class="creator-original-row" style="--creator-accent: ${creator.accent}">
               <span class="creator-original-index">${String(index + 1).padStart(2, '0')}</span>
               <div class="creator-original-main">
