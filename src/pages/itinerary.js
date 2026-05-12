@@ -1429,13 +1429,17 @@ function setupExportHandlers() {
       for (const day of dayKeys) {
         // Set the active day so the map draws the specific route
         setActiveDay(parseInt(day, 10));
-        
-        // Wait for map to update and animations to finish
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
+        updateMapFeatures();
+
+        // Clear any popup before capture
+        updateMapState({ popupDestination: null });
+
+        // Wait for map to update and route to compute
+        await new Promise(resolve => setTimeout(resolve, 600));
+
         fitToRoute();
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
+        await new Promise(resolve => setTimeout(resolve, 1200));
+
         try {
           const canvas = await html2canvas(mapElement, { useCORS: true, logging: false });
           mapScreenshots[day] = canvas.toDataURL('image/jpeg', 0.8);
@@ -1638,8 +1642,8 @@ function renderDestinationPreview() {
   const costLevel = destination.budgetLabel || formatValue(destination.min_budget, 'Low');
   
   previewContainer.innerHTML = `
-    <div class="destination-image">
-      ${imageSrc ? `<img src="${imageSrc}" alt="${destination.name}" />` : `<div class="destination-placeholder">${categoryEmojis[categoryLabel] || '+'}</div>`}
+    <div class="destination-image" id="destination-image-container">
+      ${imageSrc ? `<img src="${imageSrc}" alt="${destination.name}" class="destination-image-img" />` : `<div class="destination-placeholder">${categoryEmojis[categoryLabel] || '+'}</div>`}
       <span class="destination-distance">${distanceText}</span>
     </div>
     <div class="destination-content">
@@ -1656,7 +1660,15 @@ function renderDestinationPreview() {
       </button>
     </div>
   `;
-  
+
+  // Image expand modal
+  const imageContainer = document.getElementById('destination-image-container');
+  if (imageContainer && imageSrc) {
+    const imageClickHandler = () => openImageModal(imageSrc, destination.name);
+    imageContainer.addEventListener('click', imageClickHandler);
+    eventListeners.push({ element: imageContainer, event: 'click', handler: imageClickHandler });
+  }
+
   const toggleBtn = document.getElementById('trip-toggle-btn');
   if (toggleBtn) {
     const clickHandler = () => {
@@ -1669,6 +1681,36 @@ function renderDestinationPreview() {
     toggleBtn.addEventListener('click', clickHandler);
     eventListeners.push({ element: toggleBtn, event: 'click', handler: clickHandler });
   }
+}
+
+function openImageModal(imageSrc, altText) {
+  let modal = document.getElementById('destination-image-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'destination-image-modal';
+    modal.className = 'destination-image-modal';
+    modal.innerHTML = `
+      <div class="destination-image-modal-backdrop"></div>
+      <div class="destination-image-modal-content">
+        <img src="" alt="" />
+        <button class="destination-image-modal-close" aria-label="Close">&times;</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector('.destination-image-modal-backdrop').addEventListener('click', closeImageModal);
+    modal.querySelector('.destination-image-modal-close').addEventListener('click', closeImageModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeImageModal(); });
+  }
+  const img = modal.querySelector('img');
+  img.src = imageSrc;
+  img.alt = altText || '';
+  modal.classList.add('open');
+}
+
+function closeImageModal() {
+  const modal = document.getElementById('destination-image-modal');
+  if (modal) modal.classList.remove('open');
 }
 
 function handleAddToTrip(destination) {

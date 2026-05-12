@@ -11,12 +11,12 @@ const DEFAULT_MAX_BOUNDS = [
 ];
 
 const CATEGORY_ICONS = {
-  Water: '<path d="M12 4c2.8 3.2 4.2 5.7 4.2 7.5A4.2 4.2 0 0 1 7.8 11.5C7.8 9.7 9.2 7.2 12 4Z" />',
-  Views: '<path d="M4 17.5 8.5 9l4 5.4 2.2-3.1 5.3 6.2H4Z" />',
-  Outdoor: '<path d="M4 18h16L12 5 4 18Zm8-6 2 3h-4l2-3Z" />',
-  Heritage: '<path d="M5 9h14v2H5V9Zm2 3h2v6H7v-6Zm4 0h2v6h-2v-6Zm4 0h2v6h-2v-6ZM4 19h16v2H4v-2ZM12 3l7 4H5l7-4Z" />',
-  Dining: '<path d="M7 3h1v7H7V3Zm3 0h1v7h-1V3ZM8.5 11h1v10h-1V11ZM15 3h2v18h-2V3Z" />',
-  Stay: '<path d="M4 20V9l8-5 8 5v11h-5v-6H9v6H4Z" />'
+  Water: '<path d="M8 17a4 4 0 0 0 8 0c0-3-4-7-4-7s-4 4-4 7Z" /><path d="M15 6h2l2 4M13 6h-2l-2 4M14 3l-2 3" />',
+  Outdoor: '<path d="M12 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" /><path d="M7 21l2-7 3-2 3 2 2 7M9 10l-3 3M15 10l3 3" />',
+  Views: '<path d="m4 19 5-9 4 6 2-3 5 6H4Z" /><path d="M14 7h.01" />',
+  Heritage: '<path d="M5 9h14M7 9v10M17 9v10M4 19h16M6 5h12l1 4H5l1-4Z" />',
+  Dining: '<path d="M7 3v8M10 3v8M7 7h3M8.5 11v10M16 3v18M14 3v7a2 2 0 0 0 2 2" />',
+  Stay: '<path d="M4 20V9l8-5 8 5v11M8 20v-7h8v7M10 20v-3h4v3" />'
 };
 
 const MAP_LABELS = [

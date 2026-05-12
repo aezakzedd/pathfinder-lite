@@ -624,7 +624,11 @@ body[data-route="itinerary"] .page-container {
 .offline-marker-badge svg {
   width: 11px;
   height: 11px;
-  fill: var(--offline-poi-icon, #ffffff);
+  fill: none;
+  stroke: var(--offline-poi-icon, #ffffff);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .offline-destination-marker.added .offline-marker-badge {
@@ -2178,15 +2182,85 @@ body[data-route="itinerary"] .page-container {
 
 .page-itinerary .destination-distance {
   position: absolute;
-  top: 10px;
+  bottom: 8px;
   right: 8px;
-  min-height: 27px;
-  padding: 6px 12px;
-  border-radius: 7px;
-  background: rgba(91, 102, 102, 0.74);
-  color: #32ff35;
-  font-size: 12px;
-  font-weight: 900;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.destination-image-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.destination-image-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.destination-image-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.destination-image-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.destination-image-modal-content {
+  position: relative;
+  max-width: 88vw;
+  max-height: 88vh;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.destination-image-modal-content img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 88vw;
+  max-height: 88vh;
+  object-fit: contain;
+}
+
+.destination-image-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.destination-image-modal-close:hover {
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .page-itinerary .destination-content {
