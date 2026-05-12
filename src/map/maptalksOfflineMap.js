@@ -106,7 +106,7 @@ export function updateMapState(updates = {}) {
   let previewChanged = false;
   let selectionChanged = false;
 
-  if (updates.destinations && updates.destinations !== mapInstance.destinations) {
+  if (updates.destinations && !destinationsEqualById(updates.destinations, mapInstance.destinations)) {
     mapInstance.destinations = updates.destinations;
     destinationsChanged = true;
   }
@@ -261,44 +261,44 @@ async function setupMaptalksMap(instance, options) {
   instance.boundaryLayer = new maptalks.VectorLayer('boundaries', [], {
     enableSimplify: true,
     hitDetect: false,
-    forceRenderOnMoving: true,
-    forceRenderOnZooming: true
+    forceRenderOnMoving: false,
+    forceRenderOnZooming: false
   }).addTo(instance.map);
 
   instance.routeLayer = new maptalks.VectorLayer('routes', [], {
     hitDetect: false,
-    forceRenderOnMoving: true,
-    forceRenderOnZooming: true
+    forceRenderOnMoving: false,
+    forceRenderOnZooming: false
   }).addTo(instance.map);
 
   instance.previewLayer = new maptalks.VectorLayer('previews', [], {
     hitDetect: false,
-    forceRenderOnMoving: true,
-    forceRenderOnZooming: true
+    forceRenderOnMoving: false,
+    forceRenderOnZooming: false
   }).addTo(instance.map);
 
   instance.hubLayer = new maptalks.VectorLayer('hubs', [], {
     hitDetect: false,
-    forceRenderOnMoving: true,
-    forceRenderOnZooming: true
+    forceRenderOnMoving: false,
+    forceRenderOnZooming: false
   }).addTo(instance.map);
 
   instance.markerLayer = new maptalks.VectorLayer('markers', [], {
     hitDetect: true,
-    forceRenderOnMoving: true,
-    forceRenderOnZooming: true
+    forceRenderOnMoving: false,
+    forceRenderOnZooming: false
   }).addTo(instance.map);
 
   instance.labelLayer = new maptalks.VectorLayer('labels', [], {
     hitDetect: false,
-    forceRenderOnMoving: true,
-    forceRenderOnZooming: true
+    forceRenderOnMoving: false,
+    forceRenderOnZooming: false
   }).addTo(instance.map);
 
   instance.popupLayer = new maptalks.VectorLayer('popups', [], {
     hitDetect: true,
-    forceRenderOnMoving: true,
-    forceRenderOnZooming: true
+    forceRenderOnMoving: false,
+    forceRenderOnZooming: false
   }).addTo(instance.map);
 
   // Try adding tile layer
@@ -566,8 +566,10 @@ function drawRouteResult(instance, kind, result) {
   const layer = kind === 'preview' ? instance.previewLayer : instance.routeLayer;
   layer.clear();
 
-  const coords = result?.coordinates || result?.geometry || [];
+  let coords = result?.coordinates || result?.geometry || [];
   if (coords.length < 2) return;
+
+  coords = decimateCoords(coords, 0.0004);
 
   const isPreview = kind === 'preview';
   const isFallback = Boolean(result?.isFallback);
@@ -803,6 +805,34 @@ function syncPopup() {
 function findDestination(destinationId) {
   return mapInstance?.destinations.find(d => d.id === destinationId) ||
     (mapInstance?.popupDestination?.id === destinationId ? mapInstance.popupDestination : null);
+}
+
+function destinationsEqualById(a = [], b = []) {
+  if (a.length !== b.length) return false;
+  const idsA = new Set(a.map(d => d.id));
+  const idsB = new Set(b.map(d => d.id));
+  if (idsA.size !== idsB.size) return false;
+  for (const id of idsA) {
+    if (!idsB.has(id)) return false;
+  }
+  return true;
+}
+
+function decimateCoords(coords = [], threshold = 0.0004) {
+  if (coords.length <= 30) return coords;
+  const out = [coords[0]];
+  let last = coords[0];
+  for (let i = 1; i < coords.length - 1; i++) {
+    const c = coords[i];
+    const dx = c[0] - last[0];
+    const dy = c[1] - last[1];
+    if (dx * dx + dy * dy > threshold * threshold) {
+      out.push(c);
+      last = c;
+    }
+  }
+  out.push(coords[coords.length - 1]);
+  return out;
 }
 
 // ── Utilities ──────────────────────────────────────────────

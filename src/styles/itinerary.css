@@ -576,23 +576,7 @@ body[data-route="itinerary"] .page-container {
   font-weight: 900;
   line-height: 1;
   text-align: center;
-  text-shadow:
-    -1px -1px 0 var(--offline-map-label-stroke),
-     0px -1px 0 var(--offline-map-label-stroke),
-     1px -1px 0 var(--offline-map-label-stroke),
-    -1px  0px 0 var(--offline-map-label-stroke),
-     1px  0px 0 var(--offline-map-label-stroke),
-    -1px  1px 0 var(--offline-map-label-stroke),
-     0px  1px 0 var(--offline-map-label-stroke),
-     1px  1px 0 var(--offline-map-label-stroke),
-    -2px -2px 0 var(--offline-map-label-stroke),
-     0px -2px 0 var(--offline-map-label-stroke),
-     2px -2px 0 var(--offline-map-label-stroke),
-    -2px  0px 0 var(--offline-map-label-stroke),
-     2px  0px 0 var(--offline-map-label-stroke),
-    -2px  2px 0 var(--offline-map-label-stroke),
-     0px  2px 0 var(--offline-map-label-stroke),
-     2px  2px 0 var(--offline-map-label-stroke);
+  text-shadow: 0 1px 2px var(--offline-map-label-stroke);
   pointer-events: none;
 }
 
@@ -656,13 +640,11 @@ body[data-route="itinerary"] .page-container {
   width: 32px;
   height: 32px;
   transform: translateX(-50%);
-  filter: drop-shadow(0 4px 6px rgba(15, 23, 42, 0.4));
 }
 
 .offline-destination-marker.featured .offline-marker-pin {
   width: 32px;
   height: 32px;
-  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.4));
 }
 
 .offline-marker-pin svg {
@@ -741,13 +723,6 @@ body[data-route="itinerary"] .page-container {
     1px -1px 0 rgba(255, 255, 255, 0.84),
     -1px 1px 0 rgba(255, 255, 255, 0.84),
     1px 1px 0 rgba(255, 255, 255, 0.84);
-}
-
-.offline-route-line,
-.offline-route-casing,
-.offline-preview-line,
-.offline-preview-casing {
-  filter: drop-shadow(0 3px 4px rgba(15, 23, 42, 0.14));
 }
 
 .offline-destination-marker:not(.featured) .offline-marker-label {
