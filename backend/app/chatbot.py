@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from .dialogue_state import DialogueMemory, dialogue_store
@@ -12,6 +13,8 @@ from .knowledge_base import (
     infer_categories,
     normalize_budget,
     normalize_text,
+    score_place,
+    tokenize,
 )
 from .itinerary_planner import (
     build_add_to_day_action,
@@ -25,6 +28,66 @@ from .itinerary_planner import (
 
 
 SOURCE = "local-chatbot"
+
+
+# Count-parsing word map
+_WORD_NUMBERS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+}
+
+
+def parse_count(user_input: str) -> tuple[int, bool]:
+    """Extract explicit count from query. Returns (count, is_explicit)."""
+    query_lower = user_input.lower()
+    digit_match = re.search(r"\b(top|best|give me|show me)?\s*(\d+)\b", query_lower)
+    if digit_match:
+        n = int(digit_match.group(2))
+        if 1 <= n <= 50:
+            return n, True
+    for word, num in _WORD_NUMBERS.items():
+        pattern = r"\b(top|best|give me|show me)?\s*" + word + r"\b"
+        if re.search(pattern, query_lower):
+            return num, True
+    return 5, False
+
+
+# ---------------------------------------------------------------------------
+# Confidence tier helpers
+# ---------------------------------------------------------------------------
+T1_THRESHOLD = 0.72
+T2_THRESHOLD = 0.60
+
+
+def _score_to_confidence(score: float, max_score: float = 100.0) -> float:
+    """Normalize a raw KB score to a 0-1 confidence value."""
+    if max_score <= 0:
+        return 0.0
+    return min(1.0, score / max_score)
+
+
+def apply_confidence_framing(answer: str, confidence: float, is_list: bool = False) -> str:
+    """Wrap answer with T1/T2/T3 framing. Lists are never modified."""
+    if is_list:
+        return answer
+    if not answer:
+        return answer
+    lower = answer.lower()
+    if "i don't have information" in lower or "i'm sorry" in lower and "don't have" in lower:
+        return answer
+
+    if confidence >= T1_THRESHOLD:
+        return answer  # authoritative — as-is
+    if confidence >= T2_THRESHOLD:
+        # qualified — add prefix
+        if "price" in lower or "cost" in lower or "fee" in lower or "budget" in lower:
+            return "Based on available records, " + answer + " Prices may change; please verify with the site before visiting."
+        return "Based on available records, " + answer
+    # T3 — weak confidence
+    return (
+        "I'm not certain about that. " + answer +
+        " For the latest details, please contact the Catanduanes Provincial Tourism Office."
+    )
 
 
 def answer_question(
@@ -42,6 +105,7 @@ def answer_question(
     active_place = kb.resolve_active_pin(active_pin)
     matched_faq = kb.match_faq(question)
     intent = detect_intent(text, active_place, memory, matched_faq)
+    requested_count, _ = parse_count(question)
 
     if active_place and is_contextual_place_question(text):
         memory.active_place_id = active_place.id
@@ -65,14 +129,14 @@ def answer_question(
     if intent == "place_info":
         place = resolve_place_for_question(kb, question, active_pin, memory)
         if not place:
-            return place_suggestion_response(kb, question, memory)
-        return place_info_response(place, memory, concise=False)
+            return place_suggestion_response(kb, question, memory, count=requested_count)
+        return place_info_response(place, memory, question, concise=False)
 
     if intent == "followup_more":
         place = resolve_context_place(kb, active_pin, memory)
         if not place:
             return fallback_response(memory, "Which place do you want to know more about?")
-        return place_info_response(place, memory, concise=False)
+        return place_info_response(place, memory, question, concise=False)
 
     if intent == "add_to_day":
         result = build_add_to_day_action(kb, question, active_pin=active_pin, memory=memory)
@@ -147,10 +211,11 @@ def answer_question(
         if not origin:
             return fallback_response(memory, "Select a place first so I can find nearby options.")
         categories = infer_categories(text, None)
-        nearby_places = kb.nearby(origin, query=question, categories=categories, limit=4)
+        nearby_places = kb.nearby(origin, query=question, categories=categories, limit=requested_count)
         return recommendation_response(
             nearby_places,
             memory,
+            question,
             intent=intent,
             prefix=f"Near {origin.name}, I found",
             empty="I could not find nearby matches in the local place data.",
@@ -168,13 +233,14 @@ def answer_question(
             budget="low",
             activities=memory.preferences.get("activities"),
             categories=categories,
-            limit=4,
+            limit=requested_count,
         )
         if categories:
             memory.preferences["last_recommendation_categories"] = sorted(categories)
         return recommendation_response(
             places,
             memory,
+            question,
             intent=intent,
             prefix="For a budget-friendly plan, try",
             empty="I could not find low-budget matches in the local place data.",
@@ -200,7 +266,7 @@ def answer_question(
             budget=infer_budget(text) or memory.preferences.get("budget"),
             activities=memory.preferences.get("activities"),
             categories=categories,
-            limit=4,
+            limit=requested_count,
             exclude_ids=exclude_ids,
         )
         if categories:
@@ -208,6 +274,7 @@ def answer_question(
         return recommendation_response(
             places,
             memory,
+            question,
             intent=intent,
             prefix="Good local picks are",
             empty="I could not find a strong match. Try asking for beaches, food, heritage, views, or budget spots.",
@@ -319,7 +386,7 @@ def resolve_context_place(kb, active_pin: dict[str, Any] | None, memory: Dialogu
     return None
 
 
-def place_info_response(place: Place, memory: DialogueMemory, *, concise: bool) -> dict[str, Any]:
+def place_info_response(place: Place, memory: DialogueMemory, question: str, *, concise: bool) -> dict[str, Any]:
     description = summarize_place_intro(place)
     facts = place.facts or {}
     fact_parts = []
@@ -330,6 +397,8 @@ def place_info_response(place: Place, memory: DialogueMemory, *, concise: bool) 
     fact_parts = fact_parts[:2] if concise else fact_parts[:3]
 
     answer = " ".join([description, *fact_parts]).strip()
+    confidence = _place_confidence(place, question)
+    answer = apply_confidence_framing(answer, confidence, is_list=False)
     return respond(
         answer,
         locations=[place],
@@ -337,6 +406,7 @@ def place_info_response(place: Place, memory: DialogueMemory, *, concise: bool) 
         follow_up="Ask for nearby food, another option, or add it.",
         memory=memory,
         active_place=place,
+        confidence=confidence,
     )
 
 
@@ -352,6 +422,7 @@ def summarize_place_intro(place: Place) -> str:
 def recommendation_response(
     places: list[Place],
     memory: DialogueMemory,
+    question: str,
     *,
     intent: str,
     prefix: str,
@@ -363,6 +434,7 @@ def recommendation_response(
 
     names = ", ".join(place.name for place in places[:4])
     answer = f"{prefix}: {names}. I selected {places[0].name} on the map."
+    confidence = _place_confidence(places[0], question) if places else 0.0
     return respond(
         answer,
         locations=places,
@@ -372,6 +444,7 @@ def recommendation_response(
         memory=memory,
         active_place=places[0],
         recommended_places=places,
+        confidence=confidence,
     )
 
 
@@ -384,8 +457,8 @@ def fallback_response(memory: DialogueMemory, message: str, *, intent: str = "fa
     )
 
 
-def place_suggestion_response(kb, question: str, memory: DialogueMemory) -> dict[str, Any]:
-    suggestions = kb.suggest_places(question, limit=3)
+def place_suggestion_response(kb, question: str, memory: DialogueMemory, *, count: int = 3) -> dict[str, Any]:
+    suggestions = kb.suggest_places(question, limit=count)
     if suggestions:
         names = ", ".join(place.name for place in suggestions)
         return respond(
@@ -395,6 +468,7 @@ def place_suggestion_response(kb, question: str, memory: DialogueMemory) -> dict
             follow_up="Select one on the map, or ask using the full place name.",
             memory=memory,
             recommended_places=suggestions,
+            confidence=0.4,
         )
     return fallback_response(memory, "Which place in Catanduanes should I describe?")
 
@@ -446,6 +520,12 @@ def should_prefer_faq(text: str, matched_faq: dict[str, Any]) -> bool:
     return bool(matched_faq)
 
 
+def _place_confidence(place: Place, query: str) -> float:
+    norm = normalize_text(query)
+    tokens = set(tokenize(query))
+    return _score_to_confidence(score_place(place, norm, tokens), 100.0)
+
+
 def respond(
     answer: str,
     *,
@@ -456,6 +536,7 @@ def respond(
     actions: list[dict[str, Any]] | None = None,
     active_place: Place | None = None,
     recommended_places: list[Place] | None = None,
+    confidence: float = 1.0,
 ) -> dict[str, Any]:
     memory.last_intent = intent
     memory.pending_followup = follow_up
@@ -470,6 +551,7 @@ def respond(
         "follow_up": follow_up,
         "actions": actions or [],
         "intent": intent,
+        "confidence": round(confidence, 2),
         "source": SOURCE,
     }
 
