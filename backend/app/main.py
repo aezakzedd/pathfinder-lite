@@ -198,31 +198,6 @@ def get_pdf(pdf_id: str, download: bool = False):
     )
 
 
-@app.get("/api/pdf/{pdf_id}/preview")
-def get_pdf_preview(pdf_id: str):
-    if not pdf_exists(pdf_id):
-        raise HTTPException(status_code=404, detail="PDF not found")
-
-    preview_metadata = get_preview_with_overlays(pdf_id)
-    if not preview_metadata:
-        raise HTTPException(status_code=404, detail="Preview not available")
-
-    return preview_metadata
-
-
-@app.get("/api/pdf/{pdf_id}/preview/{page}.png")
-def get_pdf_preview_page(pdf_id: str, page: int):
-    if not pdf_exists(pdf_id):
-        raise HTTPException(status_code=404, detail="PDF not found")
-
-    page_image_path = get_page_image_path(pdf_id, page)
-    if not page_image_path:
-        raise HTTPException(status_code=404, detail="Page image not found")
-
-    from fastapi.responses import FileResponse
-    return FileResponse(page_image_path, media_type="image/png")
-
-
 @app.delete("/api/pdf/{pdf_id}")
 def delete_pdf_endpoint(pdf_id: str):
     if not pdf_exists(pdf_id):
