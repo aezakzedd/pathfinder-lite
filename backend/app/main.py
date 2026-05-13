@@ -4,6 +4,12 @@ from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
 
 from .chatbot import answer_question
+from .gatekeeper import (
+    gibberish_detector,
+    intent_classifier,
+    limiter,
+    profanity_filter,
+)
 from .routing import build_route_response
 from .pdf_generator import generate_itinerary_pdf
 from .pdf_store import load_pdf, delete_pdf, pdf_exists
@@ -80,6 +86,60 @@ def route(request: RouteRequest):
 
 @app.post("/ask")
 def ask(request: AskRequest):
+    # --- Gatekeeping layer ---
+    session_id = request.session_id or "default"
+
+    # 1. Rate limit
+    if not limiter.is_allowed(session_id):
+        remaining = limiter.get_remaining_time(session_id)
+        return {
+            "answer": f"Please wait {remaining}s before sending another message.",
+            "locations": [],
+            "actions": [],
+            "follow_up": None,
+            "intent": "rate_limited",
+        }
+
+    # 2. Profanity filter
+    if profanity_filter.contains_profanity(request.question):
+        return {
+            "answer": intent_classifier.profanity_response(),
+            "locations": [],
+            "actions": [],
+            "follow_up": None,
+            "intent": "profanity",
+        }
+
+    # 3. Gibberish + intent classification
+    if gibberish_detector.is_gibberish(request.question):
+        return {
+            "answer": intent_classifier.nonsense_response(),
+            "locations": [],
+            "actions": [],
+            "follow_up": None,
+            "intent": "nonsense",
+        }
+
+    analysis = intent_classifier.analyze(request.question)
+    if analysis["intent"] == "greeting":
+        return {
+            "answer": intent_classifier.greeting_response(),
+            "locations": [],
+            "actions": [],
+            "follow_up": "Ask me about beaches, surfing spots, or where to stay!",
+            "intent": "greeting",
+        }
+
+    if not analysis["is_valid"]:
+        return {
+            "answer": intent_classifier.nonsense_response(),
+            "locations": [],
+            "actions": [],
+            "follow_up": None,
+            "intent": "nonsense",
+        }
+
+    # --- Proceed to chatbot ---
     return answer_question(
         request.question,
         active_pin=request.active_pin,
