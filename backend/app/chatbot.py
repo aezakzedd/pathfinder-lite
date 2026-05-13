@@ -5,6 +5,7 @@ import time
 from typing import Any
 
 from .dialogue_state import DialogueMemory, dialogue_store
+from .localization import detect_language, localize, localize_quick_label
 from .knowledge_base import (
     Place,
     categories_from_rules,
@@ -196,31 +197,23 @@ def build_smart_follow_up(
     places: list[Place] | None = None,
 ) -> str | None:
     """Generate a context-aware follow-up hint instead of a static string."""
+    lang = memory.detected_language
     place = active_place or (places[0] if places else None)
 
     if intent == "place_info" and place:
-        options = []
-        if place.category_group == "Dining":
-            options.append("Ask for nearby viewpoints or beaches")
-        elif place.category_group in {"Views", "Outdoor", "Nature"}:
-            options.append("Ask for nearby food")
-        elif place.category_group in {"Beach", "Swimming"}:
-            options.append("Ask for nearby food or viewpoints")
-        else:
-            options.append("Ask for nearby spots")
-        options.append("Add it to your trip")
-        return " ".join(options) + "."
+        # Keep place-info follow-ups simple; localization covers common patterns
+        return localize("place_info_followup", lang)
 
     if intent in {"recommendation", "budget_question", "nearby_question"}:
-        return "Tap 'Tell me more' for details, 'Another' for more picks, or 'Add to trip'."
+        return localize("recommendation_followup", lang)
 
     if intent == "itinerary_request":
-        return "Ask to make it cheaper, add a stop, or replace a day."
+        return localize("itinerary_followup", lang)
 
     if intent == "greeting":
-        return "Ask for beaches, food, budget places, or a specific destination."
+        return localize("fallback", lang)
 
-    return "Try asking for beaches, food, budget places, or a specific destination."
+    return localize("fallback", lang)
 
 
 def build_quick_actions(
@@ -232,23 +225,24 @@ def build_quick_actions(
     """Generate lightweight quick-prompt actions based on conversation state."""
     actions: list[dict[str, Any]] = []
     place = active_place or (places[0] if places else None)
+    lang = memory.detected_language
 
     if intent == "place_info" and place:
-        actions.append({"type": "quick_prompt", "prompt": "Tell me more", "label": "Tell me more"})
+        actions.append({"type": "quick_prompt", "prompt": "Tell me more", "label": localize_quick_label("tell_me_more", lang)})
         if place.category_group != "Dining":
-            actions.append({"type": "quick_prompt", "prompt": f"Food near {place.name}", "label": "Nearby food"})
-        actions.append({"type": "quick_prompt", "prompt": "Add it to my trip", "label": "Add to trip"})
+            actions.append({"type": "quick_prompt", "prompt": f"Food near {place.name}", "label": localize_quick_label("nearby_food", lang)})
+        actions.append({"type": "quick_prompt", "prompt": "Add it to my trip", "label": localize_quick_label("add_to_trip", lang)})
 
     elif intent in {"recommendation", "budget_question", "nearby_question"}:
         if place:
-            actions.append({"type": "quick_prompt", "prompt": "Tell me more", "label": "Tell me more"})
-        actions.append({"type": "quick_prompt", "prompt": "Another one", "label": "Another"})
+            actions.append({"type": "quick_prompt", "prompt": "Tell me more", "label": localize_quick_label("tell_me_more", lang)})
+        actions.append({"type": "quick_prompt", "prompt": "Another one", "label": localize_quick_label("another", lang)})
         if place:
-            actions.append({"type": "quick_prompt", "prompt": "Add it to my trip", "label": "Add to trip"})
+            actions.append({"type": "quick_prompt", "prompt": "Add it to my trip", "label": localize_quick_label("add_to_trip", lang)})
 
     elif intent == "itinerary_request":
-        actions.append({"type": "quick_prompt", "prompt": "Make it cheaper", "label": "Make cheaper"})
-        actions.append({"type": "quick_prompt", "prompt": "Show the route", "label": "Show route"})
+        actions.append({"type": "quick_prompt", "prompt": "Make it cheaper", "label": localize_quick_label("make_cheaper", lang)})
+        actions.append({"type": "quick_prompt", "prompt": "Show the route", "label": localize_quick_label("show_route", lang)})
 
     return actions
 
@@ -300,12 +294,17 @@ def answer_question(
     intent = detect_intent(text, active_place, memory, matched_faq)
     requested_count, _ = parse_count(expanded)
 
+    # Phase 7: Detect and persist language
+    lang = detect_language(expanded)
+    if lang != "en" or not memory.detected_language:
+        memory.detected_language = lang
+
     if active_place and is_contextual_place_question(text):
         memory.active_place_id = active_place.id
 
     if intent == "greeting":
         return respond(
-            "Hi, I can help with Catanduanes places, nearby spots, budget picks, and simple itinerary ideas.",
+            localize("greeting", memory.detected_language),
             intent=intent,
             follow_up="Ask for a place or a recommendation.",
             memory=memory,
@@ -654,6 +653,10 @@ def recommendation_response(
 
 def fallback_response(memory: DialogueMemory, message: str, *, intent: str = "fallback") -> dict[str, Any]:
     follow_up = build_smart_follow_up(intent, memory)
+    # Phase 7: adapt fallback message if it's one of the canned ones and language is non-English
+    lang = memory.detected_language
+    if lang != "en" and message.startswith("Try asking"):
+        message = localize("fallback", lang)
     return respond(
         message,
         intent=intent,
@@ -772,6 +775,7 @@ def respond(
         "quick_actions": quick_actions or [],
         "intent": intent,
         "confidence": round(confidence, 2),
+        "detected_language": memory.detected_language,
         "source": SOURCE,
     }
 

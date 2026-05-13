@@ -24,6 +24,8 @@ class DialogueMemory:
     last_activity: str | None = None
     last_town: str | None = None
     last_user_question: str = ""
+    # Phase 7: language detection
+    detected_language: str = "en"
 
 
 class DialogueStateStore:

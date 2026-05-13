@@ -62,6 +62,7 @@ class SemanticCache:
                 "follow_up": best_entry.get("follow_up"),
                 "intent": best_entry.get("intent"),
                 "confidence": best_entry.get("confidence"),
+                "detected_language": best_entry.get("detected_language"),
                 "cached": True,
                 "similarity": round(best_score, 3),
             }
@@ -86,6 +87,7 @@ class SemanticCache:
                 entry["follow_up"] = response.get("follow_up")
                 entry["intent"] = response.get("intent")
                 entry["confidence"] = response.get("confidence")
+                entry["detected_language"] = response.get("detected_language")
                 entry["count"] = count
                 entry["updated_at"] = now
                 entry["accessed_at"] = now
@@ -106,6 +108,7 @@ class SemanticCache:
                 "follow_up": response.get("follow_up"),
                 "intent": response.get("intent"),
                 "confidence": response.get("confidence"),
+                "detected_language": response.get("detected_language"),
                 "count": count,
                 "created_at": now,
                 "updated_at": now,

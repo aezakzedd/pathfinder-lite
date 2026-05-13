@@ -17,7 +17,8 @@ let conversationState = {
   lastTown: null,
   lastIntent: null,
   mentionedPlaces: [],
-  turnCount: 0
+  turnCount: 0,
+  detectedLanguage: 'en'
 };
 
 function loadConversationState() {
