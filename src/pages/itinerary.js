@@ -36,7 +36,10 @@ import {
   addMessage,
   getMessages,
   removeMessage,
-  subscribe as subscribeChat
+  subscribe as subscribeChat,
+  updateConversationState,
+  getConversationState,
+  resetConversationState
 } from '../state/chatStore.js';
 import { calculateDistance, calculateDriveTimes, calculateTimeUsage } from '../utils/distance.js';
 import {
@@ -63,7 +66,17 @@ let pointerDrag = null;
 let allDestinations = [];
 let allSpotsGeoJson = null;
 let currentRouteSummary = null;
-const CHAT_SESSION_ID = 'pathfinder-lite-kiosk';
+function getChatSessionId() {
+  const key = 'pathfinder-lite-session-id';
+  let id = sessionStorage.getItem(key);
+  if (!id) {
+    id = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
+
+const CHAT_SESSION_ID = getChatSessionId();
 
 const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
 const budgetOptions = [
@@ -1063,10 +1076,26 @@ async function sendMessage(message) {
     } else {
       responseText = JSON.stringify(response);
     }
-    
+
+    // Track conversation context from response
+    const locations = Array.isArray(response?.locations) ? response.locations : [];
+    const state = getConversationState();
+    const updates = {
+      turnCount: state.turnCount + 1,
+      lastIntent: response?.intent || state.lastIntent
+    };
+    if (locations.length > 0) {
+      updates.lastPlace = locations[0];
+      const placeNames = locations.map(l => l.name).filter(Boolean);
+      const merged = [...new Set([...state.mentionedPlaces, ...placeNames])];
+      updates.mentionedPlaces = merged.slice(-10);
+    }
+    updateConversationState(updates);
+
     addMessage({
       role: 'assistant',
       content: responseText,
+      followUp: response?.follow_up || null,
       actions: getConfirmableChatActions(response)
     });
 
@@ -1353,6 +1382,13 @@ function renderChatMessages() {
       contentEl.className = 'chat-message-content';
       contentEl.textContent = message.content;
       messageEl.appendChild(contentEl);
+
+      if (message.followUp && roleClass === 'assistant') {
+        const followUpEl = document.createElement('div');
+        followUpEl.className = 'chat-follow-up';
+        followUpEl.textContent = message.followUp;
+        messageEl.appendChild(followUpEl);
+      }
 
       if (Array.isArray(message.actions) && message.actions.length > 0) {
         const actionRow = document.createElement('div');

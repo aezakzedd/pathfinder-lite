@@ -2,10 +2,60 @@
 // Handles chat messages with optional persistence
 
 const STORAGE_KEY = 'pathfinder-lite-chat-messages';
+const STATE_KEY = 'pathfinder-lite-chat-state';
 const MAX_MESSAGES = 50;
 
 let messages = [];
 let listeners = [];
+
+let conversationState = {
+  lastPlace: null,
+  lastActivity: null,
+  lastTown: null,
+  lastIntent: null,
+  mentionedPlaces: [],
+  turnCount: 0
+};
+
+function loadConversationState() {
+  try {
+    const saved = sessionStorage.getItem(STATE_KEY);
+    if (saved) {
+      conversationState = { ...conversationState, ...JSON.parse(saved) };
+    }
+  } catch (error) {
+    console.error('Error loading chat state:', error);
+  }
+}
+
+function saveConversationState() {
+  try {
+    sessionStorage.setItem(STATE_KEY, JSON.stringify(conversationState));
+  } catch (error) {
+    console.error('Error saving chat state:', error);
+  }
+}
+
+function getConversationState() {
+  return { ...conversationState };
+}
+
+function updateConversationState(updates) {
+  conversationState = { ...conversationState, ...updates };
+  saveConversationState();
+}
+
+function resetConversationState() {
+  conversationState = {
+    lastPlace: null,
+    lastActivity: null,
+    lastTown: null,
+    lastIntent: null,
+    mentionedPlaces: [],
+    turnCount: 0
+  };
+  saveConversationState();
+}
 
 // Load messages from sessionStorage
 function loadMessages() {
@@ -92,6 +142,7 @@ function notifyListeners() {
 
 // Initialize
 loadMessages();
+loadConversationState();
 
 export {
   addMessage,
@@ -99,5 +150,8 @@ export {
   clearMessages,
   getMessageCount,
   removeMessage,
-  subscribe
+  subscribe,
+  getConversationState,
+  updateConversationState,
+  resetConversationState
 };

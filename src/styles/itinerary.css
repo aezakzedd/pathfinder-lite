@@ -1080,6 +1080,13 @@ body[data-route="itinerary"] .page-container {
   white-space: pre-wrap;
 }
 
+.chat-follow-up {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-style: italic;
+}
+
 .chat-action-row {
   display: flex;
   flex-wrap: wrap;
@@ -2719,6 +2726,10 @@ body[data-route="itinerary"] .page-container {
   background: rgba(15, 23, 42, 0.06);
   border-color: rgba(15, 23, 42, 0.12);
   color: #0f172a;
+}
+
+[data-theme='light'] .page-itinerary .chat-follow-up {
+  color: rgba(15, 23, 42, 0.55);
 }
 
 [data-theme='light'] .page-itinerary .chat-message-system {
