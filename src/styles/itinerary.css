@@ -3185,3 +3185,49 @@ body[data-route="itinerary"] .page-container {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Phase 12: Active pin pill */
+.chat-active-pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  margin-bottom: 6px;
+  background: rgba(18, 183, 196, 0.12);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary, #64748b);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.chat-active-pin-label {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.chat-active-pin-name {
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.chat-active-pin-clear {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 2px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: color 0.15s;
+}
+
+.chat-active-pin-clear:hover {
+  color: #ef4444;
+}

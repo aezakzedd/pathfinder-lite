@@ -1,0 +1,25 @@
+{
+  "confidence": {
+    "t1": 0.72,
+    "t2": 0.60,
+    "browsing_min": 0.30,
+    "specific_min": 0.40
+  },
+  "cache": {
+    "similarity_threshold": 0.70,
+    "max_entries": 200,
+    "ttl_seconds": 3600
+  },
+  "gatekeeper": {
+    "rate_limit_max": 10,
+    "rate_limit_window_seconds": 60
+  },
+  "localization": {
+    "supported_languages": ["en", "tl", "bicolano"],
+    "default_language": "en"
+  },
+  "place_info": {
+    "max_facts_concise": 1,
+    "max_facts_full": 3
+  }
+}

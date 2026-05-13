@@ -204,6 +204,11 @@ export function renderItinerary(container) {
           </div>
           
           <div class="chatbot-input-area">
+            <div class="chat-active-pin" id="chat-active-pin" style="display:none;">
+              <span class="chat-active-pin-label">Talking about:</span>
+              <span class="chat-active-pin-name" id="chat-active-pin-name"></span>
+              <button type="button" class="chat-active-pin-clear" id="chat-active-pin-clear" aria-label="Clear context">&#x2715;</button>
+            </div>
             <form class="chatbot-form" id="chatbot-form">
               <input type="text" class="chatbot-input" id="chatbot-input" placeholder="Ask Pathfinder..." />
               <button type="submit" class="send-btn" id="send-btn" aria-label="Send message">
@@ -990,7 +995,18 @@ function setupChatHandlers() {
   const chatForm = document.getElementById('chatbot-form');
   const chatInput = document.getElementById('chatbot-input');
   const messagesContainer = document.getElementById('chatbot-messages');
-  
+  const pinClearBtn = document.getElementById('chat-active-pin-clear');
+
+  // Active pin pill clear handler
+  if (pinClearBtn) {
+    const clearHandler = () => {
+      clearSelectedDestination();
+      updateActivePinPill();
+    };
+    pinClearBtn.addEventListener('click', clearHandler);
+    eventListeners.push({ element: pinClearBtn, event: 'click', handler: clearHandler });
+  }
+
   // Form submit handler
   if (chatForm) {
     const submitHandler = (e) => {
@@ -1038,14 +1054,25 @@ function setupChatHandlers() {
   }
 }
 
+function updateActivePinPill() {
+  const pinEl = document.getElementById('chat-active-pin');
+  const nameEl = document.getElementById('chat-active-pin-name');
+  const dest = getSelectedDestination();
+  if (pinEl && nameEl) {
+    if (dest && dest.name) {
+      nameEl.textContent = dest.name;
+      pinEl.style.display = 'flex';
+    } else {
+      pinEl.style.display = 'none';
+    }
+  }
+}
+
 async function sendMessage(message) {
   isSending = true;
 
   // Add user message
-  addMessage({
-    role: 'user',
-    content: message
-  });
+  addMessage({ role: 'user', content: message });
 
   // Check frontend cache first
   const cached = getCachedResponse(message);
@@ -1084,12 +1111,16 @@ async function sendMessage(message) {
     // Remove loading message
     removeMessage(loadingId);
 
-    // Add error message
-    addMessage({
-      role: 'system',
-      content: 'Sorry, I encountered an error. Please try again.'
-    });
-
+    // Phase 12: better error messages
+    let errorMsg = 'Sorry, I encountered an error. Please try again.';
+    if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      errorMsg = 'Cannot connect to the server. Please check your connection.';
+    } else if (error.message?.includes('timeout') || error.message?.includes('Timeout')) {
+      errorMsg = 'The server took too long to respond. Please try again.';
+    } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+      errorMsg = 'Too many messages. Please wait a moment before trying again.';
+    }
+    addMessage({ role: 'system', content: errorMsg });
     console.error('Chat error:', error);
   } finally {
     isSending = false;
@@ -1139,6 +1170,9 @@ function handleChatResponse(message, response, isCached) {
   const selectedMatch = handleChatLocations(response);
   handleChatActions(response, selectedMatch, responseText);
 
+  // Phase 12: update active pin pill after response
+  updateActivePinPill();
+
   if (isCached) {
     console.log('[Cache] Served cached response for:', message);
   }
@@ -1151,6 +1185,7 @@ function handleChatLocations(response) {
   const matches = findDestinationsByLocations(allDestinations, locations);
   if (matches.length === 0) return null;
 
+  // Phase 12: auto-pin when exactly 1 location (silent)
   setSelectedDestination(matches[0]);
 
   if (matches.length > 1) {

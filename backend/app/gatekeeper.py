@@ -9,6 +9,8 @@ import time
 import unicodedata
 from collections import deque
 
+from .config import get
+
 
 # -----------------------------------------------------------------------------
 # RATE LIMITER
@@ -16,9 +18,9 @@ from collections import deque
 class RateLimiter:
     """Sliding-window throttle keyed by session_id."""
 
-    def __init__(self, max_request: int = 6, period_seconds: int = 70):
-        self.max_request = max_request
-        self.period_seconds = period_seconds
+    def __init__(self, max_request: int | None = None, period_seconds: int | None = None):
+        self.max_request = max_request or get("gatekeeper", "rate_limit_max", 10)
+        self.period_seconds = period_seconds or get("gatekeeper", "rate_limit_window_seconds", 60)
         self._windows: dict[str, deque[float]] = {}
 
     def is_allowed(self, session_id: str) -> bool:

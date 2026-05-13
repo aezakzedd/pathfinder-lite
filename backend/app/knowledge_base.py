@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import json
 import math
 import re
@@ -257,12 +258,29 @@ class KnowledgeBase:
     def resolve_active_pin(self, active_pin: dict[str, Any] | None) -> Place | None:
         if not active_pin:
             return None
+        # Strategy 1: exact ID match
         pin_id = active_pin.get("id")
         if pin_id is not None and str(pin_id) in self.by_id:
             return self.by_id[str(pin_id)]
+        # Strategy 2: exact slug / alias match
         pin_name = active_pin.get("name")
         if pin_name:
-            return self.by_slug.get(slugify(pin_name)) or self.match_alias(str(pin_name)) or self.match_place(str(pin_name))
+            exact = (
+                self.by_slug.get(slugify(pin_name))
+                or self.match_alias(str(pin_name))
+                or self.match_place(str(pin_name))
+            )
+            if exact:
+                return exact
+            # Strategy 3: fuzzy match (difflib > 0.80)
+            all_names = [p.name for p in self.places] + list(self.alias_map.keys())
+            matches = difflib.get_close_matches(pin_name, all_names, n=1, cutoff=0.80)
+            if matches:
+                fuzzy_name = matches[0]
+                return (
+                    self.match_place(fuzzy_name)
+                    or self.match_alias(fuzzy_name)
+                )
         return None
 
     def _build_alias_index(self) -> dict[str, Place]:

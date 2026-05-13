@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import re
 import time
 from typing import Any
@@ -275,6 +276,143 @@ def _update_memory_turns(
             memory.last_activity = first.category_group
 
 
+# ---------------------------------------------------------------------------
+# Phase 9: Multi-activity / multi-place routing + pin arbitration
+# ---------------------------------------------------------------------------
+_ACTIVITY_LABELS = {
+    "surfing": "surfing",
+    "dining": "food and dining",
+    "accommodation": "places to stay",
+    "swimming": "swimming",
+    "hiking": "hiking and nature",
+    "sightseeing": "sightseeing",
+    "shopping": "shopping",
+    "beaches": "beaches",
+    "transport": "getting around",
+    "budget": "budget tips",
+    "safety": "safety",
+    "planning": "trip planning",
+    "photography": "photography spots",
+    "nightlife": "nightlife",
+}
+
+
+def _handle_multi_activity(
+    kb, entities: dict[str, Any], memory: DialogueMemory, question: str, requested_count: int
+) -> dict[str, Any] | None:
+    """Handle compound queries like 'surf then eat' by sub-query per activity."""
+    activities = entities.get("activities") or []
+    if len(activities) < 2:
+        return None
+
+    all_places: list[Place] = []
+    seen_ids: set[str] = set()
+    parts: list[str] = []
+
+    for activity in activities:
+        label = _ACTIVITY_LABELS.get(activity, activity)
+        cats = infer_categories(activity, None)
+        places = kb.recommend(
+            f"{activity} catanduanes",
+            categories=cats,
+            limit=max(1, requested_count // len(activities)),
+        )
+        if places:
+            names = ", ".join(p.name for p in places)
+            parts.append(f"For {label}: {names}")
+            for p in places:
+                if p.id not in seen_ids:
+                    all_places.append(p)
+                    seen_ids.add(p.id)
+
+    if not parts:
+        return None
+
+    answer = " ".join(parts)
+    confidence = _place_confidence(all_places[0], question) if all_places else 0.0
+    follow_up = build_smart_follow_up("recommendation", memory, places=all_places)
+    quick_actions = build_quick_actions("recommendation", memory, places=all_places)
+    return respond(
+        answer,
+        locations=all_places,
+        actions=quick_actions,
+        intent="recommendation",
+        follow_up=follow_up,
+        memory=memory,
+        active_place=all_places[0] if all_places else None,
+        recommended_places=all_places,
+        confidence=confidence,
+        quick_actions=quick_actions,
+    )
+
+
+def _handle_multi_place(
+    kb, entities: dict[str, Any], memory: DialogueMemory, question: str
+) -> dict[str, Any] | None:
+    """Handle queries with 2+ specific named places."""
+    places_found = entities.get("places") or []
+    # Filter out municipalities
+    specific = [
+        p for p in places_found
+        if p.lower() not in {m.lower() for m in kb.municipalities}
+    ]
+    if len(specific) < 2:
+        return None
+
+    all_answers: list[str] = []
+    all_locations: list[Place] = []
+    seen = set()
+
+    for place_name in specific:
+        place = kb.match_place(place_name)
+        if not place:
+            continue
+        summary = summarize_place_intro(place)
+        all_answers.append(summary)
+        if place.name not in seen:
+            all_locations.append(place)
+            seen.add(place.name)
+
+    if not all_answers:
+        return None
+
+    raw_answer = " ".join(all_answers)
+    confidence = _place_confidence(all_locations[0], question) if all_locations else 0.0
+    answer = apply_confidence_framing(raw_answer, confidence, is_list=False)
+    return respond(
+        answer,
+        locations=all_locations,
+        intent="place_info",
+        follow_up=build_smart_follow_up("place_info", memory, active_place=all_locations[0]),
+        memory=memory,
+        active_place=all_locations[0],
+        confidence=confidence,
+    )
+
+
+def _arbitrate_active_pin(
+    kb, question: str, active_pin: dict[str, Any] | None, memory: DialogueMemory
+) -> tuple[Place | None, dict[str, Any] | None]:
+    """Phase 9: decide whether to use active_pin or drop it for this query."""
+    if not active_pin:
+        return kb.resolve_active_pin(active_pin), active_pin
+
+    # Try resolving with the pin
+    with_pin = kb.resolve_active_pin(active_pin)
+    # Also try without pin (pass None)
+    without_pin = kb.resolve_active_pin(None)
+
+    # If query explicitly names a different place, drop the pin
+    text = normalize_text(question)
+    if with_pin and with_pin.name.lower() not in text:
+        # Check if any place name from KB is in the query
+        for place in kb.places:
+            if place.id != with_pin.id and place.name.lower() in text:
+                return without_pin, None
+
+    return with_pin, active_pin
+
+
 def answer_question(
     question: str,
     *,
@@ -290,7 +428,9 @@ def answer_question(
     expanded = expand_anaphora(question, memory, kb)
     memory.last_user_question = expanded
     text = normalize_text(expanded)
-    active_place = kb.resolve_active_pin(active_pin)
+
+    # Phase 9: Active pin arbitration
+    active_place, effective_pin = _arbitrate_active_pin(kb, expanded, active_pin, memory)
     matched_faq = kb.match_faq(expanded)
     intent = detect_intent(text, active_place, memory, matched_faq)
     requested_count, _ = parse_count(expanded)
@@ -315,6 +455,19 @@ def answer_question(
     if active_place and is_contextual_place_question(text):
         memory.active_place_id = active_place.id
 
+    # Phase 9: Multi-place routing (before intent handlers)
+    multi_place_response = _handle_multi_place(kb, entities, memory, question)
+    if multi_place_response:
+        return multi_place_response
+
+    # Phase 9: Multi-activity routing (before standard recommendation)
+    if intent in {"recommendation", "budget_question"}:
+        multi_activity_response = _handle_multi_activity(
+            kb, entities, memory, question, requested_count
+        )
+        if multi_activity_response:
+            return multi_activity_response
+
     if intent == "greeting":
         return respond(
             localize("greeting", memory.detected_language),
@@ -332,7 +485,7 @@ def answer_question(
         )
 
     if intent == "place_info":
-        place = resolve_place_for_question(kb, question, active_pin, memory)
+        place = resolve_place_for_question(kb, question, effective_pin, memory)
         if not place:
             return place_suggestion_response(kb, question, memory, count=requested_count)
         # Phase 6: progressive disclosure — first query is concise
@@ -340,13 +493,13 @@ def answer_question(
         return place_info_response(place, memory, question, concise=is_first_time)
 
     if intent == "followup_more":
-        place = resolve_context_place(kb, active_pin, memory)
+        place = resolve_context_place(kb, effective_pin, memory)
         if not place:
             return fallback_response(memory, "Which place do you want to know more about?")
         return place_info_response(place, memory, question, concise=False)
 
     if intent == "add_to_day":
-        result = build_add_to_day_action(kb, question, active_pin=active_pin, memory=memory)
+        result = build_add_to_day_action(kb, question, active_pin=effective_pin, memory=memory)
         locations = result.get("locations") or []
         active_location = locations[0] if locations else None
         return respond(
@@ -361,7 +514,7 @@ def answer_question(
         )
 
     if intent == "replace_place":
-        result = build_replace_place_action(kb, question, active_pin=active_pin, memory=memory)
+        result = build_replace_place_action(kb, question, active_pin=effective_pin, memory=memory)
         locations = result.get("locations") or []
         active_location = locations[0] if locations else None
         return respond(
@@ -376,7 +529,7 @@ def answer_question(
         )
 
     if intent == "remove_place":
-        result = build_remove_place_action(kb, question, active_pin=active_pin, memory=memory)
+        result = build_remove_place_action(kb, question, active_pin=effective_pin, memory=memory)
         locations = result.get("locations") or []
         active_location = locations[0] if locations else None
         return respond(
@@ -401,7 +554,7 @@ def answer_question(
         )
 
     if intent == "add_it":
-        place = resolve_context_place(kb, active_pin, memory)
+        place = resolve_context_place(kb, effective_pin, memory)
         if not place:
             return fallback_response(memory, "Select a map pin first, then I can mark it for adding.")
         return respond(
@@ -414,7 +567,7 @@ def answer_question(
         )
 
     if intent == "nearby_question":
-        origin = resolve_context_place(kb, active_pin, memory)
+        origin = resolve_context_place(kb, effective_pin, memory)
         if not origin:
             return fallback_response(memory, "Select a place first so I can find nearby options.")
         categories = infer_categories(text, entities.get("activities"))
@@ -444,7 +597,7 @@ def answer_question(
             categories = set(memory.preferences.get("last_recommendation_categories") or [])
         places = kb.recommend(
             question,
-            active_pin=active_pin,
+            active_pin=effective_pin,
             budget=memory.preferences.get("budget", "low"),
             activities=entities.get("activities") or memory.preferences.get("activities"),
             categories=categories,
@@ -481,7 +634,7 @@ def answer_question(
         detected_budget = infer_budget(text) or entities.get("budget") or memory.preferences.get("budget")
         places = kb.recommend(
             question,
-            active_pin=active_pin,
+            active_pin=effective_pin,
             budget=detected_budget,
             activities=entities.get("activities") or memory.preferences.get("activities"),
             categories=categories,
@@ -500,7 +653,7 @@ def answer_question(
         )
 
     if intent == "itinerary_request":
-        plan = build_itinerary_plan(kb, question, active_pin=active_pin, memory=memory)
+        plan = build_itinerary_plan(kb, question, active_pin=effective_pin, memory=memory)
         memory.preferences["last_itinerary_constraints"] = {
             "day_count": plan.summary["day_count"],
             "start_point": plan.summary["start_point"],
@@ -534,7 +687,7 @@ def answer_question(
         )
 
     if intent == "route_question":
-        place = resolve_context_place(kb, active_pin, memory)
+        place = resolve_context_place(kb, effective_pin, memory)
         if place:
             return respond(
                 f"{place.name} can be routed on the map after it is selected or added. The route line uses the local offline road cache when available.",
