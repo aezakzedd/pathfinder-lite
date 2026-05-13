@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 from typing import Any
 
 from .dialogue_state import DialogueMemory, dialogue_store
@@ -90,6 +91,128 @@ def apply_confidence_framing(answer: str, confidence: float, is_list: bool = Fal
     )
 
 
+MAX_TURN_HISTORY = 6
+MAX_TOPIC_HISTORY = 10
+
+_ANAPHORA_PRONOUNS = {"it", "this", "that", "here", "there"}
+_PLACE_PHRASES = {"this place", "that place", "this spot", "that spot"}
+
+
+def expand_anaphora(question: str, memory: DialogueMemory, kb) -> str:
+    """Resolve pronouns to last-mentioned entities from memory."""
+    lowered = question.lower()
+    words = lowered.split()
+
+    # Skip if no pronouns or phrases detected
+    has_pronoun = any(w in _ANAPHORA_PRONOUNS for w in words)
+    has_phrase = any(p in lowered for p in _PLACE_PHRASES)
+    if not has_pronoun and not has_phrase:
+        return question
+
+    # Try resolving to active place
+    place = None
+    if memory.active_place_id:
+        place = kb.by_id.get(memory.active_place_id)
+    if not place and memory.last_recommended_place_ids:
+        place = kb.by_id.get(memory.last_recommended_place_ids[0])
+
+    if place:
+        # Replace pronouns with place name
+        for phrase in _PLACE_PHRASES:
+            if phrase in lowered:
+                lowered = lowered.replace(phrase, place.name)
+        # Replace standalone "it" when it's the subject/object of a short query
+        # Be conservative — only replace if the sentence is short or lacks other nouns
+        if "it" in words and len(words) <= 8:
+            lowered = lowered.replace(" it ", f" {place.name} ")
+            if lowered.startswith("it "):
+                lowered = place.name + lowered[2:]
+            if lowered.endswith(" it"):
+                lowered = lowered[:-3] + " " + place.name
+        if "here" in words:
+            lowered = lowered.replace("here", place.name)
+        if "this" in words and len(words) <= 6:
+            lowered = lowered.replace("this", place.name)
+        if "that" in words and len(words) <= 6:
+            lowered = lowered.replace("that", place.name)
+        return lowered
+
+    # No place resolved — try topic/town fallback
+    if memory.last_town and len(words) <= 5:
+        if "it" in words or "this" in words or "that" in words:
+            return f"{question} in {memory.last_town}"
+
+    return question
+
+
+def apply_topic_bias(categories: set[str], memory: DialogueMemory, text: str) -> set[str]:
+    """When query is vague, bias categories toward recent conversation topics."""
+    if categories:
+        return categories
+
+    # If query has explicit keywords, don't override
+    explicit_keywords = {
+        "beach", "beaches", "surf", "falls", "waterfall", "cave", "church",
+        "heritage", "food", "restaurant", "hotel", "resort", "stay",
+        "view", "viewpoint", "hike", "nature", "budget", "cheap",
+        "swimming", "snorkel", "dive", "island",
+    }
+    if any(kw in text for kw in explicit_keywords):
+        return categories
+
+    # Use topic history frequency
+    if memory.topic_history:
+        from collections import Counter
+        freq = Counter(memory.topic_history)
+        most_common = freq.most_common(1)[0][0]
+        return {most_common}
+
+    # Fall back to last recommendation categories
+    last_cats = memory.preferences.get("last_recommendation_categories")
+    if last_cats:
+        return set(last_cats)
+
+    return categories
+
+
+def _extract_topics(places: list[Place]) -> list[str]:
+    """Extract topic/category labels from a list of places."""
+    topics = []
+    for place in places:
+        if place.category_group:
+            topics.append(place.category_group)
+        if place.category:
+            topics.append(place.category)
+    return topics
+
+
+def _update_memory_turns(
+    memory: DialogueMemory,
+    question: str,
+    answer: str,
+    places: list[Place],
+) -> None:
+    """Append conversation turn to memory and extract topics."""
+    now = time.time()
+    memory.turn_history.append({"role": "user", "content": question, "timestamp": now})
+    memory.turn_history.append({"role": "assistant", "content": answer, "timestamp": now})
+    if len(memory.turn_history) > MAX_TURN_HISTORY * 2:
+        memory.turn_history = memory.turn_history[-MAX_TURN_HISTORY * 2:]
+
+    topics = _extract_topics(places)
+    if topics:
+        memory.topic_history.extend(topics)
+        if len(memory.topic_history) > MAX_TOPIC_HISTORY:
+            memory.topic_history = memory.topic_history[-MAX_TOPIC_HISTORY:]
+
+    if places:
+        first = places[0]
+        if first.municipality:
+            memory.last_town = first.municipality
+        if first.category_group:
+            memory.last_activity = first.category_group
+
+
 def answer_question(
     question: str,
     *,
@@ -101,11 +224,14 @@ def answer_question(
     memory = dialogue_store.get(session_id)
     apply_preferences(memory, preferences)
 
-    text = normalize_text(question)
+    # Phase 5: Expand anaphora before processing
+    expanded = expand_anaphora(question, memory, kb)
+    memory.last_user_question = expanded
+    text = normalize_text(expanded)
     active_place = kb.resolve_active_pin(active_pin)
-    matched_faq = kb.match_faq(question)
+    matched_faq = kb.match_faq(expanded)
     intent = detect_intent(text, active_place, memory, matched_faq)
-    requested_count, _ = parse_count(question)
+    requested_count, _ = parse_count(expanded)
 
     if active_place and is_contextual_place_question(text):
         memory.active_place_id = active_place.id
@@ -211,6 +337,7 @@ def answer_question(
         if not origin:
             return fallback_response(memory, "Select a place first so I can find nearby options.")
         categories = infer_categories(text, None)
+        categories = apply_topic_bias(categories, memory, text)
         nearby_places = kb.nearby(origin, query=question, categories=categories, limit=requested_count)
         return recommendation_response(
             nearby_places,
@@ -225,6 +352,7 @@ def answer_question(
         memory.preferences["budget"] = "low"
         rule_categories = categories_from_rules(kb.match_recommendation_rules(text))
         categories = infer_categories(text, memory.preferences.get("activities")) or rule_categories
+        categories = apply_topic_bias(categories, memory, text)
         if not categories and "make it cheaper" in text:
             categories = set(memory.preferences.get("last_recommendation_categories") or [])
         places = kb.recommend(
@@ -251,6 +379,7 @@ def answer_question(
         categories = infer_categories(text, memory.preferences.get("activities"))
         if not categories:
             categories = categories_from_rules(kb.match_recommendation_rules(text))
+        categories = apply_topic_bias(categories, memory, text)
         if is_unclear_recommendation(text, categories, memory):
             return fallback_response(
                 memory,
@@ -491,6 +620,9 @@ def summarize_plan_categories(categories: list[str]) -> str:
 def is_unclear_recommendation(text: str, categories: set[str], memory: DialogueMemory) -> bool:
     if categories or infer_budget(text) or memory.preferences.get("activities"):
         return False
+    # Phase 5: If we have topic history, the query isn't truly unclear
+    if memory.topic_history:
+        return False
     vague_phrases = ("recommend", "where should", "where can", "best places", "places to go", "spots to visit")
     return any(phrase in text for phrase in vague_phrases)
 
@@ -544,6 +676,14 @@ def respond(
         memory.active_place_id = active_place.id
     if recommended_places is not None:
         memory.last_recommended_place_ids = [place.id for place in recommended_places]
+
+    # Phase 5: Track conversation turns and topics
+    _update_memory_turns(
+        memory,
+        getattr(memory, "last_user_question", ""),
+        answer,
+        locations or [],
+    )
 
     return {
         "answer": answer,

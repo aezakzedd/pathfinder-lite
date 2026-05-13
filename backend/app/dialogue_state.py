@@ -18,6 +18,12 @@ class DialogueMemory:
     last_recommended_place_ids: list[str] = field(default_factory=list)
     pending_followup: str | None = None
     updated_at: float = field(default_factory=time)
+    # Conversation memory fields (Phase 5)
+    turn_history: list[dict[str, Any]] = field(default_factory=list)
+    topic_history: list[str] = field(default_factory=list)
+    last_activity: str | None = None
+    last_town: str | None = None
+    last_user_question: str = ""
 
 
 class DialogueStateStore:
