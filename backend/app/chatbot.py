@@ -186,6 +186,73 @@ def _extract_topics(places: list[Place]) -> list[str]:
     return topics
 
 
+# ---------------------------------------------------------------------------
+# Progressive disclosure helpers (Phase 6)
+# ---------------------------------------------------------------------------
+def build_smart_follow_up(
+    intent: str,
+    memory: DialogueMemory,
+    active_place: Place | None = None,
+    places: list[Place] | None = None,
+) -> str | None:
+    """Generate a context-aware follow-up hint instead of a static string."""
+    place = active_place or (places[0] if places else None)
+
+    if intent == "place_info" and place:
+        options = []
+        if place.category_group == "Dining":
+            options.append("Ask for nearby viewpoints or beaches")
+        elif place.category_group in {"Views", "Outdoor", "Nature"}:
+            options.append("Ask for nearby food")
+        elif place.category_group in {"Beach", "Swimming"}:
+            options.append("Ask for nearby food or viewpoints")
+        else:
+            options.append("Ask for nearby spots")
+        options.append("Add it to your trip")
+        return " ".join(options) + "."
+
+    if intent in {"recommendation", "budget_question", "nearby_question"}:
+        return "Tap 'Tell me more' for details, 'Another' for more picks, or 'Add to trip'."
+
+    if intent == "itinerary_request":
+        return "Ask to make it cheaper, add a stop, or replace a day."
+
+    if intent == "greeting":
+        return "Ask for beaches, food, budget places, or a specific destination."
+
+    return "Try asking for beaches, food, budget places, or a specific destination."
+
+
+def build_quick_actions(
+    intent: str,
+    memory: DialogueMemory,
+    active_place: Place | None = None,
+    places: list[Place] | None = None,
+) -> list[dict[str, Any]]:
+    """Generate lightweight quick-prompt actions based on conversation state."""
+    actions: list[dict[str, Any]] = []
+    place = active_place or (places[0] if places else None)
+
+    if intent == "place_info" and place:
+        actions.append({"type": "quick_prompt", "prompt": "Tell me more", "label": "Tell me more"})
+        if place.category_group != "Dining":
+            actions.append({"type": "quick_prompt", "prompt": f"Food near {place.name}", "label": "Nearby food"})
+        actions.append({"type": "quick_prompt", "prompt": "Add it to my trip", "label": "Add to trip"})
+
+    elif intent in {"recommendation", "budget_question", "nearby_question"}:
+        if place:
+            actions.append({"type": "quick_prompt", "prompt": "Tell me more", "label": "Tell me more"})
+        actions.append({"type": "quick_prompt", "prompt": "Another one", "label": "Another"})
+        if place:
+            actions.append({"type": "quick_prompt", "prompt": "Add it to my trip", "label": "Add to trip"})
+
+    elif intent == "itinerary_request":
+        actions.append({"type": "quick_prompt", "prompt": "Make it cheaper", "label": "Make cheaper"})
+        actions.append({"type": "quick_prompt", "prompt": "Show the route", "label": "Show route"})
+
+    return actions
+
+
 def _update_memory_turns(
     memory: DialogueMemory,
     question: str,
@@ -256,7 +323,9 @@ def answer_question(
         place = resolve_place_for_question(kb, question, active_pin, memory)
         if not place:
             return place_suggestion_response(kb, question, memory, count=requested_count)
-        return place_info_response(place, memory, question, concise=False)
+        # Phase 6: progressive disclosure — first query is concise
+        is_first_time = memory.last_intent not in {"place_info", "followup_more"}
+        return place_info_response(place, memory, question, concise=is_first_time)
 
     if intent == "followup_more":
         place = resolve_context_place(kb, active_pin, memory)
@@ -523,19 +592,22 @@ def place_info_response(place: Place, memory: DialogueMemory, question: str, *, 
         if facts.get(key):
             fact_parts.append(str(facts[key]))
 
-    fact_parts = fact_parts[:2] if concise else fact_parts[:3]
+    fact_parts = fact_parts[:1] if concise else fact_parts[:3]
 
     answer = " ".join([description, *fact_parts]).strip()
     confidence = _place_confidence(place, question)
     answer = apply_confidence_framing(answer, confidence, is_list=False)
+    follow_up = build_smart_follow_up("place_info", memory, active_place=place)
+    quick_actions = build_quick_actions("place_info", memory, active_place=place)
     return respond(
         answer,
         locations=[place],
         intent="place_info",
-        follow_up="Ask for nearby food, another option, or add it.",
+        follow_up=follow_up,
         memory=memory,
         active_place=place,
         confidence=confidence,
+        quick_actions=quick_actions,
     )
 
 
@@ -564,24 +636,28 @@ def recommendation_response(
     names = ", ".join(place.name for place in places[:4])
     answer = f"{prefix}: {names}. I selected {places[0].name} on the map."
     confidence = _place_confidence(places[0], question) if places else 0.0
+    follow_up = build_smart_follow_up(intent, memory, places=places)
+    quick_actions = build_quick_actions(intent, memory, places=places)
     return respond(
         answer,
         locations=places,
-        actions=actions or [],
+        actions=(actions or []) + quick_actions,
         intent=intent,
-        follow_up="Ask 'tell me more', 'another one', or 'nearby food'.",
+        follow_up=follow_up,
         memory=memory,
         active_place=places[0],
         recommended_places=places,
         confidence=confidence,
+        quick_actions=quick_actions,
     )
 
 
 def fallback_response(memory: DialogueMemory, message: str, *, intent: str = "fallback") -> dict[str, Any]:
+    follow_up = build_smart_follow_up(intent, memory)
     return respond(
         message,
         intent=intent,
-        follow_up="Try asking for beaches, food, budget places, or a specific destination.",
+        follow_up=follow_up,
         memory=memory,
     )
 
@@ -669,6 +745,7 @@ def respond(
     active_place: Place | None = None,
     recommended_places: list[Place] | None = None,
     confidence: float = 1.0,
+    quick_actions: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     memory.last_intent = intent
     memory.pending_followup = follow_up
@@ -685,11 +762,14 @@ def respond(
         locations or [],
     )
 
+    # Merge quick_actions into the main actions array for frontend compatibility
+    merged_actions = (actions or []) + (quick_actions or [])
     return {
         "answer": answer,
         "locations": [place.to_location() for place in (locations or [])],
         "follow_up": follow_up,
-        "actions": actions or [],
+        "actions": merged_actions,
+        "quick_actions": quick_actions or [],
         "intent": intent,
         "confidence": round(confidence, 2),
         "source": SOURCE,

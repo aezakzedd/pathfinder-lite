@@ -1178,13 +1178,21 @@ function getConfirmableChatActions(response) {
     'add_to_day',
     'remove_place',
     'replace_place',
-    'clear_itinerary_suggestion'
+    'clear_itinerary_suggestion',
+    'quick_prompt'
   ]);
   return actions.filter(action => action && confirmableTypes.has(action.type));
 }
 
 function applyChatAction(action) {
   if (!action?.type) return;
+
+  if (action.type === 'quick_prompt') {
+    if (action.prompt && !isSending) {
+      sendMessage(action.prompt);
+    }
+    return;
+  }
 
   if (action.type === 'replace_itinerary') {
     applyReplaceItineraryAction(action);
@@ -1438,6 +1446,7 @@ function getChatActionLabel(action) {
   if (action?.type === 'remove_place') return 'Remove';
   if (action?.type === 'replace_place') return 'Replace';
   if (action?.type === 'clear_itinerary_suggestion') return 'Clear Plan';
+  if (action?.type === 'quick_prompt') return action.label || action.prompt || 'Ask';
   return 'Apply';
 }
 
