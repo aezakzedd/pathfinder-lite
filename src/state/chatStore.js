@@ -18,7 +18,8 @@ let conversationState = {
   lastIntent: null,
   mentionedPlaces: [],
   turnCount: 0,
-  detectedLanguage: 'en'
+  detectedLanguage: 'en',
+  entities: {}
 };
 
 function loadConversationState() {

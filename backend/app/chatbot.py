@@ -5,6 +5,7 @@ import time
 from typing import Any
 
 from .dialogue_state import DialogueMemory, dialogue_store
+from .entity_extractor import EntityExtractor
 from .localization import detect_language, localize, localize_quick_label
 from .knowledge_base import (
     Place,
@@ -299,6 +300,18 @@ def answer_question(
     if lang != "en" or not memory.detected_language:
         memory.detected_language = lang
 
+    # Phase 8: Extract structured entities
+    extractor = EntityExtractor(
+        place_names=[p.name for p in kb.places],
+        municipalities=kb.municipalities,
+    )
+    entities = extractor.extract(expanded)
+
+    # Persist extracted activities into preferences for cross-turn memory
+    if entities.get("activities"):
+        memory.preferences["activities"] = entities["activities"]
+    memory._last_entities = entities
+
     if active_place and is_contextual_place_question(text):
         memory.active_place_id = active_place.id
 
@@ -404,7 +417,7 @@ def answer_question(
         origin = resolve_context_place(kb, active_pin, memory)
         if not origin:
             return fallback_response(memory, "Select a place first so I can find nearby options.")
-        categories = infer_categories(text, None)
+        categories = infer_categories(text, entities.get("activities"))
         categories = apply_topic_bias(categories, memory, text)
         nearby_places = kb.nearby(origin, query=question, categories=categories, limit=requested_count)
         return recommendation_response(
@@ -418,16 +431,22 @@ def answer_question(
 
     if intent == "budget_question":
         memory.preferences["budget"] = "low"
+        # Phase 8: budget signal override
+        if entities.get("budget"):
+            inferred = infer_budget(text)
+            if not inferred:
+                inferred = entities["budget"]
+            memory.preferences["budget"] = inferred
         rule_categories = categories_from_rules(kb.match_recommendation_rules(text))
-        categories = infer_categories(text, memory.preferences.get("activities")) or rule_categories
+        categories = infer_categories(text, entities.get("activities")) or rule_categories
         categories = apply_topic_bias(categories, memory, text)
         if not categories and "make it cheaper" in text:
             categories = set(memory.preferences.get("last_recommendation_categories") or [])
         places = kb.recommend(
             question,
             active_pin=active_pin,
-            budget="low",
-            activities=memory.preferences.get("activities"),
+            budget=memory.preferences.get("budget", "low"),
+            activities=entities.get("activities") or memory.preferences.get("activities"),
             categories=categories,
             limit=requested_count,
         )
@@ -444,7 +463,8 @@ def answer_question(
 
     if intent == "recommendation":
         exclude_ids = set()
-        categories = infer_categories(text, memory.preferences.get("activities"))
+        # Phase 8: use extracted activities for richer category inference
+        categories = infer_categories(text, entities.get("activities"))
         if not categories:
             categories = categories_from_rules(kb.match_recommendation_rules(text))
         categories = apply_topic_bias(categories, memory, text)
@@ -457,11 +477,13 @@ def answer_question(
         if "another" in text:
             exclude_ids.update(memory.last_recommended_place_ids)
             categories = set(memory.preferences.get("last_recommendation_categories") or categories)
+        # Phase 8: use extracted budget if present
+        detected_budget = infer_budget(text) or entities.get("budget") or memory.preferences.get("budget")
         places = kb.recommend(
             question,
             active_pin=active_pin,
-            budget=infer_budget(text) or memory.preferences.get("budget"),
-            activities=memory.preferences.get("activities"),
+            budget=detected_budget,
+            activities=entities.get("activities") or memory.preferences.get("activities"),
             categories=categories,
             limit=requested_count,
             exclude_ids=exclude_ids,
@@ -776,6 +798,7 @@ def respond(
         "intent": intent,
         "confidence": round(confidence, 2),
         "detected_language": memory.detected_language,
+        "entities": getattr(memory, "_last_entities", {}),
         "source": SOURCE,
     }
 

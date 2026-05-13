@@ -1118,6 +1118,9 @@ function handleChatResponse(message, response, isCached) {
   if (response?.detected_language) {
     updates.detectedLanguage = response.detected_language;
   }
+  if (response?.entities) {
+    updates.entities = response.entities;
+  }
   if (locations.length > 0) {
     updates.lastPlace = locations[0];
     const placeNames = locations.map(l => l.name).filter(Boolean);

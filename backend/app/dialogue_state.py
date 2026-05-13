@@ -26,6 +26,8 @@ class DialogueMemory:
     last_user_question: str = ""
     # Phase 7: language detection
     detected_language: str = "en"
+    # Phase 8: last extracted entities
+    _last_entities: dict[str, Any] = field(default_factory=dict)
 
 
 class DialogueStateStore:

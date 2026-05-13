@@ -1,0 +1,186 @@
+{
+  "activities": {
+    "accommodation": [
+      "stay", "staycation", "hotel", "hotels", "resort", "resorts", "inn", "inns",
+      "guesthouse", "guesthouses", "lodging", "accommodation", "accomodation",
+      "room", "rooms", "hostel", "hostels", "motel", "motels", "bnb", "airbnb",
+      "camping", "glamping", "tent", "tulugan", "matutulugan", "overnight",
+      "tuluyan", "matutuluyan", "lodge", "lodges"
+    ],
+    "dining": [
+      "eat", "food", "restaurant", "restaurants", "resto", "restos", "dining",
+      "kain", "kainan", "chibog", "gutom", "hungry", "foodtrip", "coffee",
+      "cafe", "cafes", "delicacies", "breakfast", "lunch", "dinner", "snack",
+      "merienda", "dessert", "sweets", "bakery", "carinderia", "karinderya",
+      "eatery", "seafood", "pagkain", "kakain", "lutuin", "masarap"
+    ],
+    "nightlife": [
+      "drink", "drinks", "bar", "bars", "beer", "inom", "inuman", "party",
+      "parties", "club", "clubs", "chill", "nightlife", "gimik", "gimikan",
+      "tagay", "inuman", "restobar", "restobars", "lounge", "lounges"
+    ],
+    "sightseeing": [
+      "visit", "see", "tour", "scenic", "view", "views", "viewpoint", "viewpoints",
+      "overlook", "overlooks", "landmark", "landmarks", "tourist spot", "tourist spots",
+      "sightseeing", "pasyal", "pasyalan", "gala", "lakwatsa", "sunset", "sunrise",
+      "museum", "museums", "church", "churches", "history", "heritage", "culture",
+      "tanawin", "tanawing", "magandang tanawin"
+    ],
+    "shopping": [
+      "shop", "shops", "shopping", "souvenir", "souvenirs", "pasalubong",
+      "market", "markets", "palengke", "mall", "malls", "buy", "bili",
+      "bilihan", "tiangge", "craft", "crafts", "abaca", "local product",
+      "local products", "products"
+    ],
+    "swimming": [
+      "swim", "swimming", "langoy", "ligo", "maliligo", "pool", "pools",
+      "falls", "fall", "talon", "waterfall", "waterfalls", "dive", "diving",
+      "freediving", "snorkel", "snorkeling", "cliff diving", "cliff jump",
+      "spring", "springs", "tubig", "dagat", "beach", "beaches", "dalampasigan",
+      "baybay", "baybayon", "shore", "coast"
+    ],
+    "hiking": [
+      "hike", "hiking", "trek", "trekking", "mountain", "mountains", "bundok",
+      "climb", "climbing", "akyat", "trail", "trails", "summit", "peak",
+      "walk", "walking", "nature", "nature tripping", "bundok", "bundukan"
+    ],
+    "photography": [
+      "photo", "photos", "photography", "camera", "instagram", "ig worthy",
+      "aesthetic", "picture", "pictures", "pics", "shot", "shots", "selfie",
+      "groufie", "cinematic", "vlog", "video", "shoot", "shooting", "kuha",
+      "kodak", "picturean", "picturan"
+    ],
+    "surfing": [
+      "surf", "surfing", "waves", "alon", "swell", "break", "board",
+      "longboard", "puraran", "majestic", "surfer", "surfboard"
+    ],
+    "transport": [
+      "how to get", "transportation", "transport", "commute", "tricycle",
+      "van", "vans", "jeep", "jeepney", "bus", "buses", "ferry", "ferries",
+      "boat", "boats", "roro", "airport", "airports", "terminal", "terminals",
+      "port", "ports", "rent", "rental", "rentals", "habal", "habal-habal",
+      "drive", "ride", "sakay", "pamasahe", "directions", "direction",
+      "byahe", "sakayan", "jeepney", "bus", "van", "pampublicong sasakyan"
+    ],
+    "safety": [
+      "safe", "safety", "dangerous", "hazard", "hazards", "warning", "emergency",
+      "police", "hospital", "hospitals", "clinic", "clinics", "medical",
+      "health", "typhoon", "storm", "storms", "delikado", "ligtas", "safe ba"
+    ],
+    "budget": [
+      "budget", "cost", "price", "prices", "fee", "fees", "cheap", "expensive",
+      "afford", "affordable", "magkano", "magkakano", "entrance", "entrance fee",
+      "bayad", "libre", "mura", "mahal", "presyo", "halaga"
+    ],
+    "planning": [
+      "itinerary", "weather", "best time", "season", "tips", "guide",
+      "plano", "planyo", "pagplano", "schedule", "schedules"
+    ]
+  },
+  "budget_indicators": {
+    "cheap": [
+      "cheap", "cheaper", "budget", "affordable", "low cost", "free",
+      "mura", "murang", "libre", "mas mura", "tipid", "tipid", "budget friendly"
+    ],
+    "mid": [
+      "mid", "mid-range", "midrange", "moderate", "medium", "average",
+      "katamtaman", "pwede na", "sakto"
+    ],
+    "expensive": [
+      "luxury", "expensive", "high-end", "high end", "premium", "mahal",
+      "mamahalin", "luxury", "magarbong", "de kalidad"
+    ]
+  },
+  "group_types": {
+    "solo": [
+      "solo", "alone", "myself", "just me", "ako lang", "mag isa", "mag-isa",
+      "sarili", "single"
+    ],
+    "couple": [
+      "couple", "two", "date", "romantic", "dalawa", "magkasintahan",
+      "boyfriend", "girlfriend", "asawa", "partner"
+    ],
+    "family": [
+      "family", "kids", "children", "pamilya", "bata", "anak", "magulang",
+      "parents", "mom", "dad", "with family"
+    ],
+    "group": [
+      "group", "friends", "barkada", "grupo", " tropa", "kasama",
+      "companions", "crew", "team", "workmates"
+    ]
+  },
+  "time_periods": {
+    "morning": [
+      "morning", "early", "umaga", "maaga", "sunrise", "sun up",
+      "dawn", "breakfast"
+    ],
+    "afternoon": [
+      "afternoon", "hapon", "tanghali", "lunch", "noon"
+    ],
+    "evening": [
+      "evening", "night", "gabi", "sunset", "dusk", "dinner",
+      "late", "midnight"
+    ],
+    "weekend": [
+      "weekend", "saturday", "sunday", "sabado", "linggo"
+    ],
+    "weekday": [
+      "weekday", "weekdays", "monday", "tuesday", "wednesday",
+      "thursday", "friday", "lunes", "martes", "miyerkules",
+      "huwebes", "biyernes"
+    ]
+  },
+  "proximity_patterns": {
+    "near": [
+      "near", "nearby", "close to", "around", "malapit", "malapit sa",
+      "walking distance", "a few minutes from"
+    ],
+    "in": [
+      "in", "at", "sa", "inside", "within", "located in"
+    ],
+    "from": [
+      "from", "galing", "coming from", "starting from"
+    ]
+  },
+  "listing_signals": [
+    "all", "list", "show me", "what are", "which", "any", "options",
+    "where can i", "where to", "places for", "places to", "best",
+    "top", "recommend", "suggest", "magandang", "pinakamagandang"
+  ],
+  "compound_phrases": {
+    "coffee shops": "cafe",
+    "coffee shop": "cafe",
+    "tea shops": "cafe",
+    "tea shop": "cafe",
+    "milk tea shops": "cafe",
+    "milk tea shop": "cafe",
+    "cake shops": "cafe",
+    "cake shop": "cafe",
+    "snack shops": "cafe",
+    "snack shop": "cafe",
+    "bakery shops": "cafe",
+    "bakery shop": "cafe",
+    "resto bars": "nightlife",
+    "resto bar": "nightlife",
+    "snack bars": "restaurant",
+    "snack bar": "restaurant",
+    "grill bars": "nightlife",
+    "grill bar": "nightlife",
+    "ktv bars": "nightlife",
+    "ktv bar": "nightlife",
+    "night bars": "nightlife",
+    "night bar": "nightlife",
+    "lounge bars": "nightlife",
+    "lounge bar": "nightlife",
+    "bar and lounge": "nightlife",
+    "bars and lounges": "nightlife",
+    "inuman spots": "nightlife",
+    "inuman spot": "nightlife"
+  },
+  "plural_place_types": [
+    "beaches", "hotels", "cafes", "restaurants", "falls", "resorts",
+    "waterfalls", "viewpoints", "activities", "burgers", "pizzas",
+    "coffee shops", "bars", "restobars", "restobar", "lounges", "clubs",
+    "inuman", "waterfalls", "islands", "churches", "museums"
+  ]
+}
