@@ -11,6 +11,7 @@ from .gatekeeper import (
     profanity_filter,
 )
 from .routing import build_route_response
+from .semantic_cache import semantic_cache
 from .pdf_generator import generate_itinerary_pdf
 from .pdf_store import load_pdf, delete_pdf, pdf_exists
 from .pdf_share import (
@@ -139,13 +140,22 @@ def ask(request: AskRequest):
             "intent": "nonsense",
         }
 
+    # --- Semantic cache lookup ---
+    cached = semantic_cache.get(request.question)
+    if cached:
+        return cached
+
     # --- Proceed to chatbot ---
-    return answer_question(
+    response = answer_question(
         request.question,
         active_pin=request.active_pin,
         session_id=request.session_id,
         preferences=request.preferences,
     )
+
+    # --- Cache the result ---
+    semantic_cache.set(request.question, response)
+    return response
 
 
 @app.post("/api/pdf/generate")

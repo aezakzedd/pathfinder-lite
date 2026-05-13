@@ -39,7 +39,9 @@ import {
   subscribe as subscribeChat,
   updateConversationState,
   getConversationState,
-  resetConversationState
+  resetConversationState,
+  getCachedResponse,
+  cacheResponse
 } from '../state/chatStore.js';
 import { calculateDistance, calculateDriveTimes, calculateTimeUsage } from '../utils/distance.js';
 import {
@@ -1038,13 +1040,21 @@ function setupChatHandlers() {
 
 async function sendMessage(message) {
   isSending = true;
-  
+
   // Add user message
   addMessage({
     role: 'user',
     content: message
   });
-  
+
+  // Check frontend cache first
+  const cached = getCachedResponse(message);
+  if (cached) {
+    handleChatResponse(message, cached, true);
+    isSending = false;
+    return;
+  }
+
   // Add loading indicator
   const loadingId = `loading-${Date.now()}`;
   addMessage({
@@ -1053,7 +1063,7 @@ async function sendMessage(message) {
     content: '...',
     isLoading: true
   });
-  
+
   try {
     const response = await askPathfinder({
       question: message,
@@ -1061,60 +1071,70 @@ async function sendMessage(message) {
       session_id: CHAT_SESSION_ID,
       preferences: getChatPreferencePayload()
     });
-    
+
     // Remove loading message
     removeMessage(loadingId);
-    
-    // Add actual response
-    let responseText = '';
-    if (typeof response === 'string') {
-      responseText = response;
-    } else if (response && response.answer) {
-      responseText = response.answer;
-    } else if (response && response.message) {
-      responseText = response.message;
-    } else {
-      responseText = JSON.stringify(response);
-    }
 
-    // Track conversation context from response
-    const locations = Array.isArray(response?.locations) ? response.locations : [];
-    const state = getConversationState();
-    const updates = {
-      turnCount: state.turnCount + 1,
-      lastIntent: response?.intent || state.lastIntent
-    };
-    if (locations.length > 0) {
-      updates.lastPlace = locations[0];
-      const placeNames = locations.map(l => l.name).filter(Boolean);
-      const merged = [...new Set([...state.mentionedPlaces, ...placeNames])];
-      updates.mentionedPlaces = merged.slice(-10);
-    }
-    updateConversationState(updates);
+    // Cache the fresh result
+    cacheResponse(message, response);
 
-    addMessage({
-      role: 'assistant',
-      content: responseText,
-      followUp: response?.follow_up || null,
-      actions: getConfirmableChatActions(response)
-    });
+    handleChatResponse(message, response, false);
 
-    const selectedMatch = handleChatLocations(response);
-    handleChatActions(response, selectedMatch, responseText);
-    
   } catch (error) {
     // Remove loading message
     removeMessage(loadingId);
-    
+
     // Add error message
     addMessage({
       role: 'system',
       content: 'Sorry, I encountered an error. Please try again.'
     });
-    
+
     console.error('Chat error:', error);
   } finally {
     isSending = false;
+  }
+}
+
+function handleChatResponse(message, response, isCached) {
+  let responseText = '';
+  if (typeof response === 'string') {
+    responseText = response;
+  } else if (response && response.answer) {
+    responseText = response.answer;
+  } else if (response && response.message) {
+    responseText = response.message;
+  } else {
+    responseText = JSON.stringify(response);
+  }
+
+  // Track conversation context from response
+  const locations = Array.isArray(response?.locations) ? response.locations : [];
+  const state = getConversationState();
+  const updates = {
+    turnCount: state.turnCount + 1,
+    lastIntent: response?.intent || state.lastIntent
+  };
+  if (locations.length > 0) {
+    updates.lastPlace = locations[0];
+    const placeNames = locations.map(l => l.name).filter(Boolean);
+    const merged = [...new Set([...state.mentionedPlaces, ...placeNames])];
+    updates.mentionedPlaces = merged.slice(-10);
+  }
+  updateConversationState(updates);
+
+  addMessage({
+    role: 'assistant',
+    content: responseText,
+    followUp: response?.follow_up || null,
+    actions: getConfirmableChatActions(response)
+  });
+
+  const selectedMatch = handleChatLocations(response);
+  handleChatActions(response, selectedMatch, responseText);
+
+  if (isCached) {
+    console.log('[Cache] Served cached response for:', message);
   }
 }
 
