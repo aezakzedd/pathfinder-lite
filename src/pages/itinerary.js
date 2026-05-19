@@ -618,7 +618,12 @@ function updateMapFeatures() {
   const currentStops = getDayStops();
   const hub = getHubByName(setup.startPoint);
   const filteredDestinations = getFilteredMapDestinations();
-  const visibleDestinations = includeSelectedDestination(filteredDestinations, selectedDestination);
+  const withSelected = includeSelectedDestination(filteredDestinations, selectedDestination);
+  const visibleDestinations = includeChatHighlightedDestinations(
+    withSelected,
+    allDestinations,
+    chatHighlightedDestinationIds
+  );
   const isSelectedAdded = selectedDestination ? isDestinationInDay(selectedDestination.id) : false;
   const selectedDestinationId = chatSelectionGlowEnabled ? (selectedDestination?.id || null) : null;
 
@@ -646,6 +651,27 @@ function includeSelectedDestination(destinations, selectedDestination) {
   }
 
   return [...destinations, selectedDestination];
+}
+
+function includeChatHighlightedDestinations(destinations, allCandidates, highlightedIds) {
+  const ids = Array.isArray(highlightedIds) ? highlightedIds : [];
+  if (ids.length === 0 || !Array.isArray(allCandidates) || allCandidates.length === 0) {
+    return destinations;
+  }
+
+  const merged = [...destinations];
+  const seen = new Set(merged.map(destination => destination.id));
+
+  ids.forEach((id) => {
+    const normalizedId = String(id);
+    if (seen.has(normalizedId)) return;
+    const match = allCandidates.find(destination => String(destination.id) === normalizedId);
+    if (!match) return;
+    merged.push(match);
+    seen.add(normalizedId);
+  });
+
+  return merged;
 }
 
 function getActivePinPayload() {
