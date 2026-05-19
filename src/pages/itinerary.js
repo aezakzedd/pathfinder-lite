@@ -1,5 +1,5 @@
 // Itinerary page module
-import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState, fitToRoute } from '../map/maptalksOfflineMap.js';
+import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState, fitToRoute, focusOnLocations } from '../map/maptalksOfflineMap.js';
 import { askPathfinder } from '../api.js';
 import { getState as getAppState, setState as setAppState } from '../state.js';
 import {
@@ -77,8 +77,6 @@ function getChatSessionId() {
   }
   return id;
 }
-
-const CHAT_SESSION_ID = getChatSessionId();
 
 const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
 const budgetOptions = [
@@ -204,12 +202,16 @@ export function renderItinerary(container) {
           </div>
           
           <div class="chatbot-input-area">
-            <div class="chat-active-pin" id="chat-active-pin" style="display:none;">
-              <span class="chat-active-pin-label">Talking about:</span>
-              <span class="chat-active-pin-name" id="chat-active-pin-name"></span>
-              <button type="button" class="chat-active-pin-clear" id="chat-active-pin-clear" aria-label="Clear context">&#x2715;</button>
-            </div>
             <form class="chatbot-form" id="chatbot-form">
+              <div class="chat-active-pin" id="chat-active-pin" style="display:none;">
+                <span class="chat-active-pin-name" id="chat-active-pin-name"></span>
+                <button type="button" class="chat-active-pin-clear" id="chat-active-pin-clear" aria-label="Clear context">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
               <input type="text" class="chatbot-input" id="chatbot-input" placeholder="Ask Pathfinder..." />
               <button type="submit" class="send-btn" id="send-btn" aria-label="Send message">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1095,7 +1097,7 @@ async function sendMessage(message) {
     const response = await askPathfinder({
       question: message,
       active_pin: getActivePinPayload(),
-      session_id: CHAT_SESSION_ID,
+      session_id: getChatSessionId(),
       preferences: getChatPreferencePayload()
     });
 
@@ -1180,22 +1182,65 @@ function handleChatResponse(message, response, isCached) {
 
 function handleChatLocations(response) {
   const locations = Array.isArray(response?.locations) ? response.locations : [];
-  if (locations.length === 0 || allDestinations.length === 0) return null;
+  if (locations.length === 0) return null;
 
-  const matches = findDestinationsByLocations(allDestinations, locations);
-  if (matches.length === 0) return null;
+  const matches = allDestinations.length > 0
+    ? findDestinationsByLocations(allDestinations, locations)
+    : [];
+  const selected = matches[0] || null;
 
-  // Phase 12: auto-pin when exactly 1 location (silent)
-  setSelectedDestination(matches[0]);
+  if (selected) {
+    // Keep active-pin/map context on first matched destination.
+    setSelectedDestination(selected);
+  }
 
-  if (matches.length > 1) {
+  // Keep parity with original "top picks" framing in assistant text.
+  const noticeCount = Math.min(matches.length || locations.length, 4);
+  if (noticeCount > 1) {
+    const selectedName = selected?.name || locations[0]?.name || 'the first place';
     addMessage({
-      role: 'system',
-      content: `I found ${matches.length} matching places and selected ${matches[0].name}.`
+      role: 'assistant',
+      content: `I found ${noticeCount} matching places and selected ${selectedName}.`
     });
   }
 
-  return matches[0];
+  focusMapForChatLocations(matches, locations);
+
+  return selected;
+}
+
+function focusMapForChatLocations(matches = [], locations = []) {
+  const matchedCoords = matches
+    .map(match => match?.coordinates)
+    .filter(isValidLngLat);
+  if (matchedCoords.length > 0) {
+    focusOnLocations(matchedCoords);
+    return;
+  }
+
+  const responseCoords = (Array.isArray(locations) ? locations : [])
+    .map(extractLocationCoordinates)
+    .filter(isValidLngLat);
+  if (responseCoords.length > 0) {
+    focusOnLocations(responseCoords);
+  }
+}
+
+function extractLocationCoordinates(location) {
+  const direct = location?.coordinates;
+  if (isValidLngLat(direct)) return [Number(direct[0]), Number(direct[1])];
+
+  const geometryCoords = location?.geometry?.coordinates;
+  if (isValidLngLat(geometryCoords)) return [Number(geometryCoords[0]), Number(geometryCoords[1])];
+
+  return null;
+}
+
+function isValidLngLat(value) {
+  return Array.isArray(value)
+    && value.length >= 2
+    && Number.isFinite(Number(value[0]))
+    && Number.isFinite(Number(value[1]));
 }
 
 function handleChatActions(response, selectedMatch, responseText = '') {
@@ -1452,27 +1497,6 @@ function renderChatMessages() {
       contentEl.textContent = message.content;
       messageEl.appendChild(contentEl);
 
-      if (message.followUp && roleClass === 'assistant') {
-        const followUpEl = document.createElement('div');
-        followUpEl.className = 'chat-follow-up';
-        followUpEl.textContent = message.followUp;
-        messageEl.appendChild(followUpEl);
-      }
-
-      if (Array.isArray(message.actions) && message.actions.length > 0) {
-        const actionRow = document.createElement('div');
-        actionRow.className = 'chat-action-row';
-        message.actions.forEach((action, index) => {
-          const button = document.createElement('button');
-          button.className = 'chat-action-btn';
-          button.type = 'button';
-          button.dataset.messageId = message.id;
-          button.dataset.actionIndex = String(index);
-          button.textContent = getChatActionLabel(action);
-          actionRow.appendChild(button);
-        });
-        messageEl.appendChild(actionRow);
-      }
       messagesContainer.appendChild(messageEl);
     }
   });
@@ -1621,6 +1645,24 @@ function setupExportHandlers() {
 
     replaceItineraryDays(result.days, dayCount);
   };
+
+  const stripIdsFromSnapshot = (rootEl) => {
+    if (!rootEl) return;
+    rootEl.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  };
+
+  const buildHistorySnapshotCard = (liveCard) => {
+    const snapshot = liveCard.cloneNode(true);
+    snapshot.removeAttribute('id');
+    stripIdsFromSnapshot(snapshot);
+    snapshot.classList.add('chat-itinerary-card-history', 'minimized');
+    snapshot.querySelectorAll('button').forEach(button => {
+      button.disabled = true;
+      button.setAttribute('tabindex', '-1');
+      button.setAttribute('aria-hidden', 'true');
+    });
+    return snapshot;
+  };
   
   if (generatePdfBtn) {
     const clickHandler = () => handleExport();
@@ -1651,9 +1693,15 @@ function setupExportHandlers() {
       const itineraryCard = document.getElementById('chat-itinerary-card');
       const messagesContainer = document.getElementById('chatbot-messages');
       if (itineraryCard && messagesContainer) {
-        if (itineraryCard.classList.contains('minimized')) {
-          itineraryCard.classList.remove('minimized');
-        }
+        messagesContainer
+          .querySelectorAll('.chat-itinerary-card-history')
+          .forEach(card => card.classList.add('minimized'));
+
+        const snapshot = buildHistorySnapshotCard(itineraryCard);
+        messagesContainer.appendChild(snapshot);
+
+        itineraryCard.classList.remove('minimized');
+        messagesContainer.appendChild(itineraryCard);
         itineraryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     };

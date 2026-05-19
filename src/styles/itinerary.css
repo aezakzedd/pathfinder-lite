@@ -294,6 +294,8 @@ body[data-route="itinerary"] .page-container {
 
 .chatbot-form {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -590,24 +592,42 @@ body[data-route="itinerary"] .page-container {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
-  border: 3px solid #22d3ee;
-  background: rgba(20, 184, 166, 0.16);
+  border: 3px solid rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.14);
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.82);
+  transition: opacity 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1;
 }
 
 .offline-destination-marker.selected .offline-marker-ring {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
+  background: transparent;
+  box-shadow:
+    0 0 18px rgba(255, 255, 255, 0.78),
+    0 0 34px rgba(255, 255, 255, 0.44);
+  animation: offline-marker-pulse 1.5s infinite ease-in-out;
 }
 
 .offline-destination-marker.featured .offline-marker-ring {
   top: 34%;
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
+}
+
+@keyframes offline-marker-pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.24);
+    opacity: 1;
+  }
 }
 
 .offline-marker-badge {
@@ -619,6 +639,7 @@ body[data-route="itinerary"] .page-container {
   background: var(--marker-color, #3b82f6);
   border: 2px solid rgba(15, 23, 42, 0.78);
   box-shadow: 0 2px 5px rgba(15, 23, 42, 0.24);
+  z-index: 2;
 }
 
 .offline-marker-badge svg {
@@ -643,6 +664,7 @@ body[data-route="itinerary"] .page-container {
   width: 32px;
   height: 32px;
   transform: translateX(-50%);
+  z-index: 2;
 }
 
 .offline-destination-marker.featured .offline-marker-pin {
@@ -1056,10 +1078,13 @@ body[data-route="itinerary"] .page-container {
 }
 
 .chat-message-assistant {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #ffffff;
+  border: none;
   border-bottom-left-radius: 4px;
+  backdrop-filter: none;
+  padding: 2px 0;
+  max-width: 92%;
 }
 
 .chat-message-system {
@@ -2723,8 +2748,8 @@ body[data-route="itinerary"] .page-container {
 }
 
 [data-theme='light'] .page-itinerary .chat-message-assistant {
-  background: rgba(15, 23, 42, 0.06);
-  border-color: rgba(15, 23, 42, 0.12);
+  background: transparent;
+  border: none;
   color: #0f172a;
 }
 
@@ -3123,6 +3148,18 @@ body[data-route="itinerary"] .page-container {
   display: none !important;
 }
 
+.chat-itinerary-card-history {
+  opacity: 0.95;
+}
+
+.chat-itinerary-card-history.minimized {
+  pointer-events: none;
+}
+
+.chat-itinerary-card-history .itinerary-header {
+  cursor: default;
+}
+
 .chat-itinerary-card.minimized {
   height: 56px !important;
   min-height: 56px !important;
@@ -3188,27 +3225,25 @@ body[data-route="itinerary"] .page-container {
 
 /* Phase 12: Active pin pill */
 .chat-active-pin {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  margin-bottom: 6px;
-  background: rgba(18, 183, 196, 0.12);
-  border-radius: 6px;
+  padding: 4px 10px 4px 12px;
+  margin: 2px 4px 2px 0;
+  background: rgba(138, 180, 248, 0.12);
+  border: 1px solid rgba(138, 180, 248, 0.25);
+  border-radius: 20px;
   font-size: 0.78rem;
-  color: var(--text-secondary, #64748b);
-  max-width: 100%;
+  font-weight: 500;
+  color: #8ab4f8;
+  max-width: 170px;
   overflow: hidden;
-}
-
-.chat-active-pin-label {
-  flex-shrink: 0;
-  opacity: 0.8;
+  white-space: nowrap;
 }
 
 .chat-active-pin-name {
-  font-weight: 600;
-  color: var(--text-primary, #0f172a);
+  font-weight: 500;
+  color: inherit;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3216,18 +3251,38 @@ body[data-route="itinerary"] .page-container {
 }
 
 .chat-active-pin-clear {
-  flex-shrink: 0;
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  background: rgba(138, 180, 248, 0.1);
   border: none;
-  color: var(--text-secondary, #64748b);
+  color: inherit;
   cursor: pointer;
-  font-size: 0.85rem;
-  padding: 0 2px;
-  line-height: 1;
-  border-radius: 3px;
-  transition: color 0.15s;
+  padding: 0;
+  line-height: 0;
+  border-radius: 999px;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .chat-active-pin-clear:hover {
-  color: #ef4444;
+  background: rgba(138, 180, 248, 0.3);
+  color: #f8fafc;
+}
+
+[data-theme='light'] .page-itinerary .chat-active-pin {
+  background: rgba(66, 133, 244, 0.08);
+  border-color: rgba(66, 133, 244, 0.2);
+  color: #1a73e8;
+}
+
+[data-theme='light'] .page-itinerary .chat-active-pin-clear {
+  background: rgba(66, 133, 244, 0.06);
+}
+
+[data-theme='light'] .page-itinerary .chat-active-pin-clear:hover {
+  background: rgba(66, 133, 244, 0.18);
+  color: #0f172a;
 }

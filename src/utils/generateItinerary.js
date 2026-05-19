@@ -295,6 +295,7 @@ export function generateItinerary({
 function findDestinationByLocation(destinations, location) {
   const id = typeof location === 'object' ? location.id : null;
   const name = typeof location === 'object' ? (location.name || location.location || location.title) : location;
+  const locationCoordinates = getLocationCoordinates(location);
   const normalizedName = normalizeLookup(name);
 
   if (id !== null && id !== undefined) {
@@ -303,11 +304,46 @@ function findDestinationByLocation(destinations, location) {
     if (byId) return byId;
   }
 
-  if (!normalizedName) return null;
-
-  return destinations.find(destination => normalizeLookup(destination.name) === normalizedName) ||
+  if (!normalizedName) {
+    return locationCoordinates
+      ? findNearestDestinationByCoordinates(destinations, locationCoordinates)
+      : null;
+  }
+  const byName = destinations.find(destination => normalizeLookup(destination.name) === normalizedName) ||
     destinations.find(destination => normalizeLookup(destination.name).includes(normalizedName) ||
       normalizedName.includes(normalizeLookup(destination.name)));
+
+  if (byName) return byName;
+  if (!locationCoordinates) return null;
+
+  return findNearestDestinationByCoordinates(destinations, locationCoordinates);
+}
+
+function getLocationCoordinates(location) {
+  if (!location || typeof location !== 'object') return null;
+  const direct = location.coordinates;
+  if (isValidCoordinates(direct)) return [Number(direct[0]), Number(direct[1])];
+  const geometryCoordinates = location.geometry?.coordinates;
+  if (isValidCoordinates(geometryCoordinates)) return [Number(geometryCoordinates[0]), Number(geometryCoordinates[1])];
+  return null;
+}
+
+function findNearestDestinationByCoordinates(destinations, locationCoordinates) {
+  let nearest = null;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  destinations.forEach(destination => {
+    const destinationCoordinates = getDestinationCoordinates(destination);
+    if (!isValidCoordinates(destinationCoordinates)) return;
+    const distance = calculateDistance(locationCoordinates, destinationCoordinates);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearest = destination;
+    }
+  });
+
+  // 2 km guardrail avoids snapping to random faraway pins.
+  return nearestDistance <= 2 ? nearest : null;
 }
 
 function buildDayFromSlotPlan({ hub, dayStartCoordinates, primaryPool, secondaryPool, usedIds }) {

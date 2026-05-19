@@ -1,11 +1,15 @@
 // Last/Share page module
 import { clearItinerary } from '../state/itineraryStore.js';
+import { clearMessages, resetConversationState, clearQueryCache } from '../state/chatStore.js';
 import { createPdfShare, finishSession, requestPdfGeneration } from '../api.js';
 import { apiUrl } from '../config/apiConfig.js';
 
 const EXPORT_PAYLOAD_KEY = 'pathfinder-lite-export-payload';
 const PDF_ID_KEY = 'pathfinder-lite-pdf-id';
 const CHAT_MESSAGES_KEY = 'pathfinder-lite-chat-messages';
+const CHAT_STATE_KEY = 'pathfinder-lite-chat-state';
+const CHAT_CACHE_KEY = 'pathfinder-lite-query-cache';
+const CHAT_SESSION_ID_KEY = 'pathfinder-lite-session-id';
 
 export function renderLast(container) {
   const { exportPayload, savedPdfId } = loadExportState();
@@ -154,7 +158,9 @@ async function handleFinishHome({ finishHomeBtn, finishLoading, finishError, cur
     finishLoading.style.display = 'block';
     finishError.style.display = 'none';
 
-    const payload = { session_id: 'kiosk' };
+    const payload = {
+      session_id: sessionStorage.getItem(CHAT_SESSION_ID_KEY) || 'kiosk'
+    };
     if (currentPdfId) payload.pdf_id = currentPdfId;
     await finishSession(payload);
 
@@ -174,9 +180,15 @@ async function handleFinishHome({ finishHomeBtn, finishLoading, finishError, cur
 
 function clearLocalExportSession() {
   clearItinerary();
+  clearMessages();
+  resetConversationState();
+  clearQueryCache();
   localStorage.removeItem(EXPORT_PAYLOAD_KEY);
   localStorage.removeItem(PDF_ID_KEY);
   sessionStorage.removeItem(CHAT_MESSAGES_KEY);
+  sessionStorage.removeItem(CHAT_STATE_KEY);
+  sessionStorage.removeItem(CHAT_CACHE_KEY);
+  sessionStorage.removeItem(CHAT_SESSION_ID_KEY);
 }
 
 function loadExportState() {

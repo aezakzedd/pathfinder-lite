@@ -203,6 +203,42 @@ export function fitToRoute() {
   }
 }
 
+export function focusOnLocations(locations = []) {
+  if (!mapInstance?.map) return;
+
+  const coords = (Array.isArray(locations) ? locations : [])
+    .filter(isValidCoordinate)
+    .map(c => [Number(c[0]), Number(c[1])]);
+
+  if (coords.length === 0) return;
+
+  if (coords.length === 1) {
+    const [lng, lat] = coords[0];
+    mapInstance.map.animateTo({
+      center: [lng, lat],
+      zoom: 14,
+      pitch: mapInstance.map.getPitch(),
+      bearing: mapInstance.map.getBearing()
+    }, { duration: 480 });
+    return;
+  }
+
+  const extent = new maptalks.Extent(
+    new maptalks.Coordinate(coords[0][0], coords[0][1]),
+    new maptalks.Coordinate(coords[0][0], coords[0][1])
+  );
+  coords.forEach(c => extent._combine(new maptalks.Coordinate(c[0], c[1])));
+
+  mapInstance.map.fitExtent(extent, -1, {
+    padding: { left: 80, right: 80, top: 80, bottom: 80 },
+    animation: false
+  });
+
+  if (mapInstance.map.getZoom() > 13) {
+    mapInstance.map.setZoom(13);
+  }
+}
+
 export function invalidateSize() {
   if (!mapInstance?.map) return;
   applyMapTheme(mapInstance);
