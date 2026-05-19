@@ -68,6 +68,8 @@ let pointerDrag = null;
 let allDestinations = [];
 let allSpotsGeoJson = null;
 let currentRouteSummary = null;
+let chatSelectionGlowEnabled = false;
+let chatHighlightedDestinationIds = [];
 function getChatSessionId() {
   const key = 'pathfinder-lite-session-id';
   let id = sessionStorage.getItem(key);
@@ -76,6 +78,14 @@ function getChatSessionId() {
     sessionStorage.setItem(key, id);
   }
   return id;
+}
+
+function setChatSelectionGlowEnabled(enabled) {
+  chatSelectionGlowEnabled = Boolean(enabled);
+}
+
+function setChatHighlightedDestinationIds(ids = []) {
+  chatHighlightedDestinationIds = [...new Set((Array.isArray(ids) ? ids : []).filter(Boolean))];
 }
 
 const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
@@ -455,6 +465,8 @@ function initializeUI() {
   // Setup custom event listener for select-destination from map markers
   const selectDestinationHandler = (e) => {
     if (e.detail && e.detail.destination) {
+      setChatSelectionGlowEnabled(false);
+      setChatHighlightedDestinationIds([]);
       setSelectedDestination(e.detail.destination);
     }
   };
@@ -479,6 +491,8 @@ function initializeUI() {
   eventListeners.push({ element: document, event: 'remove-from-trip', handler: removeFromTripHandler });
 
   const clearDestinationHandler = () => {
+    setChatSelectionGlowEnabled(false);
+    setChatHighlightedDestinationIds([]);
     clearSelectedDestination();
   };
   document.addEventListener('clear-destination', clearDestinationHandler);
@@ -606,17 +620,18 @@ function updateMapFeatures() {
   const filteredDestinations = getFilteredMapDestinations();
   const visibleDestinations = includeSelectedDestination(filteredDestinations, selectedDestination);
   const isSelectedAdded = selectedDestination ? isDestinationInDay(selectedDestination.id) : false;
+  const selectedDestinationId = chatSelectionGlowEnabled ? (selectedDestination?.id || null) : null;
 
   updateMapState({
     destinations: visibleDestinations,
     hub,
-    selectedDestinationId: selectedDestination?.id || null,
+    selectedDestinationId,
+    chatHighlightedDestinationIds,
     addedDestinationIds: currentStops.map(stop => stop.id),
     routeCoordinates: hub ? buildRouteCoordinates(hub, currentStops) : [],
     previewCoordinates: hub && selectedDestination && !isSelectedAdded
       ? buildPreviewRouteCoordinates(hub, currentStops, selectedDestination)
-      : [],
-    popupDestination: selectedDestination || null
+      : []
   });
 }
 
@@ -1002,6 +1017,8 @@ function setupChatHandlers() {
   // Active pin pill clear handler
   if (pinClearBtn) {
     const clearHandler = () => {
+      setChatSelectionGlowEnabled(false);
+      setChatHighlightedDestinationIds([]);
       clearSelectedDestination();
       updateActivePinPill();
     };
@@ -1182,16 +1199,28 @@ function handleChatResponse(message, response, isCached) {
 
 function handleChatLocations(response) {
   const locations = Array.isArray(response?.locations) ? response.locations : [];
-  if (locations.length === 0) return null;
+  if (locations.length === 0) {
+    setChatHighlightedDestinationIds([]);
+    return null;
+  }
+
+  // Chat-driven pin highlighting should not force-open popup cards.
+  updateMapState({ popupDestination: null });
 
   const matches = allDestinations.length > 0
     ? findDestinationsByLocations(allDestinations, locations)
     : [];
+  setChatHighlightedDestinationIds(matches.map(match => match.id));
   const selected = matches[0] || null;
 
   if (selected) {
     // Keep active-pin/map context on first matched destination.
+    setChatSelectionGlowEnabled(true);
     setSelectedDestination(selected);
+  } else {
+    // No GeoJSON destination matched this response; clear stale selected/glow state.
+    setChatSelectionGlowEnabled(false);
+    clearSelectedDestination();
   }
 
   // Keep parity with original "top picks" framing in assistant text.
@@ -1325,7 +1354,11 @@ function applyReplaceItineraryAction(action) {
 
   replaceItineraryDays(resolvedDays, dayCount);
   const firstStop = Object.values(resolvedDays).flat()[0];
-  if (firstStop) setSelectedDestination(firstStop);
+  if (firstStop) {
+    setChatSelectionGlowEnabled(true);
+    setChatHighlightedDestinationIds([firstStop.id]);
+    setSelectedDestination(firstStop);
+  }
   addMessage({
     role: 'system',
     content: `Applied the ${dayCount}-day chatbot plan to the itinerary card.`
@@ -1354,6 +1387,8 @@ function applyAddToDayAction(action) {
 
   setActiveDay(day);
   const result = addStopToDay(destination);
+  setChatSelectionGlowEnabled(true);
+  setChatHighlightedDestinationIds([destination.id]);
   setSelectedDestination(destination);
   addMessage({
     role: 'system',
@@ -1403,6 +1438,8 @@ function applyReplacePlaceAction(action) {
   removeDestinationFromDay(target.id, targetDay);
   setActiveDay(targetDay);
   const result = addStopToDay(replacement);
+  setChatSelectionGlowEnabled(true);
+  setChatHighlightedDestinationIds([replacement.id]);
   setSelectedDestination(replacement);
   addMessage({
     role: 'system',
@@ -1645,24 +1682,6 @@ function setupExportHandlers() {
 
     replaceItineraryDays(result.days, dayCount);
   };
-
-  const stripIdsFromSnapshot = (rootEl) => {
-    if (!rootEl) return;
-    rootEl.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-  };
-
-  const buildHistorySnapshotCard = (liveCard) => {
-    const snapshot = liveCard.cloneNode(true);
-    snapshot.removeAttribute('id');
-    stripIdsFromSnapshot(snapshot);
-    snapshot.classList.add('chat-itinerary-card-history', 'minimized');
-    snapshot.querySelectorAll('button').forEach(button => {
-      button.disabled = true;
-      button.setAttribute('tabindex', '-1');
-      button.setAttribute('aria-hidden', 'true');
-    });
-    return snapshot;
-  };
   
   if (generatePdfBtn) {
     const clickHandler = () => handleExport();
@@ -1693,13 +1712,12 @@ function setupExportHandlers() {
       const itineraryCard = document.getElementById('chat-itinerary-card');
       const messagesContainer = document.getElementById('chatbot-messages');
       if (itineraryCard && messagesContainer) {
+        // Cleanup any leftover cloned cards from older behavior.
         messagesContainer
           .querySelectorAll('.chat-itinerary-card-history')
-          .forEach(card => card.classList.add('minimized'));
+          .forEach(card => card.remove());
 
-        const snapshot = buildHistorySnapshotCard(itineraryCard);
-        messagesContainer.appendChild(snapshot);
-
+        // Move the single live itinerary card to the latest position.
         itineraryCard.classList.remove('minimized');
         messagesContainer.appendChild(itineraryCard);
         itineraryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

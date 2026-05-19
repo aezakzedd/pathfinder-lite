@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import difflib
+import math
 import re
 import time
 from typing import Any
@@ -30,7 +31,7 @@ from .itinerary_planner import (
     build_replace_place_action,
     is_itinerary_request,
 )
-from .reference_qa import ReferenceQAMatch, get_reference_qa_store
+from .reference_qa import ReferenceQAMatch, clean_text as reference_clean_text, get_reference_qa_store
 
 
 SOURCE = "local-chatbot"
@@ -123,10 +124,86 @@ def _reference_geo_place(kb, match: ReferenceQAMatch) -> Place | None:
     return kb.match_place(canonical_name, active_pin=None)
 
 
+def _coerce_lat_lng(value: Any) -> tuple[float, float] | None:
+    if not isinstance(value, dict):
+        return None
+
+    lat_raw = value.get("lat")
+    if lat_raw is None:
+        lat_raw = value.get("latitude")
+
+    lng_raw = value.get("lng")
+    if lng_raw is None:
+        lng_raw = value.get("lon")
+    if lng_raw is None:
+        lng_raw = value.get("longitude")
+
+    try:
+        lat = float(lat_raw)
+        lng = float(lng_raw)
+    except (TypeError, ValueError):
+        return None
+
+    if not (math.isfinite(lat) and math.isfinite(lng)):
+        return None
+    return lat, lng
+
+
+def _reference_id_suffix(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", normalize_text(name)).strip("-") or "place"
+
+
+def _reference_config_only_location(match: ReferenceQAMatch) -> dict[str, Any] | None:
+    row = match.row
+    if str(row.get("mapping_status") or "").strip().lower() != "config_only":
+        return None
+
+    store = get_reference_qa_store()
+    place_map_entry = store.place_map_entry(row)
+    if not place_map_entry:
+        return None
+
+    lat_lng = _coerce_lat_lng(place_map_entry.get("best_coordinates"))
+    if not lat_lng:
+        return None
+
+    canonical_name = store.canonical_place_name(row)
+    if not canonical_name:
+        return None
+
+    lat, lng = lat_lng
+    municipality = reference_clean_text(row.get("location"))
+    answer_text = str(row.get("answer") or "").strip()
+    ref_id = f"ref-config-{_reference_id_suffix(canonical_name)}"
+
+    return {
+        "id": ref_id,
+        "name": canonical_name,
+        "description": answer_text,
+        "municipality": municipality,
+        "category": "reference",
+        "category_group": "Reference",
+        "categoryGroup": "Reference",
+        "displayCategory": "Reference",
+        "type": "REFERENCE",
+        "coordinates": [lng, lat],
+        "geometry": {"type": "Point", "coordinates": [lng, lat]},
+        "image": "",
+        "min_budget": "low",
+        "best_time_of_day": "any",
+        "outdoor_exposure": "unknown",
+        "visit_time_minutes": 60,
+        "is_top_10": False,
+        "isTop10": False,
+        "mapping_status": "config_only",
+    }
+
+
 def _reference_qa_response(kb, memory: DialogueMemory, match: ReferenceQAMatch) -> dict[str, Any]:
     answer = str(match.row.get("answer") or "").strip() or localize("fallback", memory.detected_language)
     place = _reference_geo_place(kb, match)
-    locations = [place] if place else []
+    config_only_location = _reference_config_only_location(match) if not place else None
+    locations = [place] if place else ([config_only_location] if config_only_location else [])
     intent = "place_info" if place else "faq"
 
     return respond(
@@ -138,7 +215,7 @@ def _reference_qa_response(kb, memory: DialogueMemory, match: ReferenceQAMatch) 
         follow_up=None,
         memory=memory,
         active_place=place,
-        recommended_places=locations if locations else None,
+        recommended_places=[place] if place else None,
         confidence=match.score,
     )
 
@@ -320,14 +397,26 @@ def apply_topic_bias(categories: set[str], memory: DialogueMemory, text: str) ->
     return categories
 
 
-def _extract_topics(places: list[Place]) -> list[str]:
+def _location_field(location: Any, key: str) -> Any:
+    if isinstance(location, Place):
+        return getattr(location, key, None)
+    if isinstance(location, dict):
+        if key == "category_group":
+            return location.get("category_group") or location.get("categoryGroup")
+        return location.get(key)
+    return None
+
+
+def _extract_topics(places: list[Any]) -> list[str]:
     """Extract topic/category labels from a list of places."""
     topics = []
     for place in places:
-        if place.category_group:
-            topics.append(place.category_group)
-        if place.category:
-            topics.append(place.category)
+        category_group = _location_field(place, "category_group")
+        category = _location_field(place, "category")
+        if category_group:
+            topics.append(str(category_group))
+        if category:
+            topics.append(str(category))
     return topics
 
 
@@ -395,7 +484,7 @@ def _update_memory_turns(
     memory: DialogueMemory,
     question: str,
     answer: str,
-    places: list[Place],
+    places: list[Any],
 ) -> None:
     """Append conversation turn to memory and extract topics."""
     now = time.time()
@@ -412,10 +501,12 @@ def _update_memory_turns(
 
     if places:
         first = places[0]
-        if first.municipality:
-            memory.last_town = first.municipality
-        if first.category_group:
-            memory.last_activity = first.category_group
+        first_town = _location_field(first, "municipality")
+        first_activity = _location_field(first, "category_group")
+        if first_town:
+            memory.last_town = str(first_town)
+        if first_activity:
+            memory.last_activity = str(first_activity)
 
 
 # ---------------------------------------------------------------------------
@@ -1078,12 +1169,50 @@ def _place_confidence(place: Place, query: str) -> float:
     return _score_to_confidence(score_place(place, norm, tokens), 100.0)
 
 
+def _valid_lng_lat(value: Any) -> list[float] | None:
+    if not isinstance(value, (list, tuple)) or len(value) < 2:
+        return None
+    try:
+        lng = float(value[0])
+        lat = float(value[1])
+    except (TypeError, ValueError):
+        return None
+    if not (math.isfinite(lng) and math.isfinite(lat)):
+        return None
+    return [lng, lat]
+
+
+def _location_to_payload(location: Any) -> dict[str, Any] | None:
+    if isinstance(location, Place):
+        return location.to_location()
+    if not isinstance(location, dict):
+        return None
+
+    payload = dict(location)
+    coords = _valid_lng_lat(payload.get("coordinates"))
+    if coords is None:
+        geometry = payload.get("geometry")
+        if isinstance(geometry, dict):
+            coords = _valid_lng_lat(geometry.get("coordinates"))
+
+    if coords is not None:
+        payload["coordinates"] = coords
+        payload["geometry"] = {"type": "Point", "coordinates": coords}
+
+    category_group = payload.get("category_group") or payload.get("categoryGroup")
+    if category_group:
+        payload.setdefault("category_group", category_group)
+        payload.setdefault("categoryGroup", category_group)
+        payload.setdefault("displayCategory", category_group)
+    return payload
+
+
 def respond(
     answer: str,
     *,
     intent: str,
     memory: DialogueMemory,
-    locations: list[Place] | None = None,
+    locations: list[Any] | None = None,
     follow_up: str | None = None,
     actions: list[dict[str, Any]] | None = None,
     active_place: Place | None = None,
@@ -1108,9 +1237,15 @@ def respond(
 
     # Merge quick_actions into the main actions array for frontend compatibility
     merged_actions = (actions or []) + (quick_actions or [])
+    serialized_locations: list[dict[str, Any]] = []
+    for location in (locations or []):
+        payload = _location_to_payload(location)
+        if payload is not None:
+            serialized_locations.append(payload)
+
     return {
         "answer": answer,
-        "locations": [place.to_location() for place in (locations or [])],
+        "locations": serialized_locations,
         "follow_up": follow_up,
         "actions": merged_actions,
         "quick_actions": quick_actions or [],

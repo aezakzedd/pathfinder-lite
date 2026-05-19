@@ -44,6 +44,8 @@ class ReferenceQAStore:
         self._exact_question_index: dict[str, dict[str, Any]] = {}
         self._entries: list[dict[str, Any]] = []
         self._variant_to_canonical: dict[str, str] = {}
+        self._canonical_norm_to_place_map: dict[str, dict[str, Any]] = {}
+        self._variant_norm_to_place_map: dict[str, dict[str, Any]] = {}
 
         self._build_indexes()
 
@@ -137,6 +139,26 @@ class ReferenceQAStore:
 
         return self._variant_to_canonical.get(normalize_text(raw)) or raw
 
+    def place_map_entry(self, row: dict[str, Any]) -> dict[str, Any] | None:
+        canonical = self.canonical_place_name(row)
+        raw = clean_text(row.get("place_name_raw"))
+
+        for candidate in (canonical, raw):
+            entry = self.place_map_by_name(candidate)
+            if entry is not None:
+                return entry
+        return None
+
+    def place_map_by_name(self, place_name: str | None) -> dict[str, Any] | None:
+        normalized_name = normalize_text(place_name)
+        if not normalized_name:
+            return None
+
+        entry = self._canonical_norm_to_place_map.get(normalized_name)
+        if entry is not None:
+            return entry
+        return self._variant_norm_to_place_map.get(normalized_name)
+
     def _build_indexes(self) -> None:
         sorted_rows = sorted(self.qa_rows, key=lambda row: str(row.get("id") or ""))
         for row in sorted_rows:
@@ -164,11 +186,16 @@ class ReferenceQAStore:
             if not canonical:
                 continue
 
+            normalized_canonical = normalize_text(canonical)
+            if normalized_canonical:
+                self._canonical_norm_to_place_map.setdefault(normalized_canonical, row)
+
             variants = row.get("variants") or []
-            for variant in variants:
+            for variant in [canonical, *variants]:
                 normalized_variant = normalize_text(variant)
                 if not normalized_variant:
                     continue
+                self._variant_norm_to_place_map.setdefault(normalized_variant, row)
                 self._variant_to_canonical.setdefault(normalized_variant, canonical)
 
     @staticmethod
