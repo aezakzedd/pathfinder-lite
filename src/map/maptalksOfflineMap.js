@@ -65,6 +65,7 @@ export function initMap(containerId, destinations = [], options = {}) {
     popupLayer: null,
     popupDestination: null,
     selectedDestinationId: null,
+    chatHighlightedDestinationIds: new Set(),
     addedDestinationIds: new Set(),
     hub: null,
     routeCoordinates: [],
@@ -119,6 +120,13 @@ export function updateMapState(updates = {}) {
   if ('selectedDestinationId' in updates) {
     if (mapInstance.selectedDestinationId !== updates.selectedDestinationId) {
       mapInstance.selectedDestinationId = updates.selectedDestinationId;
+      selectionChanged = true;
+    }
+  }
+  if ('chatHighlightedDestinationIds' in updates) {
+    const nextHighlightedIds = new Set(updates.chatHighlightedDestinationIds || []);
+    if (!setEqual(nextHighlightedIds, mapInstance.chatHighlightedDestinationIds)) {
+      mapInstance.chatHighlightedDestinationIds = nextHighlightedIds;
       selectionChanged = true;
     }
   }
@@ -779,6 +787,7 @@ function updateMarkerStates() {
     const dest = marker.__destinationData;
     const isFeatured = marker.__isFeatured;
     const isSelected = instance.selectedDestinationId === dest.id;
+    const isChatHighlighted = instance.chatHighlightedDestinationIds.has(dest.id);
     const isAdded = instance.addedDestinationIds.has(dest.id);
 
     const wrapper = dom.querySelector('.offline-destination-marker');
@@ -786,13 +795,14 @@ function updateMarkerStates() {
 
     // Toggle classes without removing/recreating the element
     wrapper.classList.toggle('selected', isSelected);
+    wrapper.classList.toggle('chat-highlight', isChatHighlighted);
     wrapper.classList.toggle('added', isAdded);
 
     // For non-featured markers, show/hide label based on selection state
     if (!isFeatured) {
       const label = wrapper.querySelector('.offline-marker-label');
       if (label) {
-        label.style.display = (isSelected || isAdded) ? '' : 'none';
+        label.style.display = (isSelected || isChatHighlighted || isAdded) ? '' : 'none';
       }
     }
   });
@@ -869,6 +879,14 @@ function destinationsEqualById(a = [], b = []) {
   if (idsA.size !== idsB.size) return false;
   for (const id of idsA) {
     if (!idsB.has(id)) return false;
+  }
+  return true;
+}
+
+function setEqual(a = new Set(), b = new Set()) {
+  if (a.size !== b.size) return false;
+  for (const value of a) {
+    if (!b.has(value)) return false;
   }
   return true;
 }

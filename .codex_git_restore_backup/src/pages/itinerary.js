@@ -1,0 +1,2195 @@
+// Itinerary page module
+import { initMap, zoomIn, zoomOut, resetView, destroyMap, invalidateSize, updateMapState, fitToRoute, focusOnLocations } from '../map/maptalksOfflineMap.js';
+import { askPathfinder } from '../api.js';
+import { getState as getAppState, setState as setAppState } from '../state.js';
+import {
+  getSelectedDestination,
+  setSelectedDestination,
+  clearSelectedDestination,
+  getActiveDay,
+  setActiveDay,
+  getDayStops,
+  getAllDays,
+  addStopToDay,
+  removeStopFromDay,
+  removeDestinationFromDay,
+  replaceItineraryDays,
+  moveStopUp,
+  moveStopDown,
+  reorderStop,
+  reorderStopToEnd,
+  getTimeWalletInfo,
+  isDestinationInDay,
+  getStopCount,
+  getTripSetup,
+  getTripDayCount,
+  updateTripSetup,
+  toggleTripSetupActivity,
+  setTripSetupBudget,
+  isTripSetupComplete,
+  completeTripSetup,
+  subscribe,
+  getAllStops,
+  clearItinerary
+} from '../state/itineraryStore.js';
+import {
+  addMessage,
+  getMessages,
+  removeMessage,
+  subscribe as subscribeChat,
+  updateConversationState,
+  getConversationState,
+  resetConversationState,
+  getCachedResponse,
+  cacheResponse
+} from '../state/chatStore.js';
+import { calculateDistance, calculateDriveTimes, calculateTimeUsage } from '../utils/distance.js';
+import {
+  featureCollectionToDestinations,
+  filterDestinationsForSetup,
+  findDestinationsByLocations,
+  generateItinerary
+} from '../utils/generateItinerary.js';
+import { buildPreviewRouteCoordinates, buildRouteCoordinates, getHubByName } from '../utils/visualRoute.js';
+import { initKioskKeyboard } from '../ui/kioskKeyboard.js';
+import html2canvas from 'html2canvas';
+
+let mapInitialized = false;
+let stateUnsubscribe = null;
+let chatUnsubscribe = null;
+let eventListeners = [];
+let isSending = false;
+let setupOverlayOpen = false;
+let setupCalendarOpen = false;
+let setupCalendarMonthDate = null;
+let setupOpenedFromCompleted = false;
+let draggedStopId = null;
+let pointerDrag = null;
+let allDestinations = [];
+let allSpotsGeoJson = null;
+let currentRouteSummary = null;
+function getChatSessionId() {
+  const key = 'pathfinder-lite-session-id';
+  let id = sessionStorage.getItem(key);
+  if (!id) {
+    id = 'session-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
+
+const setupActivities = ['Water', 'Outdoor', 'Views', 'Heritage', 'Dining', 'Stay'];
+const budgetOptions = [
+  { value: 'low', label: '&le;&#8369;200' },
+  { value: 'medium', label: '&#8369;200-&#8369;600' },
+  { value: 'high', label: '&#8369;600+' }
+];
+
+const setupActivityIcons = {
+  Water: '<path d="M8 17a4 4 0 0 0 8 0c0-3-4-7-4-7s-4 4-4 7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /><path d="M15 6h2l2 4M13 6h-2l-2 4M14 3l-2 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />',
+  Outdoor: '<path d="M12 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" stroke="currentColor" stroke-width="1.8" /><path d="M7 21l2-7 3-2 3 2 2 7M9 10l-3 3M15 10l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />',
+  Views: '<path d="m4 19 5-9 4 6 2-3 5 6H4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /><path d="M14 7h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round" />',
+  Heritage: '<path d="M5 9h14M7 9v10M17 9v10M4 19h16M6 5h12l1 4H5l1-4Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />',
+  Dining: '<path d="M7 3v8M10 3v8M7 7h3M8.5 11v10M16 3v18M14 3v7a2 2 0 0 0 2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />',
+  Stay: '<path d="M4 20V9l8-5 8 5v11M8 20v-7h8v7M10 20v-3h4v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />'
+};
+
+// Category emoji mapping
+const categoryEmojis = {
+  'Water': '🌊',
+  'Views': '🏔️',
+  'Outdoor': '🥾',
+  'Heritage': '🏛️',
+  'Dining': '🍽️',
+  'Stay': '🏨'
+};
+
+const destinationImages = {
+  'puraran-beach': '/images/puraran_beach.webp',
+  'binurong-point': '/images/binurong_point.webp',
+  'twin-rock': '/images/twin_rock.webp',
+  'mamangsal': '/images/mamangal.webp',
+  'bato-church': '/images/st_john_church.webp',
+  'puraran beach': '/images/puraran_beach.webp',
+  'binurong point': '/images/binurong_point.webp',
+  'twin rock beach resort': '/images/twin_rock.webp',
+  'mamangal beach': '/images/mamangal.webp',
+  'bato church': '/images/st_john_church.webp',
+  'st. john the baptist church': '/images/st_john_church.webp'
+};
+
+export function renderItinerary(container) {
+  const setup = getTripSetup();
+  setupOverlayOpen = !setup.completed || !isTripSetupComplete(setup);
+
+  container.innerHTML = `
+    <div class="page page-itinerary ${setupOverlayOpen ? 'setup-active' : ''}">
+      <div class="itinerary-container">
+        <!-- Grid Overlay -->
+        <div class="grid-overlay"></div>
+        
+        <!-- Left Chatbot Panel -->
+        <aside class="chatbot-panel">
+          <div class="chatbot-header">
+            <a class="pathfinder-brand" href="#/" data-navigate="#/" aria-label="Pathfinder Home">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 12v2a2 2 0 0 1-2 2H9a1 1 0 0 0-1 1v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h0"/>
+                <path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3a1 1 0 0 1-1 1h-5a2 2 0 0 0-2 2v2"/>
+              </svg>
+              <span>PATHFINDER</span>
+            </a>
+            <button class="check-itinerary-btn" id="check-itinerary-btn" type="button" aria-label="Check Itinerary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 6.5c2.4-1.4 4.8-1.4 7.2 0v11c-2.4-1.4-4.8-1.4-7.2 0v-11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M12.8 6.5c2.4-1.4 4.8-1.4 7.2 0v11c-2.4-1.4-4.8-1.4-7.2 0v-11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              </svg>
+              Check Itinerary
+            </button>
+          </div>
+          
+          <div class="chatbot-body">
+            <div class="chatbot-messages" id="chatbot-messages">
+              <!-- Itinerary Preview as Chat Card -->
+              <div class="chat-itinerary-card" id="chat-itinerary-card">
+                <div class="itinerary-header" id="itinerary-header-click">
+                  <h3 class="itinerary-title">Itinerary Preview</h3>
+                  <div class="itinerary-header-right">
+                    <span class="spot-count" id="chat-spot-count">0 spots</span>
+                    <button class="itinerary-optimize-btn" id="itinerary-optimize-btn" type="button" aria-label="Optimize Route" title="Optimize Route">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkle-icon lucide-sparkle">
+                        <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/>
+                      </svg>
+                    </button>
+                    <span class="itinerary-minimize-icon" id="itinerary-minimize-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </span>
+                  </div>
+                </div>
+                <div class="itinerary-body" id="itinerary-body">
+                  <div class="itinerary-day-summary">
+                    <div class="day-indicator" id="day-indicator">
+                      <span class="day-indicator-text" id="day-indicator-text">Day 1 of 3</span>
+                    </div>
+                    <div class="pace-indicator" id="pace-indicator">
+                      <span class="pace-text" id="pace-text">Relaxed pace</span>
+                      <div class="pace-bar">
+                        <div class="pace-fill" id="pace-fill" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="itinerary-spots" id="chat-itinerary-spots">
+                    <div class="itinerary-empty">Day 1 is empty. Select a map pin or generate a plan to begin.</div>
+                  </div>
+                  <div class="itinerary-actions">
+                    <button class="btn-secondary chat-back-btn" id="chat-back-btn" aria-label="Previous day">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </button>
+                    <button class="btn-primary chat-generate-btn" id="chat-generate-btn">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="m14 4 6 6M4 20l9.5-9.5M13 5l6 6-2 2-6-6 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M5 5v4M3 7h4M19 17v4M17 19h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                      </svg>
+                      Generate
+                    </button>
+                    <button class="btn-primary" id="chat-next-btn" style="display: none;">Next</button>
+                    <button class="btn-primary" id="chat-save-btn" style="display: none;">Save</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="chatbot-input-area">
+            <form class="chatbot-form" id="chatbot-form">
+              <div class="chat-active-pin" id="chat-active-pin" style="display:none;">
+                <span class="chat-active-pin-name" id="chat-active-pin-name"></span>
+                <button type="button" class="chat-active-pin-clear" id="chat-active-pin-clear" aria-label="Clear context">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <input type="text" class="chatbot-input" id="chatbot-input" placeholder="Ask Pathfinder..." />
+              <button type="submit" class="send-btn" id="send-btn" aria-label="Send message">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        </aside>
+        
+        <!-- Main Map Area -->
+        <main class="map-area">
+          <!-- Map Header -->
+          <div class="map-header">
+            <h1 class="map-title">CATANDUANES</h1>
+            <p class="map-subtitle">PATHFINDER_PHILIPPINES</p>
+            <p class="map-description">Explore the island of happiness with AI-powered travel guidance</p>
+          </div>
+          
+          <!-- Local GeoJSON Map -->
+          <div id="pathfinder-map" class="map-placeholder"></div>
+          <div class="setup-map-dim" id="setup-map-dim" aria-hidden="true"></div>
+          
+          <!-- Map Controls -->
+          <div class="map-controls">
+            <button class="map-control-btn" id="zoom-in-btn" aria-label="Zoom in">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+                <path d="M11 8v6" />
+                <path d="M8 11h6" />
+              </svg>
+            </button>
+            <button class="map-control-btn" id="zoom-out-btn" aria-label="Zoom out">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+                <path d="M8 11h6" />
+              </svg>
+            </button>
+            <button class="map-control-btn" id="reset-view-btn" aria-label="Reset angled view" title="Reset to angled view">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="setup-control-bar" aria-label="Map setup controls">
+            <button type="button" class="setup-icon-btn chat-toggle-btn" id="chat-toggle-btn" title="Hide Chat & Forecast" aria-label="Toggle Chat">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye">
+                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+
+            <button class="setup-icon-btn map-theme-toggle" type="button" id="itinerary-theme-toggle" aria-label="Switch to night mode">
+              <svg class="theme-day-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <svg class="theme-night-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <button class="setup-open-btn" id="open-setup-btn" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Setup</span>
+            </button>
+            <button class="setup-icon-btn setup-info-control" type="button" id="map-info-btn" aria-label="Show Info">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8" />
+                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" />
+              </svg>
+              <span class="info-btn-text">Show Info</span>
+            </button>
+          </div>
+          <section class="trip-setup-overlay" id="trip-setup-overlay" aria-label="Trip setup">
+            <div class="trip-setup-card" role="dialog" aria-modal="true" aria-labelledby="trip-setup-title">
+              <div class="trip-setup-main">
+                <h2 id="trip-setup-title">START POINT AND TRIP DATE</h2>
+
+                <label class="setup-field setup-select-field" for="setup-start-point">
+                  <span class="setup-field-icon" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 21s6-5.1 6-10A6 6 0 0 0 6 11c0 4.9 6 10 6 10Z" stroke="currentColor" stroke-width="1.8" />
+                      <circle cx="12" cy="11" r="2" stroke="currentColor" stroke-width="1.8" />
+                    </svg>
+                  </span>
+                  <select id="setup-start-point" class="setup-input setup-select" aria-label="Start point">
+                    <option value="Virac">Virac</option>
+                    <option value="San Andres">San Andres</option>
+                  </select>
+                </label>
+
+                <label class="setup-field" for="setup-trip-date">
+                  <span class="setup-field-icon" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                      <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8" />
+                      <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                  </span>
+                  <input id="setup-trip-date" class="setup-input setup-date" type="text" inputmode="none" readonly aria-label="Trip date" />
+                  <button class="setup-calendar-trigger" id="setup-calendar-trigger" type="button" aria-label="Open calendar">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8" />
+                      <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    </svg>
+                  </button>
+                  <div class="setup-calendar-popover" id="setup-calendar-popover" aria-hidden="true"></div>
+                </label>
+
+                <div class="setup-budget-group">
+                  <h3>BUDGET SLIDER</h3>
+                  <input id="setup-budget-range" class="setup-budget-range" type="range" min="0" max="2" step="1" value="0" aria-label="Budget range" />
+                  <div class="setup-budget-options" id="setup-budget-options" aria-label="Budget options">
+                    ${budgetOptions.map(option => `
+                      <button class="setup-budget-option" type="button" data-budget="${option.value}">
+                        ${option.label}
+                      </button>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+
+              <aside class="setup-activity-panel">
+                <h3>CHOOSE ACTIVITIES</h3>
+                <div class="setup-activity-list" id="setup-activity-list">
+                  ${setupActivities.map(activity => `
+                    <button class="setup-activity-btn" type="button" data-activity="${activity}">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        ${setupActivityIcons[activity]}
+                      </svg>
+                      <span>${activity}</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </aside>
+
+              <div class="setup-card-footer">
+                <button class="setup-done-btn" id="setup-done-btn" type="button" disabled>Done</button>
+              </div>
+            </div>
+          </section>
+          
+          <!-- Destination Preview Card -->
+          <div class="destination-preview-card" id="destination-preview">
+            <div class="destination-image">
+              <div class="destination-placeholder">📍</div>
+            </div>
+            <div class="destination-content">
+              <p class="destination-empty">Select a destination from the map</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  `;
+
+  // Initialize UI and state
+  initializeUI();
+  
+  // Initialize map after DOM is updated
+  setTimeout(() => {
+    if (!mapInitialized) {
+      // Load the real local GeoJSON once for both base map and destination points.
+      fetch('/data/catanduanes_datafile.geojson')
+        .then(response => response.json())
+        .then(geojson => {
+          allSpotsGeoJson = geojson;
+          allDestinations = featureCollectionToDestinations(geojson);
+          const filteredDestinations = getFilteredMapDestinations();
+          initMap('pathfinder-map', filteredDestinations, { geojson, onRouteResult: handleMapRouteResult });
+          mapInitialized = true;
+          updateMapFeatures();
+
+          // Setup control button handlers
+          setupMapControls();
+        })
+        .catch(error => {
+          console.error('Failed to load destination data:', error);
+          // Initialize map without data
+          allSpotsGeoJson = null;
+          allDestinations = [];
+          initMap('pathfinder-map', [], { onRouteResult: handleMapRouteResult });
+          mapInitialized = true;
+          setupMapControls();
+        });
+    }
+  }, 100);
+}
+
+function initializeUI() {
+  // Subscribe to state changes
+  stateUnsubscribe = subscribe(() => {
+    currentRouteSummary = null;
+    renderDestinationPreview();
+    renderItinerarySpots();
+    renderTimeWallet();
+    updateDayTabs();
+    renderTripSetup();
+    updateMapFeatures();
+  });
+  
+  // Subscribe to chat changes
+  chatUnsubscribe = subscribeChat(() => {
+    renderChatMessages();
+  });
+  
+  // Initial render
+  renderDestinationPreview();
+  syncMapInfoButton();
+  renderItinerarySpots();
+  renderTimeWallet();
+  updateDayTabs();
+  renderChatMessages();
+  
+  // Setup chat handlers
+  setupChatHandlers();
+  
+  // Initialize kiosk virtual keyboard
+  initKioskKeyboard({
+    inputSelector: '#chatbot-input',
+    onSubmit: (message) => {
+      if (!isSending) {
+        sendMessage(message);
+      }
+    }
+  });
+  
+  // Setup export handlers
+  setupExportHandlers();
+
+  // Setup trip setup overlay handlers
+  setupTripSetupHandlers();
+  renderTripSetup();
+  
+  // Setup custom event listener for select-destination from map markers
+  const selectDestinationHandler = (e) => {
+    if (e.detail && e.detail.destination) {
+      setSelectedDestination(e.detail.destination);
+    }
+  };
+  document.addEventListener('select-destination', selectDestinationHandler);
+  eventListeners.push({ element: document, event: 'select-destination', handler: selectDestinationHandler });
+  
+  // Setup custom event listener for add-to-trip from map popups
+  const addToTripHandler = (e) => {
+    if (e.detail && e.detail.destination) {
+      handleAddToTrip(e.detail.destination);
+    }
+  };
+  document.addEventListener('add-to-trip', addToTripHandler);
+  eventListeners.push({ element: document, event: 'add-to-trip', handler: addToTripHandler });
+
+  const removeFromTripHandler = (e) => {
+    if (e.detail && e.detail.destination) {
+      handleRemoveFromTrip(e.detail.destination.id);
+    }
+  };
+  document.addEventListener('remove-from-trip', removeFromTripHandler);
+  eventListeners.push({ element: document, event: 'remove-from-trip', handler: removeFromTripHandler });
+
+  const clearDestinationHandler = () => {
+    clearSelectedDestination();
+  };
+  document.addEventListener('clear-destination', clearDestinationHandler);
+  eventListeners.push({ element: document, event: 'clear-destination', handler: clearDestinationHandler });
+}
+
+function setupMapControls() {
+  const zoomInBtn = document.getElementById('zoom-in-btn');
+  const zoomOutBtn = document.getElementById('zoom-out-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  const locateBtn = document.getElementById('locate-btn');
+  const filterBtn = document.getElementById('filter-btn');
+  const openSetupBtn = document.getElementById('open-setup-btn');
+  const mapInfoBtn = document.getElementById('map-info-btn');
+  const itineraryThemeToggle = document.getElementById('itinerary-theme-toggle');
+
+  if (zoomInBtn) {
+    const clickHandler = () => zoomIn();
+    zoomInBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: zoomInBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (zoomOutBtn) {
+    const clickHandler = () => zoomOut();
+    zoomOutBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: zoomOutBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (resetBtn) {
+    const clickHandler = () => resetView();
+    resetBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: resetBtn, event: 'click', handler: clickHandler });
+  }
+
+  const resetViewBtn = document.getElementById('reset-view-btn');
+  if (resetViewBtn) {
+    const clickHandler = () => resetView();
+    resetViewBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: resetViewBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (locateBtn) {
+    const clickHandler = () => {
+      console.log('Locate me - to be implemented');
+    };
+    locateBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: locateBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (filterBtn) {
+    const clickHandler = () => {
+      openTripSetup();
+    };
+    filterBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: filterBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (openSetupBtn) {
+    const clickHandler = () => {
+      // Toggle setup overlay
+      const setup = getTripSetup();
+      const isValid = isTripSetupComplete(setup);
+      const isCurrentlyOpen = setupOverlayOpen || !setup.completed || !isValid;
+      
+      if (isCurrentlyOpen) {
+        setupOverlayOpen = false;
+        setupOpenedFromCompleted = false;
+      } else {
+        setupOpenedFromCompleted = setup.completed && isValid;
+        setupOverlayOpen = true;
+      }
+      renderTripSetup();
+    };
+    openSetupBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: openSetupBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (mapInfoBtn) {
+    const clickHandler = () => {
+      showMapInfo();
+    };
+    mapInfoBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: mapInfoBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (itineraryThemeToggle) {
+    const clickHandler = () => {
+      const currentTheme = getAppState('theme') || 'light';
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      setAppState('theme', nextTheme);
+      applyItineraryTheme(nextTheme);
+    };
+    itineraryThemeToggle.addEventListener('click', clickHandler);
+    eventListeners.push({ element: itineraryThemeToggle, event: 'click', handler: clickHandler });
+    applyItineraryTheme(getAppState('theme') || 'light');
+  }
+
+  const chatToggleBtn = document.getElementById('chat-toggle-btn');
+  if (chatToggleBtn) {
+    const clickHandler = () => {
+      const container = document.querySelector('.itinerary-container');
+      if (container) {
+        const isHidden = container.classList.toggle('chat-hidden');
+        chatToggleBtn.setAttribute('title', isHidden ? 'Show Chat & Forecast' : 'Hide Chat & Forecast');
+        
+        chatToggleBtn.innerHTML = isHidden
+          ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-closed"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>';
+          
+        window.requestAnimationFrame(() => invalidateSize());
+      }
+    };
+    chatToggleBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatToggleBtn, event: 'click', handler: clickHandler });
+  }
+}
+
+function updateMapFeatures() {
+  if (!mapInitialized) return;
+
+  const setup = getTripSetup();
+  const selectedDestination = getSelectedDestination();
+  const currentStops = getDayStops();
+  const hub = getHubByName(setup.startPoint);
+  const filteredDestinations = getFilteredMapDestinations();
+  const visibleDestinations = includeSelectedDestination(filteredDestinations, selectedDestination);
+  const isSelectedAdded = selectedDestination ? isDestinationInDay(selectedDestination.id) : false;
+
+  updateMapState({
+    destinations: visibleDestinations,
+    hub,
+    selectedDestinationId: selectedDestination?.id || null,
+    addedDestinationIds: currentStops.map(stop => stop.id),
+    routeCoordinates: hub ? buildRouteCoordinates(hub, currentStops) : [],
+    previewCoordinates: hub && selectedDestination && !isSelectedAdded
+      ? buildPreviewRouteCoordinates(hub, currentStops, selectedDestination)
+      : [],
+    popupDestination: selectedDestination || null
+  });
+}
+
+function getFilteredMapDestinations() {
+  const setup = getTripSetup();
+  return filterDestinationsForSetup(allDestinations, setup);
+}
+
+function includeSelectedDestination(destinations, selectedDestination) {
+  if (!selectedDestination || destinations.some(destination => destination.id === selectedDestination.id)) {
+    return destinations;
+  }
+
+  return [...destinations, selectedDestination];
+}
+
+function getActivePinPayload() {
+  const destination = getSelectedDestination();
+  if (!destination) return null;
+
+  return {
+    id: destination.id,
+    name: destination.name,
+    category: destination.category,
+    type: destination.type,
+    municipality: destination.municipality,
+    coordinates: destination.coordinates
+  };
+}
+
+function applyItineraryTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const themeToggle = document.getElementById('itinerary-theme-toggle');
+  if (mapInitialized) {
+    window.requestAnimationFrame(() => invalidateSize());
+  }
+  if (!themeToggle) return;
+
+  const isDark = theme === 'dark';
+  themeToggle.classList.toggle('theme-night', isDark);
+  themeToggle.setAttribute('aria-label', isDark ? 'Switch to day mode' : 'Switch to night mode');
+}
+
+function setupTripSetupHandlers() {
+  const startSelect = document.getElementById('setup-start-point');
+  const dateInput = document.getElementById('setup-trip-date');
+  const calendarTrigger = document.getElementById('setup-calendar-trigger');
+  const calendarPopover = document.getElementById('setup-calendar-popover');
+  const budgetRange = document.getElementById('setup-budget-range');
+  const budgetButtons = document.querySelectorAll('.setup-budget-option');
+  const activityButtons = document.querySelectorAll('.setup-activity-btn');
+  const doneBtn = document.getElementById('setup-done-btn');
+
+  if (startSelect) {
+    const changeHandler = () => {
+      updateTripSetup({ startPoint: startSelect.value });
+    };
+    startSelect.addEventListener('change', changeHandler);
+    eventListeners.push({ element: startSelect, event: 'change', handler: changeHandler });
+  }
+
+  if (dateInput) {
+    const clickHandler = () => {
+      setupCalendarOpen = true;
+      setupCalendarMonthDate = getCalendarMonthDate(getTripSetup().tripDate);
+      renderTripSetup();
+    };
+    dateInput.addEventListener('click', clickHandler);
+    eventListeners.push({ element: dateInput, event: 'click', handler: clickHandler });
+  }
+
+  if (calendarTrigger) {
+    const clickHandler = () => {
+      setupCalendarOpen = !setupCalendarOpen;
+      setupCalendarMonthDate = getCalendarMonthDate(getTripSetup().tripDate);
+      renderTripSetup();
+    };
+    calendarTrigger.addEventListener('click', clickHandler);
+    eventListeners.push({ element: calendarTrigger, event: 'click', handler: clickHandler });
+  }
+
+  if (calendarPopover) {
+    const clickHandler = (event) => {
+      const monthButton = event.target.closest('[data-calendar-month]');
+      if (monthButton) {
+        setupCalendarMonthDate = shiftCalendarMonth(setupCalendarMonthDate, Number(monthButton.dataset.calendarMonth));
+        renderTripSetup();
+        return;
+      }
+
+      const dateButton = event.target.closest('[data-calendar-date]');
+      if (!dateButton) return;
+      applySetupDateSelection(dateButton.dataset.calendarDate);
+    };
+    calendarPopover.addEventListener('click', clickHandler);
+    eventListeners.push({ element: calendarPopover, event: 'click', handler: clickHandler });
+  }
+
+  if (budgetRange) {
+    const inputHandler = () => {
+      const option = budgetOptions[Number(budgetRange.value)] || budgetOptions[0];
+      updateBudgetSliderVisual(budgetRange);
+      setTripSetupBudget(option.value);
+    };
+    budgetRange.addEventListener('input', inputHandler);
+    eventListeners.push({ element: budgetRange, event: 'input', handler: inputHandler });
+  }
+
+  budgetButtons.forEach(button => {
+    const clickHandler = () => {
+      setTripSetupBudget(button.dataset.budget);
+    };
+    button.addEventListener('click', clickHandler);
+    eventListeners.push({ element: button, event: 'click', handler: clickHandler });
+  });
+
+  activityButtons.forEach(button => {
+    const clickHandler = () => {
+      toggleTripSetupActivity(button.dataset.activity);
+    };
+    button.addEventListener('click', clickHandler);
+    eventListeners.push({ element: button, event: 'click', handler: clickHandler });
+  });
+
+  if (doneBtn) {
+    const clickHandler = () => {
+      const result = completeTripSetup();
+      if (result.success) {
+        setupOverlayOpen = false;
+        setupCalendarOpen = false;
+        setupOpenedFromCompleted = false;
+        renderTripSetup();
+      }
+    };
+    doneBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: doneBtn, event: 'click', handler: clickHandler });
+  }
+}
+
+function openTripSetup() {
+  const setup = getTripSetup();
+  setupOpenedFromCompleted = setup.completed && isTripSetupComplete(setup);
+  setupOverlayOpen = true;
+  renderTripSetup();
+}
+
+function handleMapRouteResult(event = {}) {
+  currentRouteSummary = event.result || null;
+  renderTimeWallet();
+}
+
+function applySetupDateSelection(selectedDate) {
+  const setup = getTripSetup();
+  const hasCompleteRange = Boolean(setup.tripDate && setup.tripEndDate);
+
+  if (!setup.tripDate || hasCompleteRange) {
+    setupCalendarOpen = true;
+    setupCalendarMonthDate = getCalendarMonthDate(selectedDate);
+    updateTripSetup({ tripDate: selectedDate, tripEndDate: '' });
+    return;
+  }
+
+  const start = new Date(`${setup.tripDate}T00:00:00`);
+  const selected = new Date(`${selectedDate}T00:00:00`);
+  if (selected < start) {
+    setupCalendarOpen = true;
+    setupCalendarMonthDate = getCalendarMonthDate(selectedDate);
+    updateTripSetup({ tripDate: selectedDate, tripEndDate: '' });
+    return;
+  }
+
+  setupCalendarOpen = false;
+  updateTripSetup({ tripEndDate: selectedDate });
+}
+
+function showMapInfo() {
+  const previewCard = document.getElementById('destination-preview');
+
+  if (!previewCard) return;
+
+  const isHidden = previewCard.classList.contains('hidden');
+
+  if (isHidden) {
+    previewCard.classList.remove('hidden');
+  } else {
+    previewCard.classList.add('hidden');
+  }
+
+  syncMapInfoButton();
+}
+
+function syncMapInfoButton() {
+  const previewCard = document.getElementById('destination-preview');
+  const infoBtn = document.getElementById('map-info-btn');
+  const infoBtnText = infoBtn?.querySelector('.info-btn-text');
+
+  if (!previewCard || !infoBtn) return;
+
+  const isHidden = previewCard.classList.contains('hidden');
+  infoBtn.setAttribute('aria-label', isHidden ? 'Show Info' : 'Hide Info');
+  if (infoBtnText) infoBtnText.textContent = isHidden ? 'Show Info' : 'Hide Info';
+}
+
+function renderTripSetup() {
+  const page = document.querySelector('.page-itinerary');
+  const overlay = document.getElementById('trip-setup-overlay');
+  const dim = document.getElementById('setup-map-dim');
+  const startSelect = document.getElementById('setup-start-point');
+  const dateInput = document.getElementById('setup-trip-date');
+  const calendarPopover = document.getElementById('setup-calendar-popover');
+  const budgetRange = document.getElementById('setup-budget-range');
+  const budgetButtons = document.querySelectorAll('.setup-budget-option');
+  const activityButtons = document.querySelectorAll('.setup-activity-btn');
+  const doneBtn = document.getElementById('setup-done-btn');
+
+  if (!page || !overlay) return;
+
+  const setup = getTripSetup();
+  const isValid = isTripSetupComplete(setup);
+  const isOpen = setupOverlayOpen || !setup.completed || !isValid;
+  const isInitialSetup = isOpen && !setupOpenedFromCompleted && (!setup.completed || !isValid);
+  setupOverlayOpen = isOpen;
+
+  page.classList.toggle('setup-active', isOpen);
+  page.classList.toggle('setup-initial', isInitialSetup);
+  page.classList.toggle('setup-reopen', isOpen && !isInitialSetup);
+  overlay.classList.toggle('setup-visible', isOpen);
+  overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  if (dim) dim.classList.toggle('setup-map-dim-visible', isOpen);
+
+  if (startSelect && startSelect.value !== setup.startPoint) {
+    startSelect.value = setup.startPoint;
+  }
+
+  if (dateInput) {
+    const displayDate = formatSetupDateDisplay(setup.tripDate, setup.tripEndDate);
+    if (dateInput.value !== displayDate) {
+      dateInput.value = displayDate;
+    }
+  }
+
+  if (calendarPopover) {
+    calendarPopover.classList.toggle('setup-calendar-open', setupCalendarOpen);
+    calendarPopover.setAttribute('aria-hidden', setupCalendarOpen ? 'false' : 'true');
+    calendarPopover.innerHTML = renderSetupCalendar(setup.tripDate, setup.tripEndDate);
+  }
+
+  const budgetIndex = Math.max(0, budgetOptions.findIndex(option => option.value === setup.budget));
+  if (budgetRange && Number(budgetRange.value) !== budgetIndex) {
+    budgetRange.value = String(budgetIndex);
+  }
+  if (budgetRange) {
+    updateBudgetSliderVisual(budgetRange);
+  }
+
+  budgetButtons.forEach(button => {
+    button.classList.toggle('setup-budget-selected', button.dataset.budget === setup.budget);
+  });
+
+  activityButtons.forEach(button => {
+    const selected = setup.activities.includes(button.dataset.activity);
+    button.classList.toggle('setup-activity-selected', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+
+  if (doneBtn) {
+    doneBtn.disabled = !isValid;
+    doneBtn.classList.toggle('setup-done-ready', isValid);
+  }
+
+  if (mapInitialized) {
+    window.requestAnimationFrame(() => invalidateSize());
+  }
+}
+
+function formatSetupDateDisplay(startValue, endValue) {
+  if (!startValue) return '';
+
+  const start = new Date(`${startValue}T00:00:00`);
+  if (Number.isNaN(start.getTime())) return '';
+
+  const month = start.toLocaleString('en-US', { month: 'short' });
+  const startDay = start.getDate();
+
+  if (!endValue) {
+    return `${month} ${startDay} - Select end`;
+  }
+
+  const end = new Date(`${endValue}T00:00:00`);
+  if (Number.isNaN(end.getTime())) {
+    return `${month} ${startDay} - Select end`;
+  }
+
+  const endMonth = end.toLocaleString('en-US', { month: 'short' });
+  const endDay = end.getDate();
+
+  return `${month} ${startDay} - ${endMonth} ${endDay}`;
+}
+
+function renderSetupCalendar(startValue, endValue) {
+  const calendarMonth = setupCalendarMonthDate || getCalendarMonthDate(startValue);
+  const year = calendarMonth.getFullYear();
+  const month = calendarMonth.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startOffset = firstDay.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const monthLabel = calendarMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const startTime = startValue ? new Date(`${startValue}T00:00:00`).getTime() : null;
+  const endTime = endValue ? new Date(`${endValue}T00:00:00`).getTime() : null;
+  const weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const cells = [];
+
+  for (let index = 0; index < 42; index += 1) {
+    const dayNumber = index - startOffset + 1;
+    let cellDate;
+    let cellLabel;
+    let muted = false;
+
+    if (dayNumber < 1) {
+      cellLabel = daysInPrevMonth + dayNumber;
+      cellDate = new Date(year, month - 1, cellLabel);
+      muted = true;
+    } else if (dayNumber > daysInMonth) {
+      cellLabel = dayNumber - daysInMonth;
+      cellDate = new Date(year, month + 1, cellLabel);
+      muted = true;
+    } else {
+      cellLabel = dayNumber;
+      cellDate = new Date(year, month, cellLabel);
+    }
+
+    const isoDate = toIsoDate(cellDate);
+    const cellTime = cellDate.getTime();
+    const isStart = isoDate === startValue;
+    const isEnd = isoDate === endValue;
+    const inRange = Boolean(startTime && endTime && cellTime > startTime && cellTime < endTime);
+    cells.push(`
+      <button class="setup-calendar-day ${muted ? 'muted' : ''} ${inRange ? 'in-range' : ''} ${isStart ? 'range-start selected' : ''} ${isEnd ? 'range-end selected' : ''}" type="button" data-calendar-date="${isoDate}">
+        ${cellLabel}
+      </button>
+    `);
+  }
+
+  return `
+    <div class="setup-calendar-header">
+      <button class="setup-calendar-nav setup-calendar-prev" type="button" data-calendar-month="-1" aria-label="Previous month">&lsaquo;</button>
+      <span>${monthLabel}</span>
+      <button class="setup-calendar-nav setup-calendar-next" type="button" data-calendar-month="1" aria-label="Next month">&rsaquo;</button>
+    </div>
+    <div class="setup-calendar-weekdays">
+      ${weekdayLabels.map(day => `<span>${day}</span>`).join('')}
+    </div>
+    <div class="setup-calendar-grid">
+      ${cells.join('')}
+    </div>
+  `;
+}
+
+function getCalendarMonthDate(dateValue) {
+  const date = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+  return new Date(safeDate.getFullYear(), safeDate.getMonth(), 1);
+}
+
+function shiftCalendarMonth(monthDate, offset) {
+  const baseDate = monthDate || getCalendarMonthDate(getTripSetup().tripDate);
+  return new Date(baseDate.getFullYear(), baseDate.getMonth() + offset, 1);
+}
+function toIsoDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function setupChatHandlers() {
+  const chatForm = document.getElementById('chatbot-form');
+  const chatInput = document.getElementById('chatbot-input');
+  const messagesContainer = document.getElementById('chatbot-messages');
+  const pinClearBtn = document.getElementById('chat-active-pin-clear');
+
+  // Active pin pill clear handler
+  if (pinClearBtn) {
+    const clearHandler = () => {
+      clearSelectedDestination();
+      updateActivePinPill();
+    };
+    pinClearBtn.addEventListener('click', clearHandler);
+    eventListeners.push({ element: pinClearBtn, event: 'click', handler: clearHandler });
+  }
+
+  // Form submit handler
+  if (chatForm) {
+    const submitHandler = (e) => {
+      e.preventDefault();
+      const message = chatInput.value.trim();
+      if (message && !isSending) {
+        sendMessage(message);
+        chatInput.value = '';
+      }
+    };
+    chatForm.addEventListener('submit', submitHandler);
+    eventListeners.push({ element: chatForm, event: 'submit', handler: submitHandler });
+  }
+  
+  // Enter key handler
+  if (chatInput) {
+    const keydownHandler = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (message && !isSending) {
+          sendMessage(message);
+          chatInput.value = '';
+        }
+      }
+    };
+    chatInput.addEventListener('keydown', keydownHandler);
+    eventListeners.push({ element: chatInput, event: 'keydown', handler: keydownHandler });
+  }
+
+  if (messagesContainer) {
+    const actionClickHandler = (event) => {
+      const button = event.target.closest('.chat-action-btn');
+      if (!button) return;
+
+      const message = getMessages().find(item => item.id === button.dataset.messageId);
+      const action = message?.actions?.[Number(button.dataset.actionIndex)];
+      if (!action) return;
+
+      button.disabled = true;
+      applyChatAction(action);
+    };
+    messagesContainer.addEventListener('click', actionClickHandler);
+    eventListeners.push({ element: messagesContainer, event: 'click', handler: actionClickHandler });
+  }
+}
+
+function updateActivePinPill() {
+  const pinEl = document.getElementById('chat-active-pin');
+  const nameEl = document.getElementById('chat-active-pin-name');
+  const dest = getSelectedDestination();
+  if (pinEl && nameEl) {
+    if (dest && dest.name) {
+      nameEl.textContent = dest.name;
+      pinEl.style.display = 'flex';
+    } else {
+      pinEl.style.display = 'none';
+    }
+  }
+}
+
+async function sendMessage(message) {
+  isSending = true;
+
+  // Add user message
+  addMessage({ role: 'user', content: message });
+
+  // Check frontend cache first
+  const cached = getCachedResponse(message);
+  if (cached) {
+    handleChatResponse(message, cached, true);
+    isSending = false;
+    return;
+  }
+
+  // Add loading indicator
+  const loadingId = `loading-${Date.now()}`;
+  addMessage({
+    id: loadingId,
+    role: 'assistant',
+    content: '...',
+    isLoading: true
+  });
+
+  try {
+    const response = await askPathfinder({
+      question: message,
+      active_pin: getActivePinPayload(),
+      session_id: getChatSessionId(),
+      preferences: getChatPreferencePayload()
+    });
+
+    // Remove loading message
+    removeMessage(loadingId);
+
+    // Cache the fresh result
+    cacheResponse(message, response);
+
+    handleChatResponse(message, response, false);
+
+  } catch (error) {
+    // Remove loading message
+    removeMessage(loadingId);
+
+    // Phase 12: better error messages
+    let errorMsg = 'Sorry, I encountered an error. Please try again.';
+    if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      errorMsg = 'Cannot connect to the server. Please check your connection.';
+    } else if (error.message?.includes('timeout') || error.message?.includes('Timeout')) {
+      errorMsg = 'The server took too long to respond. Please try again.';
+    } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+      errorMsg = 'Too many messages. Please wait a moment before trying again.';
+    }
+    addMessage({ role: 'system', content: errorMsg });
+    console.error('Chat error:', error);
+  } finally {
+    isSending = false;
+  }
+}
+
+function handleChatResponse(message, response, isCached) {
+  let responseText = '';
+  if (typeof response === 'string') {
+    responseText = response;
+  } else if (response && response.answer) {
+    responseText = response.answer;
+  } else if (response && response.message) {
+    responseText = response.message;
+  } else {
+    responseText = JSON.stringify(response);
+  }
+
+  // Track conversation context from response
+  const locations = Array.isArray(response?.locations) ? response.locations : [];
+  const state = getConversationState();
+  const updates = {
+    turnCount: state.turnCount + 1,
+    lastIntent: response?.intent || state.lastIntent
+  };
+  if (response?.detected_language) {
+    updates.detectedLanguage = response.detected_language;
+  }
+  if (response?.entities) {
+    updates.entities = response.entities;
+  }
+  if (locations.length > 0) {
+    updates.lastPlace = locations[0];
+    const placeNames = locations.map(l => l.name).filter(Boolean);
+    const merged = [...new Set([...state.mentionedPlaces, ...placeNames])];
+    updates.mentionedPlaces = merged.slice(-10);
+  }
+  updateConversationState(updates);
+
+  addMessage({
+    role: 'assistant',
+    content: responseText,
+    followUp: response?.follow_up || null,
+    actions: getConfirmableChatActions(response)
+  });
+
+  const selectedMatch = handleChatLocations(response);
+  handleChatActions(response, selectedMatch, responseText);
+
+  // Phase 12: update active pin pill after response
+  updateActivePinPill();
+
+  if (isCached) {
+    console.log('[Cache] Served cached response for:', message);
+  }
+}
+
+function handleChatLocations(response) {
+  const locations = Array.isArray(response?.locations) ? response.locations : [];
+  if (locations.length === 0) return null;
+
+  const matches = allDestinations.length > 0
+    ? findDestinationsByLocations(allDestinations, locations)
+    : [];
+  const selected = matches[0] || null;
+
+  if (selected) {
+    // Keep active-pin/map context on first matched destination.
+    setSelectedDestination(selected);
+  }
+
+  // Keep parity with original "top picks" framing in assistant text.
+  const noticeCount = Math.min(matches.length || locations.length, 4);
+  if (noticeCount > 1) {
+    const selectedName = selected?.name || locations[0]?.name || 'the first place';
+    addMessage({
+      role: 'assistant',
+      content: `I found ${noticeCount} matching places and selected ${selectedName}.`
+    });
+  }
+
+  focusMapForChatLocations(matches, locations);
+
+  return selected;
+}
+
+function focusMapForChatLocations(matches = [], locations = []) {
+  const matchedCoords = matches
+    .map(match => match?.coordinates)
+    .filter(isValidLngLat);
+  if (matchedCoords.length > 0) {
+    focusOnLocations(matchedCoords);
+    return;
+  }
+
+  const responseCoords = (Array.isArray(locations) ? locations : [])
+    .map(extractLocationCoordinates)
+    .filter(isValidLngLat);
+  if (responseCoords.length > 0) {
+    focusOnLocations(responseCoords);
+  }
+}
+
+function extractLocationCoordinates(location) {
+  const direct = location?.coordinates;
+  if (isValidLngLat(direct)) return [Number(direct[0]), Number(direct[1])];
+
+  const geometryCoords = location?.geometry?.coordinates;
+  if (isValidLngLat(geometryCoords)) return [Number(geometryCoords[0]), Number(geometryCoords[1])];
+
+  return null;
+}
+
+function isValidLngLat(value) {
+  return Array.isArray(value)
+    && value.length >= 2
+    && Number.isFinite(Number(value[0]))
+    && Number.isFinite(Number(value[1]));
+}
+
+function handleChatActions(response, selectedMatch, responseText = '') {
+  const actions = Array.isArray(response?.actions) ? response.actions : [];
+  const addAction = actions.find(action => action?.type === 'add_to_trip');
+  if (!addAction) return;
+
+  const destinationName = selectedMatch?.name || addAction.location?.name || 'that place';
+  if (String(responseText).toLowerCase().includes('add spot')) return;
+
+  addMessage({
+    role: 'system',
+    content: `I selected ${destinationName}. Use Add Spot on the destination card to add it to Day ${getActiveDay()}.`
+  });
+}
+
+function getConfirmableChatActions(response) {
+  const actions = Array.isArray(response?.actions) ? response.actions : [];
+  const confirmableTypes = new Set([
+    'replace_itinerary',
+    'add_to_day',
+    'remove_place',
+    'replace_place',
+    'clear_itinerary_suggestion',
+    'quick_prompt'
+  ]);
+  return actions.filter(action => action && confirmableTypes.has(action.type));
+}
+
+function applyChatAction(action) {
+  if (!action?.type) return;
+
+  if (action.type === 'quick_prompt') {
+    if (action.prompt && !isSending) {
+      sendMessage(action.prompt);
+    }
+    return;
+  }
+
+  if (action.type === 'replace_itinerary') {
+    applyReplaceItineraryAction(action);
+    return;
+  }
+
+  if (action.type === 'add_to_day') {
+    applyAddToDayAction(action);
+    return;
+  }
+
+  if (action.type === 'remove_place') {
+    applyRemovePlaceAction(action);
+    return;
+  }
+
+  if (action.type === 'replace_place') {
+    applyReplacePlaceAction(action);
+    return;
+  }
+
+  if (action.type === 'clear_itinerary_suggestion') {
+    replaceItineraryDays({}, getTripDayCount());
+    addMessage({ role: 'system', content: 'Cleared the itinerary suggestion.' });
+  }
+}
+
+function applyReplaceItineraryAction(action) {
+  const rawDays = action.days || {};
+  const dayEntries = Object.entries(rawDays);
+  const dayCount = Number(action.summary?.day_count) || dayEntries.length || getTripDayCount();
+  const resolvedDays = {};
+
+  dayEntries.forEach(([day, stops]) => {
+    resolvedDays[day] = (Array.isArray(stops) ? stops : [])
+      .map(resolveActionLocation)
+      .filter(Boolean);
+  });
+
+  if (!Object.values(resolvedDays).some(stops => stops.length > 0)) {
+    addMessage({ role: 'system', content: 'I could not match that plan to local map places.' });
+    return;
+  }
+
+  replaceItineraryDays(resolvedDays, dayCount);
+  const firstStop = Object.values(resolvedDays).flat()[0];
+  if (firstStop) setSelectedDestination(firstStop);
+  addMessage({
+    role: 'system',
+    content: `Applied the ${dayCount}-day chatbot plan to the itinerary card.`
+  });
+}
+
+function applyAddToDayAction(action) {
+  const destination = resolveActionLocation(action.location);
+  const day = Number(action.day) || getActiveDay();
+  const dayCount = getTripDayCount();
+
+  if (!destination) {
+    addMessage({ role: 'system', content: 'I could not match that place to the local map.' });
+    return;
+  }
+
+  if (day < 1 || day > dayCount) {
+    addMessage({ role: 'system', content: `Day ${day} is outside this ${dayCount}-day trip.` });
+    return;
+  }
+
+  if (isDestinationInDay(destination.id, day)) {
+    addMessage({ role: 'system', content: `${destination.name} is already in Day ${day}.` });
+    return;
+  }
+
+  setActiveDay(day);
+  const result = addStopToDay(destination);
+  setSelectedDestination(destination);
+  addMessage({
+    role: 'system',
+    content: result.success ? `Added ${destination.name} to Day ${day}.` : result.message
+  });
+}
+
+function applyRemovePlaceAction(action) {
+  const destination = resolveActionLocation(action.location);
+  if (!destination) {
+    addMessage({ role: 'system', content: 'I could not match that place to remove.' });
+    return;
+  }
+
+  const targetDay = Number(action.day) || findDayContainingDestination(destination.id);
+  if (!targetDay) {
+    addMessage({ role: 'system', content: `${destination.name} is not in the current itinerary.` });
+    return;
+  }
+
+  const result = removeDestinationFromDay(destination.id, targetDay);
+  addMessage({
+    role: 'system',
+    content: result.success ? `Removed ${destination.name} from Day ${targetDay}.` : result.message
+  });
+}
+
+function applyReplacePlaceAction(action) {
+  const target = resolveActionLocation(action.target_location);
+  const replacement = resolveActionLocation(action.replacement_location);
+  if (!target || !replacement) {
+    addMessage({ role: 'system', content: 'I could not match both places for that replacement.' });
+    return;
+  }
+
+  const targetDay = Number(action.day) || findDayContainingDestination(target.id);
+  if (!targetDay) {
+    addMessage({ role: 'system', content: `${target.name} is not in the current itinerary.` });
+    return;
+  }
+
+  if (isDestinationInDay(replacement.id, targetDay)) {
+    addMessage({ role: 'system', content: `${replacement.name} is already in Day ${targetDay}.` });
+    return;
+  }
+
+  removeDestinationFromDay(target.id, targetDay);
+  setActiveDay(targetDay);
+  const result = addStopToDay(replacement);
+  setSelectedDestination(replacement);
+  addMessage({
+    role: 'system',
+    content: result.success
+      ? `Replaced ${target.name} with ${replacement.name} in Day ${targetDay}.`
+      : result.message
+  });
+}
+
+function resolveActionLocation(location) {
+  if (!location) return null;
+  const matches = findDestinationsByLocations(allDestinations, [location]);
+  if (matches.length) return matches[0];
+  if (!location.id || !location.name) return null;
+
+  const coordinates = Array.isArray(location.coordinates)
+    ? location.coordinates
+    : location.geometry?.coordinates;
+
+  return {
+    ...location,
+    id: String(location.id),
+    coordinates: Array.isArray(coordinates) ? [...coordinates] : [],
+    geometry: location.geometry || (Array.isArray(coordinates) ? { type: 'Point', coordinates: [...coordinates] } : null),
+    categoryGroup: location.categoryGroup || location.category_group || location.displayCategory,
+    displayCategory: location.displayCategory || location.categoryGroup || location.category_group,
+    isTop10: Boolean(location.isTop10 || location.is_top_10)
+  };
+}
+
+function findDayContainingDestination(destinationId) {
+  const days = getAllDays();
+  const targetId = String(destinationId);
+  for (const [day, stops] of Object.entries(days)) {
+    if ((stops || []).some(stop => String(stop.id) === targetId)) {
+      return Number(day);
+    }
+  }
+  return null;
+}
+
+function getChatPreferencePayload() {
+  const setup = getTripSetup();
+  return {
+    startPoint: setup.startPoint,
+    budget: setup.budget,
+    activities: setup.activities,
+    dayCount: getTripDayCount(setup),
+    currentItinerary: getCurrentItineraryPayload()
+  };
+}
+
+function getCurrentItineraryPayload() {
+  const days = getAllDays();
+  return Object.fromEntries(
+    Object.entries(days).map(([day, stops]) => [
+      day,
+      (stops || []).map(stop => ({
+        id: stop.id,
+        name: stop.name,
+        municipality: stop.municipality,
+        category: stop.category,
+        coordinates: stop.coordinates
+      }))
+    ])
+  );
+}
+
+function renderChatMessages() {
+  const messagesContainer = document.getElementById('chatbot-messages');
+  
+  if (!messagesContainer) return;
+  
+  const messages = getMessages().filter(m => !(m.content && m.content.includes('Generated a lightweight local itinerary')));
+  
+  // Render messages
+  const existingMessages = messagesContainer.querySelectorAll('.chat-message');
+  existingMessages.forEach(msg => msg.remove());
+  
+  messages.forEach(message => {
+    if (message.isLoading) {
+      const loadingEl = document.createElement('div');
+      loadingEl.className = 'chat-message chat-message-assistant chat-message-loading';
+      loadingEl.innerHTML = '<span class="typing-indicator">...</span>';
+      messagesContainer.appendChild(loadingEl);
+    } else {
+      const messageEl = document.createElement('div');
+      const roleClass = ['user', 'assistant', 'system'].includes(message.role) ? message.role : 'assistant';
+      messageEl.className = `chat-message chat-message-${roleClass}`;
+      const contentEl = document.createElement('div');
+      contentEl.className = 'chat-message-content';
+      contentEl.textContent = message.content;
+      messageEl.appendChild(contentEl);
+
+      messagesContainer.appendChild(messageEl);
+    }
+  });
+  
+  // Scroll to bottom
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function getChatActionLabel(action) {
+  if (action?.type === 'replace_itinerary') return 'Apply Plan';
+  if (action?.type === 'add_to_day') return `Add to Day ${action.day || getActiveDay()}`;
+  if (action?.type === 'remove_place') return 'Remove';
+  if (action?.type === 'replace_place') return 'Replace';
+  if (action?.type === 'clear_itinerary_suggestion') return 'Clear Plan';
+  if (action?.type === 'quick_prompt') return action.label || action.prompt || 'Ask';
+  return 'Apply';
+}
+
+function setupExportHandlers() {
+  const generatePdfBtn = document.getElementById('generate-pdf-btn');
+  const saveBtn = document.getElementById('save-btn');
+  const chatGenerateBtn = document.getElementById('chat-generate-btn');
+  const chatSaveBtn = document.getElementById('chat-save-btn');
+  const chatBackBtn = document.getElementById('chat-back-btn');
+  const chatNextBtn = document.getElementById('chat-next-btn');
+  const checkItineraryBtn = document.getElementById('check-itinerary-btn');
+  const minimizeBtn = document.getElementById('itinerary-header-click');
+  const optimizeBtn = document.getElementById('itinerary-optimize-btn');
+  
+  const handleExport = async () => {
+    let overlay = document.getElementById('pdf-export-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pdf-export-overlay';
+      overlay.innerHTML = `
+        <div class="pdf-export-spinner"></div>
+        <p>Capturing routes for PDF...</p>
+      `;
+      document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+
+    const generateBtn = document.getElementById('generate-pdf-btn');
+    if (generateBtn) generateBtn.classList.add('is-loading');
+
+    const originalActiveDay = getActiveDay();
+    const days = getAllDays();
+    const dayKeys = Object.keys(days).sort();
+    
+    // Hide UI elements so they don't appear in the screenshot
+    const uiElements = document.querySelectorAll('.setup-control-bar, .map-controls, .map-header, .destination-preview, #destination-preview');
+    uiElements.forEach(el => {
+      if(el) el.style.opacity = '0';
+    });
+
+    const mapScreenshots = {};
+    const mapElement = document.getElementById('pathfinder-map');
+    
+    if (mapElement) {
+      for (const day of dayKeys) {
+        // Set the active day so the map draws the specific route
+        setActiveDay(parseInt(day, 10));
+        updateMapFeatures();
+
+        // Clear any popup before capture
+        updateMapState({ popupDestination: null });
+
+        // Wait for map to update and route to compute
+        await new Promise(resolve => setTimeout(resolve, 600));
+
+        fitToRoute();
+        await new Promise(resolve => setTimeout(resolve, 1200));
+
+        try {
+          const canvas = await html2canvas(mapElement, { useCORS: true, logging: false });
+          mapScreenshots[day] = canvas.toDataURL('image/jpeg', 0.8);
+        } catch (err) {
+          console.error('Failed to capture map screenshot for day ' + day, err);
+        }
+      }
+    }
+    
+    // Restore UI
+    uiElements.forEach(el => {
+      if(el) el.style.opacity = '';
+    });
+    setActiveDay(originalActiveDay);
+    if (generateBtn) generateBtn.classList.remove('is-loading');
+    if (overlay) overlay.style.display = 'none';
+
+    const setup = getTripSetup();
+    const dayCount = getTripDayCount(setup);
+    const timeWallet = buildCurrentTimeWalletInfo();
+    // Prepare export payload
+    const exportPayload = {
+      map_screenshots: mapScreenshots,
+      days: getAllDays(),
+      allStops: getAllStops(),
+      totalStops: getAllStops().length,
+      activeDay: getActiveDay(),
+      dayCount,
+      dateRange: {
+        startDate: setup.tripDate,
+        endDate: setup.tripEndDate
+      },
+      setup,
+      timeWallet,
+      exportedAt: new Date().toISOString()
+    };
+    
+    // Store in localStorage
+    localStorage.setItem('pathfinder-lite-export-payload', JSON.stringify(exportPayload));
+    
+    // Navigate to last page
+    window.location.hash = '#/last';
+  };
+
+  const handleGenerate = () => {
+    const setup = getTripSetup();
+    const hub = getHubByName(setup.startPoint);
+    const dayCount = getTripDayCount(setup);
+
+    if (!hub || allDestinations.length === 0) {
+      addMessage({
+        role: 'system',
+        content: 'Complete setup first so Pathfinder can generate from the local destination map.'
+      });
+      return;
+    }
+
+    const result = generateItinerary({
+      hub,
+      dayCount,
+      budgetFilter: setup.budget,
+      selectedActivities: setup.activities,
+      allSpots: allDestinations
+    });
+
+    if (!Object.keys(result.days).length) {
+      addMessage({
+        role: 'system',
+        content: 'No local destinations matched the current activity and budget filters.'
+      });
+      return;
+    }
+
+    replaceItineraryDays(result.days, dayCount);
+  };
+
+  const stripIdsFromSnapshot = (rootEl) => {
+    if (!rootEl) return;
+    rootEl.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  };
+
+  const buildHistorySnapshotCard = (liveCard) => {
+    const snapshot = liveCard.cloneNode(true);
+    snapshot.removeAttribute('id');
+    stripIdsFromSnapshot(snapshot);
+    snapshot.classList.add('chat-itinerary-card-history', 'minimized');
+    snapshot.querySelectorAll('button').forEach(button => {
+      button.disabled = true;
+      button.setAttribute('tabindex', '-1');
+      button.setAttribute('aria-hidden', 'true');
+    });
+    return snapshot;
+  };
+  
+  if (generatePdfBtn) {
+    const clickHandler = () => handleExport();
+    generatePdfBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: generatePdfBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (saveBtn) {
+    const clickHandler = () => handleExport();
+    saveBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: saveBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (chatGenerateBtn) {
+    const clickHandler = () => handleGenerate();
+    chatGenerateBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatGenerateBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (chatSaveBtn) {
+    const clickHandler = () => handleExport();
+    chatSaveBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatSaveBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (checkItineraryBtn) {
+    const clickHandler = () => {
+      const itineraryCard = document.getElementById('chat-itinerary-card');
+      const messagesContainer = document.getElementById('chatbot-messages');
+      if (itineraryCard && messagesContainer) {
+        messagesContainer
+          .querySelectorAll('.chat-itinerary-card-history')
+          .forEach(card => card.classList.add('minimized'));
+
+        const snapshot = buildHistorySnapshotCard(itineraryCard);
+        messagesContainer.appendChild(snapshot);
+
+        itineraryCard.classList.remove('minimized');
+        messagesContainer.appendChild(itineraryCard);
+        itineraryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    };
+    checkItineraryBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: checkItineraryBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (minimizeBtn) {
+    const clickHandler = () => {
+      const itineraryCard = document.getElementById('chat-itinerary-card');
+      const minimizeIcon = document.getElementById('itinerary-minimize-icon');
+      if (itineraryCard) {
+        const isMinimized = itineraryCard.classList.toggle('minimized');
+        minimizeBtn.setAttribute('aria-label', isMinimized ? 'Expand itinerary' : 'Minimize itinerary');
+        if (minimizeIcon) {
+          minimizeIcon.innerHTML = isMinimized 
+            ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>'
+            : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+        }
+      }
+    };
+    minimizeBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: minimizeBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (optimizeBtn) {
+    const clickHandler = (e) => {
+      e.stopPropagation();
+      handleGenerate();
+    };
+    optimizeBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: optimizeBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (chatBackBtn) {
+    const clickHandler = () => {
+      const activeDay = getActiveDay();
+      if (activeDay > 1) {
+        setActiveDay(activeDay - 1);
+      }
+    };
+    chatBackBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatBackBtn, event: 'click', handler: clickHandler });
+  }
+
+  if (chatNextBtn) {
+    const clickHandler = () => {
+      const activeDay = getActiveDay();
+      const dayCount = getTripDayCount();
+      if (activeDay < dayCount) {
+        setActiveDay(activeDay + 1);
+      }
+    };
+    chatNextBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: chatNextBtn, event: 'click', handler: clickHandler });
+  }
+}
+
+function renderDestinationPreview() {
+  const previewContainer = document.getElementById('destination-preview');
+  if (!previewContainer) return;
+  
+  const destination = getSelectedDestination();
+  
+  if (!destination) {
+    previewContainer.innerHTML = `
+      <div class="destination-image destination-image-empty">
+        <div class="destination-placeholder">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+        </div>
+      </div>
+      <div class="destination-content">
+        <h3 class="destination-empty-title">Select a destination</h3>
+        <p class="destination-empty-subtitle">Click on a map marker to view location details</p>
+        <button class="btn-add-trip btn-disabled" disabled>Add Spot</button>
+      </div>
+    `;
+    return;
+  }
+  
+  const isAdded = isDestinationInDay(destination.id);
+  const imageSrc = getDestinationImageSrc(destination);
+  const hub = getHubByName(getTripSetup().startPoint);
+  const distanceText = getDestinationDistanceText(destination, hub);
+  const description = destination.description || 'Explore this destination and add it to your Catanduanes itinerary.';
+  const categoryLabel = destination.displayCategory || destination.categoryGroup || destination.category || 'Spot';
+  const bestTime = formatValue(destination.best_time_of_day, 'Any time');
+  const exposure = formatValue(destination.outdoor_exposure, 'Mixed');
+  const costLevel = destination.budgetLabel || formatValue(destination.min_budget, 'Low');
+  
+  previewContainer.innerHTML = `
+    <div class="destination-image" id="destination-image-container">
+      ${imageSrc ? `<img src="${imageSrc}" alt="${destination.name}" class="destination-image-img" />` : `<div class="destination-placeholder">${categoryEmojis[categoryLabel] || '+'}</div>`}
+      <span class="destination-distance">${distanceText}</span>
+    </div>
+    <div class="destination-content">
+      <h3 class="destination-name">${destination.name}</h3>
+      <p class="destination-description">${description}</p>
+      <div class="destination-meta-grid">
+        <span><strong>Type</strong>${categoryLabel}</span>
+        <span><strong>Cost</strong>${costLevel}</span>
+        <span><strong>Best</strong>${bestTime}</span>
+        <span><strong>Exposure</strong>${exposure}</span>
+      </div>
+      <button class="btn-add-trip ${isAdded ? 'btn-remove-trip' : ''}" id="trip-toggle-btn">
+        ${isAdded ? 'Remove Spot' : 'Add Spot'}
+      </button>
+    </div>
+  `;
+
+  // Image expand modal
+  const imageContainer = document.getElementById('destination-image-container');
+  if (imageContainer && imageSrc) {
+    const imageClickHandler = () => openImageModal(imageSrc, destination.name);
+    imageContainer.addEventListener('click', imageClickHandler);
+    eventListeners.push({ element: imageContainer, event: 'click', handler: imageClickHandler });
+  }
+
+  const toggleBtn = document.getElementById('trip-toggle-btn');
+  if (toggleBtn) {
+    const clickHandler = () => {
+      if (isAdded) {
+        handleRemoveFromTrip(destination.id);
+      } else {
+        handleAddToTrip(destination);
+      }
+    };
+    toggleBtn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: toggleBtn, event: 'click', handler: clickHandler });
+  }
+}
+
+function openImageModal(imageSrc, altText) {
+  let modal = document.getElementById('destination-image-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'destination-image-modal';
+    modal.className = 'destination-image-modal';
+    modal.innerHTML = `
+      <div class="destination-image-modal-backdrop"></div>
+      <div class="destination-image-modal-content">
+        <img src="" alt="" />
+        <button class="destination-image-modal-close" aria-label="Close">&times;</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector('.destination-image-modal-backdrop').addEventListener('click', closeImageModal);
+    modal.querySelector('.destination-image-modal-close').addEventListener('click', closeImageModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeImageModal(); });
+  }
+  const img = modal.querySelector('img');
+  img.src = imageSrc;
+  img.alt = altText || '';
+  modal.classList.add('open');
+}
+
+function closeImageModal() {
+  const modal = document.getElementById('destination-image-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+function handleAddToTrip(destination) {
+  const result = addStopToDay(destination);
+  if (result.success) {
+    renderDestinationPreview();
+  } else {
+    console.log(result.message);
+  }
+}
+
+function handleRemoveFromTrip(destinationId) {
+  const result = removeDestinationFromDay(destinationId);
+  if (!result.success) {
+    console.log(result.message);
+  }
+}
+
+function getDestinationImageSrc(destination) {
+  const directKey = destinationImages[destination.id];
+  if (directKey) return directKey;
+
+  const nameKey = String(destination.name || '').toLowerCase();
+  return destinationImages[nameKey] || '';
+}
+
+function getDestinationDistanceText(destination, hub) {
+  if (!destination?.coordinates || !hub?.coordinates) return 'Distance pending';
+  const distanceKm = calculateDistance(hub.coordinates, destination.coordinates);
+  return `${distanceKm} km from hub`;
+}
+
+function formatValue(value, fallback) {
+  const text = String(value || '').trim();
+  if (!text) return fallback;
+  return text
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function renderItinerarySpots() {
+  const spotsContainer = document.getElementById('chat-itinerary-spots');
+  const spotCountEl = document.getElementById('chat-spot-count');
+  
+  if (!spotsContainer || !spotCountEl) return;
+  
+  const stops = getDayStops();
+  const hub = getHubByName(getTripSetup().startPoint);
+  const driveTimes = hub ? calculateDriveTimes(hub, stops, { includeReturnLeg: false }) : [];
+  
+  spotCountEl.textContent = `${stops.length} spot${stops.length !== 1 ? 's' : ''}`;
+  
+  if (stops.length === 0) {
+    spotsContainer.innerHTML = `<div class="itinerary-empty">Day ${getActiveDay()} is empty. Select a map pin or generate a plan to begin.</div>`;
+    return;
+  }
+  
+  spotsContainer.innerHTML = stops.map((stop, index) => `
+    <div class="itinerary-spot" data-stop-id="${stop.stopId}" draggable="true">
+      ${index > 0 ? `
+        <div class="spot-drive-row">
+          <span class="spot-timeline-dot"></span>
+          <span class="spot-drive-icon">↝</span>
+          <span>${driveTimes[index]?.driveTime || 0} min drive</span>
+        </div>
+      ` : ''}
+      <div class="spot-info">
+        <span class="spot-handle" aria-hidden="true">⋮⋮</span>
+        <span class="spot-name">${stop.name}</span>
+        <button class="spot-action-btn spot-remove" data-action="remove" aria-label="Remove">×</button>
+      </div>
+      <div class="spot-actions">
+        <button class="spot-action-btn" data-action="up" ${index === 0 ? 'disabled' : ''} aria-label="Move up">↑</button>
+        <button class="spot-action-btn" data-action="down" ${index === stops.length - 1 ? 'disabled' : ''} aria-label="Move down">↓</button>
+      </div>
+    </div>
+  `).join('');
+  
+  // Setup stop action handlers
+  spotsContainer.querySelectorAll('.spot-action-btn').forEach(btn => {
+    const stopId = btn.closest('.itinerary-spot').dataset.stopId;
+    const action = btn.dataset.action;
+    
+    const clickHandler = () => {
+      if (action === 'up') {
+        moveStopUp(stopId);
+      } else if (action === 'down') {
+        moveStopDown(stopId);
+      } else if (action === 'remove') {
+        removeStopFromDay(stopId);
+      }
+    };
+    
+    btn.addEventListener('click', clickHandler);
+    eventListeners.push({ element: btn, event: 'click', handler: clickHandler });
+  });
+
+  setupStopDragHandlers(spotsContainer);
+}
+
+function setupStopDragHandlers(spotsContainer) {
+  spotsContainer.querySelectorAll('.itinerary-spot').forEach(spot => {
+    const dragStartHandler = (event) => {
+      draggedStopId = spot.dataset.stopId;
+      spot.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', draggedStopId);
+    };
+
+    const dragEndHandler = () => {
+      draggedStopId = null;
+      spotsContainer.querySelectorAll('.itinerary-spot').forEach(item => {
+        item.classList.remove('dragging', 'drag-over');
+      });
+      spotsContainer.classList.remove('drag-active');
+    };
+
+    const dragOverHandler = (event) => {
+      if (!draggedStopId || draggedStopId === spot.dataset.stopId) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      spotsContainer.classList.add('drag-active');
+      spotsContainer.querySelectorAll('.itinerary-spot').forEach(item => item.classList.remove('drag-over'));
+      spot.classList.add('drag-over');
+    };
+
+    const dropHandler = (event) => {
+      event.preventDefault();
+      const sourceStopId = event.dataTransfer.getData('text/plain') || draggedStopId;
+      const targetStopId = spot.dataset.stopId;
+      draggedStopId = null;
+      if (sourceStopId && targetStopId && sourceStopId !== targetStopId) {
+        reorderStop(sourceStopId, targetStopId);
+      }
+    };
+
+    const pointerDownHandler = (event) => {
+      if (event.target.closest('button')) return;
+      pointerDrag = {
+        stopId: spot.dataset.stopId,
+        startY: event.clientY,
+        active: false
+      };
+      spot.setPointerCapture?.(event.pointerId);
+    };
+
+    const pointerMoveHandler = (event) => {
+      if (!pointerDrag || pointerDrag.stopId !== spot.dataset.stopId) return;
+      const deltaY = event.clientY - pointerDrag.startY;
+
+      if (!pointerDrag.active && Math.abs(deltaY) > 8) {
+        pointerDrag.active = true;
+        spot.classList.add('dragging');
+        spotsContainer.classList.add('drag-active');
+      }
+
+      if (pointerDrag.active) {
+        event.preventDefault();
+        spot.style.transform = `translateY(${deltaY}px) scale(0.985)`;
+        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.itinerary-spot');
+        spotsContainer.querySelectorAll('.itinerary-spot').forEach(item => item.classList.remove('drag-over'));
+        if (target && target !== spot && spotsContainer.contains(target)) {
+          target.classList.add('drag-over');
+        }
+      }
+    };
+
+    const pointerUpHandler = (event) => {
+      if (!pointerDrag || pointerDrag.stopId !== spot.dataset.stopId) return;
+      const sourceStopId = pointerDrag.stopId;
+      const wasDragging = pointerDrag.active;
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.itinerary-spot');
+
+      pointerDrag = null;
+      spot.releasePointerCapture?.(event.pointerId);
+      spot.style.transform = '';
+      spotsContainer.classList.remove('drag-active');
+      spotsContainer.querySelectorAll('.itinerary-spot').forEach(item => {
+        item.classList.remove('dragging', 'drag-over');
+      });
+
+      if (wasDragging && target && target !== spot && spotsContainer.contains(target)) {
+        reorderStop(sourceStopId, target.dataset.stopId);
+      }
+    };
+
+    spot.addEventListener('dragstart', dragStartHandler);
+    spot.addEventListener('dragend', dragEndHandler);
+    spot.addEventListener('dragover', dragOverHandler);
+    spot.addEventListener('drop', dropHandler);
+    spot.addEventListener('pointerdown', pointerDownHandler);
+    spot.addEventListener('pointermove', pointerMoveHandler);
+    spot.addEventListener('pointerup', pointerUpHandler);
+    spot.addEventListener('pointercancel', pointerUpHandler);
+    eventListeners.push({ element: spot, event: 'dragstart', handler: dragStartHandler });
+    eventListeners.push({ element: spot, event: 'dragend', handler: dragEndHandler });
+    eventListeners.push({ element: spot, event: 'dragover', handler: dragOverHandler });
+    eventListeners.push({ element: spot, event: 'drop', handler: dropHandler });
+    eventListeners.push({ element: spot, event: 'pointerdown', handler: pointerDownHandler });
+    eventListeners.push({ element: spot, event: 'pointermove', handler: pointerMoveHandler });
+    eventListeners.push({ element: spot, event: 'pointerup', handler: pointerUpHandler });
+    eventListeners.push({ element: spot, event: 'pointercancel', handler: pointerUpHandler });
+  });
+
+  const containerDragOverHandler = (event) => {
+    if (!draggedStopId) return;
+    event.preventDefault();
+  };
+
+  const containerDropHandler = (event) => {
+    if (!draggedStopId || event.target.closest('.itinerary-spot')) return;
+    event.preventDefault();
+    const sourceStopId = event.dataTransfer.getData('text/plain') || draggedStopId;
+    draggedStopId = null;
+    reorderStopToEnd(sourceStopId);
+  };
+
+  spotsContainer.addEventListener('dragover', containerDragOverHandler);
+  spotsContainer.addEventListener('drop', containerDropHandler);
+  eventListeners.push({ element: spotsContainer, event: 'dragover', handler: containerDragOverHandler });
+  eventListeners.push({ element: spotsContainer, event: 'drop', handler: containerDropHandler });
+}
+
+function updateBudgetSliderVisual(slider) {
+  const min = Number(slider.min || 0);
+  const max = Number(slider.max || 2);
+  const value = Number(slider.value || 0);
+  const percent = max === min ? 0 : ((value - min) / (max - min)) * 100;
+  slider.style.setProperty('--budget-fill', `${percent}%`);
+}
+
+function renderTimeWallet() {
+  const paceText = document.getElementById('pace-text');
+  const paceFill = document.getElementById('pace-fill');
+  const walletInfo = buildCurrentTimeWalletInfo();
+
+  if (paceText && paceFill) {
+    const routeHint = walletInfo.routeSource === 'fallback' ? ' approx' : '';
+    paceText.textContent = `${walletInfo.pace} pace · ${walletInfo.visitTime}m visit + ${walletInfo.driveTime}m drive${routeHint}`;
+    paceFill.style.width = `${walletInfo.percentage}%`;
+  }
+}
+
+function buildCurrentTimeWalletInfo() {
+  const activeDay = getActiveDay();
+  const stops = getDayStops(activeDay);
+  const hub = getHubByName(getTripSetup().startPoint);
+  const fallbackUsage = hub ? calculateTimeUsage(hub, stops, { includeReturnLeg: false }) : { driveTime: 0, visitTime: 0 };
+  const routeDriveTime = Number(currentRouteSummary?.durationMin ?? currentRouteSummary?.duration_min);
+  const driveTime = Number.isFinite(routeDriveTime) && routeDriveTime > 0
+    ? Math.round(routeDriveTime)
+    : fallbackUsage.driveTime;
+  const routeSource = currentRouteSummary?.isFallback ? 'fallback' : (currentRouteSummary ? 'api' : 'estimate');
+
+  return {
+    ...getTimeWalletInfo(activeDay, {
+      visitMinutes: fallbackUsage.visitTime,
+      travelMinutes: driveTime
+    }),
+    routeSource
+  };
+}
+
+function updateDayTabs() {
+  const activeDay = getActiveDay();
+  const dayCount = getTripDayCount();
+  const dayIndicatorText = document.getElementById('day-indicator-text');
+  const chatSaveBtn = document.getElementById('chat-save-btn');
+  const chatGenerateBtn = document.getElementById('chat-generate-btn');
+  const chatBackBtn = document.getElementById('chat-back-btn');
+  const chatNextBtn = document.getElementById('chat-next-btn');
+  
+  if (dayIndicatorText) {
+    dayIndicatorText.textContent = `Day ${activeDay} of ${dayCount}`;
+  }
+  
+  // Handle action button visibility based on day
+  if (chatBackBtn && chatGenerateBtn && chatNextBtn && chatSaveBtn) {
+    // Back button: hidden on Day 1, visible from Day 2 onward
+    chatBackBtn.disabled = activeDay <= 1;
+    chatBackBtn.style.display = activeDay <= 1 ? 'none' : 'inline-flex';
+    
+    // Next button: visible until final day, Save button only on final day
+    if (activeDay < dayCount) {
+      chatNextBtn.style.display = 'block';
+      chatSaveBtn.style.display = 'none';
+    } else {
+      chatNextBtn.style.display = 'none';
+      chatSaveBtn.style.display = 'block';
+    }
+    
+    // Generate button: visible on all days
+    chatGenerateBtn.style.display = 'block';
+  }
+}
+
+// Cleanup function to be called when leaving the page
+export function cleanupItinerary() {
+  // Unsubscribe from state changes
+  if (stateUnsubscribe) {
+    stateUnsubscribe();
+    stateUnsubscribe = null;
+  }
+  
+  // Unsubscribe from chat changes
+  if (chatUnsubscribe) {
+    chatUnsubscribe();
+    chatUnsubscribe = null;
+  }
+  
+  // Remove all event listeners
+  eventListeners.forEach(({ element, event, handler }) => {
+    element.removeEventListener(event, handler);
+  });
+  eventListeners = [];
+  
+  // Destroy map
+  if (mapInitialized) {
+    destroyMap();
+    mapInitialized = false;
+  }
+  
+  // Clear selected destination
+  clearSelectedDestination();
+  
+  // Reset sending state
+  isSending = false;
+}

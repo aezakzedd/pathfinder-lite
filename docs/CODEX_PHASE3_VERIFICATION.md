@@ -1,6 +1,6 @@
 # Codex Phase 3 Verification
 
-Date: 2026-05-19 14:40:36
+Date: 2026-05-19 14:56:30
 Project: `pathfinder-lite-maptalks`
 Scope: Phase 3 config-only reference pin bridge + response-shape/runtime checks.
 

@@ -603,7 +603,8 @@ body[data-route="itinerary"] .page-container {
   z-index: 1;
 }
 
-.offline-destination-marker.selected .offline-marker-ring {
+.offline-destination-marker.selected .offline-marker-ring,
+.offline-destination-marker.chat-highlight .offline-marker-ring {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
   background: transparent;
@@ -3146,18 +3147,6 @@ body[data-route="itinerary"] .page-container {
 
 .chat-itinerary-card.minimized .itinerary-body {
   display: none !important;
-}
-
-.chat-itinerary-card-history {
-  opacity: 0.95;
-}
-
-.chat-itinerary-card-history.minimized {
-  pointer-events: none;
-}
-
-.chat-itinerary-card-history .itinerary-header {
-  cursor: default;
 }
 
 .chat-itinerary-card.minimized {

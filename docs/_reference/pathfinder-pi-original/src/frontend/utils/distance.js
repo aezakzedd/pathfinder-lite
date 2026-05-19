@@ -1,0 +1,190 @@
+import * as turf from '@turf/turf';
+
+const isValidCoordinates = (coordinates) => {
+    return (
+        Array.isArray(coordinates) &&
+        coordinates.length >= 2 &&
+        typeof coordinates[0] === 'number' &&
+        typeof coordinates[1] === 'number' &&
+        !isNaN(coordinates[0]) &&
+        !isNaN(coordinates[1])
+    );
+};
+
+const resolveStartCoordinates = (hub, options = {}) => {
+    if (isValidCoordinates(options.startCoordinates)) {
+        return options.startCoordinates;
+    }
+    return isValidCoordinates(hub?.coordinates) ? hub.coordinates : null;
+};
+
+export const estimateDriveMinutes = (distanceKm) => {
+    const km = Number(distanceKm);
+    if (!Number.isFinite(km) || km <= 0) return 0;
+
+    let averageSpeedKmh = 40;
+    let transferBufferMinutes = 4;
+
+    // Short inter-town legs are typically slower due to turns and traffic.
+    if (km < 3) {
+        averageSpeedKmh = 22;
+        transferBufferMinutes = 4;
+    } else if (km < 8) {
+        averageSpeedKmh = 30;
+        transferBufferMinutes = 5;
+    } else if (km < 20) {
+        averageSpeedKmh = 38;
+        transferBufferMinutes = 7;
+    } else {
+        averageSpeedKmh = 46;
+        transferBufferMinutes = 10;
+    }
+
+    const rawMinutes = (km / averageSpeedKmh) * 60 + transferBufferMinutes;
+    return Math.max(3, Math.ceil(rawMinutes));
+};
+
+// 1. Basic Distance Calc (Used by everything else)
+export const calculateDistance = (coord1, coord2) => {
+    if (!coord1 || !coord2) return 0;
+    const from = turf.point(coord1);
+    const to = turf.point(coord2);
+    return parseFloat(turf.distance(from, to).toFixed(1));
+};
+
+// 2. Total Trip Calc (Used for Summary Stats)
+export const calculateTotalRoute = (hub, spots) => {
+    if (!hub || !spots || spots.length === 0) return 0;
+    
+    let totalDist = 0;
+    let currentCoords = hub.coordinates;
+
+    spots.forEach(spot => {
+        const dist = calculateDistance(currentCoords, spot.geometry.coordinates);
+        totalDist += dist;
+        currentCoords = spot.geometry.coordinates;
+    });
+
+    return parseFloat(totalDist.toFixed(1));
+};
+
+// 3. Feasibility Scoring Engine (The Green/Yellow/Red Logic)
+export const evaluateTripFeasibility = (hub, spots, endHour = 17) => {
+    // GUARD CLAUSE: Return safe default if data is missing
+    if (!hub || !spots || spots.length === 0) {
+        return { status: 'EMPTY', message: 'Add spots to see feasibility', color: '#6B7280' };
+    }
+
+    // A. Run the Reverse Math (Invisible Layer)
+    let currentTime = new Date();
+    currentTime.setHours(endHour, 0, 0, 0);
+
+    // 1. Subtract Drive Home (Last Spot -> Hub)
+    let lastSpot = spots[spots.length - 1];
+    let distToHome = calculateDistance(lastSpot.geometry.coordinates, hub.coordinates);
+    let driveHomeMins = estimateDriveMinutes(distToHome);
+    currentTime.setMinutes(currentTime.getMinutes() - driveHomeMins);
+
+    // 2. Loop Backwards to find Hub Departure Time
+    for (let i = spots.length - 1; i >= 0; i--) {
+        const spot = spots[i];
+        
+        // Subtract Visit (Default 60 mins)
+        const visitDuration = spot.visit_time_minutes > 0 ? spot.visit_time_minutes : 60; 
+        currentTime.setMinutes(currentTime.getMinutes() - visitDuration);
+
+        // Subtract Drive from Previous
+        let prevCoords = (i === 0) ? hub.coordinates : spots[i - 1].geometry.coordinates;
+        const dist = calculateDistance(prevCoords, spot.geometry.coordinates);
+        const driveMinutes = estimateDriveMinutes(dist);
+
+        currentTime.setMinutes(currentTime.getMinutes() - driveMinutes);
+    }
+
+    // B. The Result: When MUST you leave the Hub?
+    const requiredDepartureHour = currentTime.getHours() + (currentTime.getMinutes() / 60);
+
+    // C. The Verdict
+    if (requiredDepartureHour >= 8) {
+        return { 
+            status: 'RELAXED', 
+            message: 'Comfortable day. Fits well.', 
+            color: '#10B981', // Green
+        };
+    } else if (requiredDepartureHour >= 6) {
+        return { 
+            status: 'TIGHT', 
+            message: 'Doable, but requires an early start (6-8 AM).', 
+            color: '#F59E0B', // Yellow
+        };
+    } else {
+        return { 
+            status: 'UNREALISTIC', 
+            message: 'Too much! You would need to start before dawn.', 
+            color: '#EF4444', // Red
+        };
+    }
+};
+
+export const calculateTimeUsage = (hub, spots, options = {}) => {
+    if (!spots || spots.length === 0) {
+        return { totalUsed: 0, driveTime: 0, visitTime: 0 };
+    }
+
+    const startCoordinates = resolveStartCoordinates(hub, options);
+    if (!startCoordinates) {
+        return { totalUsed: 0, driveTime: 0, visitTime: 0 };
+    }
+
+    const includeReturnLeg = options.includeReturnLeg !== false;
+    const returnCoordinates = isValidCoordinates(options.returnCoordinates)
+        ? options.returnCoordinates
+        : (isValidCoordinates(hub?.coordinates) ? hub.coordinates : startCoordinates);
+
+    let totalDrive = 0;
+    let totalVisit = 0;
+    let currentCoords = startCoordinates;
+
+    spots.forEach(spot => {
+        // 1. Visit Time
+        const visit = spot.visit_time_minutes > 0 ? spot.visit_time_minutes : 60;
+        totalVisit += visit;
+
+        // 2. Drive from Previous
+        const dist = calculateDistance(currentCoords, spot.geometry.coordinates);
+        const driveMins = estimateDriveMinutes(dist);
+        totalDrive += driveMins;
+
+        currentCoords = spot.geometry.coordinates;
+    });
+
+    // 3. Optional return leg (defaults to legacy behavior)
+    if (includeReturnLeg && returnCoordinates) {
+        const distHome = calculateDistance(currentCoords, returnCoordinates);
+        const driveHome = estimateDriveMinutes(distHome);
+        totalDrive += driveHome;
+    }
+
+    return {
+        totalUsed: totalDrive + totalVisit,
+        driveTime: totalDrive,
+        visitTime: totalVisit
+    };
+};
+
+// 4. Drive Time Helper (Used for the UI list)
+export const calculateDriveTimes = (hub, spots, options = {}) => {
+    if (!spots || spots.length === 0) return [];
+
+    const startCoordinates = resolveStartCoordinates(hub, options);
+    if (!startCoordinates) return [];
+    
+    let currentCoords = startCoordinates;
+    
+    return spots.map(spot => {
+        const dist = calculateDistance(currentCoords, spot.geometry.coordinates);
+        const driveMinutes = estimateDriveMinutes(dist);
+        currentCoords = spot.geometry.coordinates;
+        return { driveTime: driveMinutes };
+    });
+};
