@@ -59,11 +59,13 @@ class SemanticCache:
                 "answer": best_entry["answer"],
                 "locations": best_entry.get("locations", []),
                 "actions": best_entry.get("actions", []),
+                "quick_actions": best_entry.get("quick_actions", []),
                 "follow_up": best_entry.get("follow_up"),
                 "intent": best_entry.get("intent"),
                 "confidence": best_entry.get("confidence"),
                 "detected_language": best_entry.get("detected_language"),
                 "entities": best_entry.get("entities"),
+                "source": best_entry.get("source"),
                 "cached": True,
                 "similarity": round(best_score, 3),
             }
@@ -85,11 +87,13 @@ class SemanticCache:
                 entry["answer"] = response.get("answer", "")
                 entry["locations"] = response.get("locations", [])
                 entry["actions"] = response.get("actions", [])
+                entry["quick_actions"] = response.get("quick_actions", [])
                 entry["follow_up"] = response.get("follow_up")
                 entry["intent"] = response.get("intent")
                 entry["confidence"] = response.get("confidence")
                 entry["detected_language"] = response.get("detected_language")
                 entry["entities"] = response.get("entities")
+                entry["source"] = response.get("source")
                 entry["count"] = count
                 entry["updated_at"] = now
                 entry["accessed_at"] = now
@@ -107,11 +111,13 @@ class SemanticCache:
                 "answer": response.get("answer", ""),
                 "locations": response.get("locations", []),
                 "actions": response.get("actions", []),
+                "quick_actions": response.get("quick_actions", []),
                 "follow_up": response.get("follow_up"),
                 "intent": response.get("intent"),
                 "confidence": response.get("confidence"),
                 "detected_language": response.get("detected_language"),
                 "entities": response.get("entities"),
+                "source": response.get("source"),
                 "count": count,
                 "created_at": now,
                 "updated_at": now,

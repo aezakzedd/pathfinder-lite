@@ -5,6 +5,7 @@ import re
 import time
 from typing import Any
 
+from .config import get as config_get
 from .dialogue_state import DialogueMemory, dialogue_store
 from .entity_extractor import EntityExtractor
 from .localization import detect_language, localize, localize_quick_label
@@ -29,9 +30,32 @@ from .itinerary_planner import (
     build_replace_place_action,
     is_itinerary_request,
 )
+from .reference_qa import ReferenceQAMatch, get_reference_qa_store
 
 
 SOURCE = "local-chatbot"
+REFERENCE_QA_PROTECTED_INTENTS = {
+    "add_to_day",
+    "replace_place",
+    "remove_place",
+    "clear_itinerary_suggestion",
+    "itinerary_request",
+    "nearby_question",
+    "route_question",
+    "add_it",
+}
+REFERENCE_QA_OVERRIDABLE_INTENTS = {"place_info", "recommendation", "fallback"}
+OUT_OF_DOMAIN_TOPICS = (
+    "quantum physics",
+    "quantum",
+    "physics",
+    "chemistry",
+    "algebra",
+    "calculus",
+    "programming",
+    "coding",
+)
+TOURISM_EDU_ALLOWLIST = ("history", "heritage", "cultural", "culture", "church", "museum")
 
 
 # Count-parsing word map
@@ -54,6 +78,124 @@ def parse_count(user_input: str) -> tuple[int, bool]:
         if re.search(pattern, query_lower):
             return num, True
     return 5, False
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _reference_qa_settings() -> dict[str, Any]:
+    return {
+        "enabled": bool(config_get("reference_qa", "enabled", True)),
+        "min_score": _safe_float(config_get("reference_qa", "min_score", 0.66), 0.66),
+        "min_token_overlap": int(config_get("reference_qa", "min_token_overlap", 2) or 2),
+        "weak_confidence_max": _safe_float(
+            config_get("reference_qa", "weak_confidence_max", 0.25), 0.25
+        ),
+        "override_margin": _safe_float(config_get("reference_qa", "override_margin", 0.15), 0.15),
+    }
+
+
+def _match_reference_qa(question: str, settings: dict[str, Any]) -> ReferenceQAMatch | None:
+    if not settings.get("enabled", True):
+        return None
+    store = get_reference_qa_store()
+    return store.match(
+        question,
+        min_score=_safe_float(settings.get("min_score"), 0.66),
+        min_token_overlap=int(settings.get("min_token_overlap", 2) or 2),
+    )
+
+
+def _reference_geo_place(kb, match: ReferenceQAMatch) -> Place | None:
+    row = match.row
+    if str(row.get("mapping_status") or "").strip().lower() != "geo_exact":
+        return None
+
+    store = get_reference_qa_store()
+    canonical_name = store.canonical_place_name(row)
+    if not canonical_name:
+        return None
+
+    return kb.match_place(canonical_name, active_pin=None)
+
+
+def _reference_qa_response(kb, memory: DialogueMemory, match: ReferenceQAMatch) -> dict[str, Any]:
+    answer = str(match.row.get("answer") or "").strip() or localize("fallback", memory.detected_language)
+    place = _reference_geo_place(kb, match)
+    locations = [place] if place else []
+    intent = "place_info" if place else "faq"
+
+    return respond(
+        answer,
+        locations=locations,
+        actions=[],
+        quick_actions=[],
+        intent=intent,
+        follow_up=None,
+        memory=memory,
+        active_place=place,
+        recommended_places=locations if locations else None,
+        confidence=match.score,
+    )
+
+
+def _try_reference_qa_response(
+    kb,
+    memory: DialogueMemory,
+    question: str,
+    settings: dict[str, Any],
+) -> dict[str, Any] | None:
+    match = _match_reference_qa(question, settings)
+    if not match:
+        return None
+    return _reference_qa_response(kb, memory, match)
+
+
+def _maybe_override_with_reference_qa(
+    kb,
+    memory: DialogueMemory,
+    question: str,
+    current_response: dict[str, Any],
+    settings: dict[str, Any],
+) -> dict[str, Any]:
+    if not settings.get("enabled", True):
+        return current_response
+
+    current_intent = str(current_response.get("intent") or "")
+    if current_intent in REFERENCE_QA_PROTECTED_INTENTS:
+        return current_response
+    if current_intent not in REFERENCE_QA_OVERRIDABLE_INTENTS:
+        return current_response
+
+    current_confidence = _safe_float(current_response.get("confidence"), 0.0)
+    if current_confidence > _safe_float(settings.get("weak_confidence_max"), 0.25):
+        return current_response
+
+    match = _match_reference_qa(question, settings)
+    if not match:
+        return current_response
+    if match.score < current_confidence + _safe_float(settings.get("override_margin"), 0.15):
+        return current_response
+
+    return _reference_qa_response(kb, memory, match)
+
+
+def _is_out_of_domain_tourism_query(
+    text: str,
+    entities: dict[str, Any],
+    active_place: Place | None,
+) -> bool:
+    if active_place:
+        return False
+    if entities.get("places") or entities.get("activities") or entities.get("is_listing"):
+        return False
+    if any(term in text for term in TOURISM_EDU_ALLOWLIST):
+        return False
+    return any(term in text for term in OUT_OF_DOMAIN_TOPICS)
 
 
 # ---------------------------------------------------------------------------
@@ -434,6 +576,7 @@ def answer_question(
     matched_faq = kb.match_faq(expanded)
     intent = detect_intent(text, active_place, memory, matched_faq)
     requested_count, _ = parse_count(expanded)
+    reference_settings = _reference_qa_settings()
 
     # Phase 7: Detect and persist language
     lang = detect_language(expanded)
@@ -458,7 +601,9 @@ def answer_question(
     # Phase 9: Multi-place routing (before intent handlers)
     multi_place_response = _handle_multi_place(kb, entities, memory, question)
     if multi_place_response:
-        return multi_place_response
+        return _maybe_override_with_reference_qa(
+            kb, memory, expanded, multi_place_response, reference_settings
+        )
 
     # Phase 9: Multi-activity routing (before standard recommendation)
     if intent in {"recommendation", "budget_question"}:
@@ -466,7 +611,9 @@ def answer_question(
             kb, entities, memory, question, requested_count
         )
         if multi_activity_response:
-            return multi_activity_response
+            return _maybe_override_with_reference_qa(
+                kb, memory, expanded, multi_activity_response, reference_settings
+            )
 
     if intent == "greeting":
         return respond(
@@ -485,12 +632,26 @@ def answer_question(
         )
 
     if intent == "place_info":
+        if _is_out_of_domain_tourism_query(text, entities, active_place):
+            reference_response = _try_reference_qa_response(kb, memory, expanded, reference_settings)
+            if reference_response:
+                return reference_response
+            return fallback_response(
+                memory,
+                "I can help with places, nearby food, budget picks, routes, or simple itinerary ideas.",
+                intent="fallback",
+            )
+
         place = resolve_place_for_question(kb, question, effective_pin, memory)
         if not place:
+            reference_response = _try_reference_qa_response(kb, memory, expanded, reference_settings)
+            if reference_response:
+                return reference_response
             return place_suggestion_response(kb, question, memory, count=requested_count)
         # Phase 6: progressive disclosure — first query is concise
         is_first_time = memory.last_intent not in {"place_info", "followup_more"}
-        return place_info_response(place, memory, question, concise=is_first_time)
+        response = place_info_response(place, memory, question, concise=is_first_time)
+        return _maybe_override_with_reference_qa(kb, memory, expanded, response, reference_settings)
 
     if intent == "followup_more":
         place = resolve_context_place(kb, effective_pin, memory)
@@ -643,7 +804,7 @@ def answer_question(
         )
         if categories:
             memory.preferences["last_recommendation_categories"] = sorted(categories)
-        return recommendation_response(
+        response = recommendation_response(
             places,
             memory,
             question,
@@ -651,6 +812,7 @@ def answer_question(
             prefix="Good local picks are",
             empty="I could not find a strong match. Try asking for beaches, food, heritage, views, or budget spots.",
         )
+        return _maybe_override_with_reference_qa(kb, memory, expanded, response, reference_settings)
 
     if intent == "itinerary_request":
         plan = build_itinerary_plan(kb, question, active_pin=effective_pin, memory=memory)
@@ -702,6 +864,9 @@ def answer_question(
             memory=memory,
         )
 
+    reference_response = _try_reference_qa_response(kb, memory, expanded, reference_settings)
+    if reference_response:
+        return reference_response
     return fallback_response(memory, "I can help with places, nearby food, budget picks, routes, or simple itinerary ideas.")
 
 
@@ -837,6 +1002,7 @@ def fallback_response(memory: DialogueMemory, message: str, *, intent: str = "fa
         intent=intent,
         follow_up=follow_up,
         memory=memory,
+        confidence=0.0,
     )
 
 

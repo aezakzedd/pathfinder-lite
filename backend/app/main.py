@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
+import re
+from typing import Any
 
 from .chatbot import answer_question
 from .gatekeeper import (
@@ -24,6 +26,96 @@ from .pdf_share import (
     invalidate_pdf_share,
 )
 from .dialogue_state import dialogue_store
+
+FOLLOWUP_ACTIVE_PIN_PHRASES = (
+    "nearby",
+    "near this",
+    "around this",
+    "is this",
+    "is it",
+    "good for",
+    "beginners",
+    "can i",
+    "what about this",
+    "how far",
+    "how long",
+    "add this",
+)
+SOFT_QUERY_HINTS = {
+    "what",
+    "where",
+    "when",
+    "who",
+    "why",
+    "how",
+    "is",
+    "are",
+    "can",
+    "tell",
+    "show",
+    "best",
+    "recommend",
+    "known",
+    "swim",
+    "beach",
+    "restaurant",
+    "food",
+    "hotel",
+    "stay",
+    "tourism",
+    "catanduanes",
+    "virac",
+    "fare",
+    "tricycle",
+    "nightlife",
+}
+
+
+def normalize_ask_response(payload: dict[str, Any] | None) -> dict[str, Any]:
+    response: dict[str, Any] = dict(payload or {})
+
+    response["answer"] = str(response.get("answer") or "")
+    response["locations"] = response.get("locations") if isinstance(response.get("locations"), list) else []
+    response["actions"] = response.get("actions") if isinstance(response.get("actions"), list) else []
+    response["quick_actions"] = (
+        response.get("quick_actions") if isinstance(response.get("quick_actions"), list) else []
+    )
+
+    follow_up = response.get("follow_up")
+    response["follow_up"] = None if follow_up is None else str(follow_up)
+
+    response["intent"] = str(response.get("intent") or "fallback")
+    try:
+        response["confidence"] = float(response.get("confidence", 0.0))
+    except (TypeError, ValueError):
+        response["confidence"] = 0.0
+
+    detected_language = str(response.get("detected_language") or "").strip()
+    response["detected_language"] = detected_language or "en"
+    response["entities"] = response.get("entities") if isinstance(response.get("entities"), dict) else {}
+    response["source"] = str(response.get("source") or "local-chatbot")
+
+    return response
+
+
+def has_contextual_active_pin_signal(question: str, active_pin: dict | None) -> bool:
+    if not active_pin:
+        return False
+    lowered = str(question or "").lower()
+    tokens = set(lowered.split())
+
+    if {"this", "that", "it", "here", "there"} & tokens:
+        return True
+
+    return any(phrase in lowered for phrase in FOLLOWUP_ACTIVE_PIN_PHRASES)
+
+
+def looks_like_real_query(question: str) -> bool:
+    lowered = str(question or "").lower()
+    tokens = set(re.findall(r"[a-z0-9]+", lowered))
+    if len(tokens) < 3:
+        return False
+    return bool(tokens & SOFT_QUERY_HINTS)
 
 
 class RouteRequest(BaseModel):
@@ -89,69 +181,75 @@ def route(request: RouteRequest):
 def ask(request: AskRequest):
     # --- Gatekeeping layer ---
     session_id = request.session_id or "default"
+    contextual_active_pin = has_contextual_active_pin_signal(request.question, request.active_pin)
 
     # 1. Rate limit
     if not limiter.is_allowed(session_id):
         remaining = limiter.get_remaining_time(session_id)
-        return {
+        return normalize_ask_response({
             "answer": f"Please wait {remaining}s before sending another message.",
             "locations": [],
             "actions": [],
             "follow_up": None,
             "intent": "rate_limited",
-        }
+            "confidence": 0.0,
+        })
 
     # 2. Profanity filter
     if profanity_filter.contains_profanity(request.question):
-        return {
+        return normalize_ask_response({
             "answer": intent_classifier.profanity_response(),
             "locations": [],
             "actions": [],
             "follow_up": None,
             "intent": "profanity",
-        }
+            "confidence": 0.0,
+        })
 
     # 3. Gibberish + intent classification
-    if gibberish_detector.is_gibberish(request.question):
-        return {
+    if gibberish_detector.is_gibberish(request.question) and not contextual_active_pin:
+        return normalize_ask_response({
             "answer": intent_classifier.nonsense_response(),
             "locations": [],
             "actions": [],
             "follow_up": None,
             "intent": "nonsense",
-        }
+            "confidence": 0.0,
+        })
 
     analysis = intent_classifier.analyze(request.question)
     if analysis["intent"] == "greeting":
-        return {
+        return normalize_ask_response({
             "answer": intent_classifier.greeting_response(),
             "locations": [],
             "actions": [],
             "follow_up": "Ask me about beaches, surfing spots, or where to stay!",
             "intent": "greeting",
-        }
+            "confidence": 1.0,
+        })
 
-    if not analysis["is_valid"]:
-        return {
+    if not analysis["is_valid"] and not contextual_active_pin and not looks_like_real_query(request.question):
+        return normalize_ask_response({
             "answer": intent_classifier.nonsense_response(),
             "locations": [],
             "actions": [],
             "follow_up": None,
             "intent": "nonsense",
-        }
+            "confidence": 0.0,
+        })
 
     # --- Semantic cache lookup ---
     cached = semantic_cache.get(request.question)
     if cached:
-        return cached
+        return normalize_ask_response(cached)
 
     # --- Proceed to chatbot ---
-    response = answer_question(
+    response = normalize_ask_response(answer_question(
         request.question,
         active_pin=request.active_pin,
         session_id=request.session_id,
         preferences=request.preferences,
-    )
+    ))
 
     # --- Cache the result ---
     semantic_cache.set(request.question, response)

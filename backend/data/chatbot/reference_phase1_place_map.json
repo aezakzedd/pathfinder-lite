@@ -1,0 +1,5368 @@
+[
+  {
+    "place_name_canonical": "2838 Tea and Cafe",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.659534,
+      "lng": 124.371122
+    },
+    "variants": [
+      "2838 Tea and Cafe"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "2838 Tea & Cafe - Francia",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.585508,
+      "lng": 124.238042
+    },
+    "variants": [
+      "2838 Tea & Cafe - Francia"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "3s Pares Marias",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.642624,
+      "lng": 124.299636
+    },
+    "variants": [
+      "3s Pares Marias"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Abihao Point",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.655209,
+      "lng": 124.399298
+    },
+    "variants": [
+      "Abihao Point"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Alon Stay",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.689745,
+      "lng": 124.393271
+    },
+    "variants": [
+      "Alon Stay"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Amenia Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.573293,
+      "lng": 124.139461
+    },
+    "variants": [
+      "Amenia Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Andercas",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.045418,
+      "lng": 124.168878
+    },
+    "variants": [
+      "Andercas"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Angel's Pizza",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.58399,
+      "lng": 124.234172
+    },
+    "variants": [
+      "Angel's Pizza"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Angeles Homestay",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.907666,
+      "lng": 124.295564
+    },
+    "variants": [
+      "Angeles Homestay"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Anika Food Corner",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.57904,
+      "lng": 124.228724
+    },
+    "variants": [
+      "Anika Food Corner"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Appleberry",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.578877,
+      "lng": 124.231251
+    },
+    "variants": [
+      "Appleberry"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "ARDCI Cafe",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.581459,
+      "lng": 124.230093
+    },
+    "variants": [
+      "ARDCI Cafe"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "ARDCI Corporate Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.581255,
+      "lng": 124.230115
+    },
+    "variants": [
+      "ARDCI Corporate Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 4,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "ARDCI Skydeck Lounge",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.581368,
+      "lng": 124.229873
+    },
+    "variants": [
+      "ARDCI Skydeck Lounge"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Ba-haw Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.75388,
+      "lng": 124.383207
+    },
+    "variants": [
+      "Ba-haw Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Bagamanoc Guest House",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.941557,
+      "lng": 124.286973
+    },
+    "variants": [
+      "Bagamanoc Guest House"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Bagasbas Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.579008,
+      "lng": 124.124975
+    },
+    "variants": [
+      "Bagasbas Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Balacay Point",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.705435,
+      "lng": 124.395307
+    },
+    "variants": [
+      "Balacay Point"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 5,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Balay Victoria",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.043968,
+      "lng": 124.17152
+    },
+    "variants": [
+      "Balay Victoria"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Balin's Seaview Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.572623,
+      "lng": 124.139937
+    },
+    "variants": [
+      "Balin's Seaview Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Balongbong Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.621559,
+      "lng": 124.294858
+    },
+    "variants": [
+      "Balongbong Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Banquerohan Bridge",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.894381,
+      "lng": 124.30838
+    },
+    "variants": [
+      "Banquerohan Bridge"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Bantayaw Point",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.83143,
+      "lng": 124.409607
+    },
+    "variants": [
+      "Bantayaw Point"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Barefoot Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.551155,
+      "lng": 124.154476
+    },
+    "variants": [
+      "Barefoot Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Batag Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.540204,
+      "lng": 124.163741
+    },
+    "variants": [
+      "Batag Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Batalay Mangrove Eco Park",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.592937,
+      "lng": 124.3088
+    },
+    "variants": [
+      "Batalay Mangrove Eco Park"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Bestea X E-fren Fries",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.779501,
+      "lng": 124.391298
+    },
+    "variants": [
+      "Bestea X E-fren Fries"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Bhem's Kitchen",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.048228,
+      "lng": 124.169157
+    },
+    "variants": [
+      "Bhem's Kitchen"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Binurong Point",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.668995,
+      "lng": 124.414498
+    },
+    "variants": [
+      "Binurong Point"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 16,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Bitaog Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.024435,
+      "lng": 124.037361
+    },
+    "variants": [
+      "Bitaog Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Bitaogan Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.558335,
+      "lng": 124.318504
+    },
+    "variants": [
+      "Bitaogan Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Black Alley",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.87441,
+      "lng": 124.309911
+    },
+    "variants": [
+      "Black Alley"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Blossoms Restaurant",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.581742,
+      "lng": 124.232281
+    },
+    "variants": [
+      "Blossoms Restaurant"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Blue Café",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.581176,
+      "lng": 124.228245
+    },
+    "variants": [
+      "Blue Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Blue Horizon Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.564625,
+      "lng": 124.145639
+    },
+    "variants": [
+      "Blue Horizon Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Bote Lighthouse",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.559809,
+      "lng": 124.325487
+    },
+    "variants": [
+      "Bote Lighthouse"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 5,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Boto Ni Korakog",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.953737,
+      "lng": 124.287585
+    },
+    "variants": [
+      "Boto Ni Korakog"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Boto Ni Korakog (Fertility Island)",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.953737,
+      "lng": 124.287585
+    },
+    "variants": [
+      "Boto Ni Korakog (Fertility Island)"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Buddy's Mami House",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.581307,
+      "lng": 124.213424
+    },
+    "variants": [
+      "Buddy's Mami House"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cafe De Au",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.581122,
+      "lng": 124.232387
+    },
+    "variants": [
+      "Cafe De Au"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cafe Norte",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.586446,
+      "lng": 124.238513
+    },
+    "variants": [
+      "Cafe Norte"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cafe Ubaldita",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.584173,
+      "lng": 124.207542
+    },
+    "variants": [
+      "Cafe Ubaldita"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cagnipa Cove",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.0603,
+      "lng": 124.127406
+    },
+    "variants": [
+      "Cagnipa Cove"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cagnipa Rolling Hills",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.058968,
+      "lng": 124.128705
+    },
+    "variants": [
+      "Cagnipa Rolling Hills"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 5,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cagraray Island",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.617149,
+      "lng": 124.349482
+    },
+    "variants": [
+      "Cagraray Island"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Campilan Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.06499,
+      "lng": 124.175032
+    },
+    "variants": [
+      "Campilan Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 6,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Camping Herold Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.599401,
+      "lng": 124.054386
+    },
+    "variants": [
+      "Camping Herold Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Canapino Diner",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.572931,
+      "lng": 124.140441
+    },
+    "variants": [
+      "Canapino Diner"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Caramoran",
+    "mapping_status": "unresolved",
+    "best_coordinates": null,
+    "variants": [
+      "Caramoran"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": false,
+      "coordinate_sources": []
+    }
+  },
+  {
+    "place_name_canonical": "Carangyan Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.055887,
+      "lng": 124.154469
+    },
+    "variants": [
+      "Carangyan Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 4,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Carorian Wonders",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.580256,
+      "lng": 124.342316
+    },
+    "variants": [
+      "Carorian Wonders"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Carrie's Pizza, Pasta and More",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.580776,
+      "lng": 124.214292
+    },
+    "variants": [
+      "Carrie's Pizza, Pasta and More"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Casa Dueña Travellers Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.599402,
+      "lng": 124.095959
+    },
+    "variants": [
+      "Casa Dueña Travellers Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Casa Remedios Bed & Breakfast",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.579229,
+      "lng": 124.216675
+    },
+    "variants": [
+      "Casa Remedios Bed & Breakfast"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Catanduanes Halfway Resort Hotel",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.067249,
+      "lng": 124.225646
+    },
+    "variants": [
+      "Catanduanes Halfway Resort Hotel"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Catanduanes Midtown Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.582964,
+      "lng": 124.232562
+    },
+    "variants": [
+      "Catanduanes Midtown Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 4,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cathy's Restaurant and Catering Services",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.585545,
+      "lng": 124.237172
+    },
+    "variants": [
+      "Cathy's Restaurant and Catering Services"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cathy's Spring Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.828329,
+      "lng": 124.267643
+    },
+    "variants": [
+      "Cathy's Spring Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "CJ's Travellers Inn",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.779611,
+      "lng": 124.390286
+    },
+    "variants": [
+      "CJ's Travellers Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Coco Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.981994,
+      "lng": 124.130975
+    },
+    "variants": [
+      "Coco Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Codon Lighthouse",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.66291,
+      "lng": 124.02606
+    },
+    "variants": [
+      "Codon Lighthouse"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cogon Hills",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.870806,
+      "lng": 124.406794
+    },
+    "variants": [
+      "Cogon Hills"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Costa Marina",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.954434,
+      "lng": 124.284011
+    },
+    "variants": [
+      "Costa Marina"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Cumagat Beach & Hilltop Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.949631,
+      "lng": 124.350223
+    },
+    "variants": [
+      "Cumagat Beach & Hilltop Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "DAKILA' Café",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.579209,
+      "lng": 124.227584
+    },
+    "variants": [
+      "DAKILA' Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Dayhagan Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.972487,
+      "lng": 124.335264
+    },
+    "variants": [
+      "Dayhagan Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Dela Villa's Balacay Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.703862,
+      "lng": 124.387969
+    },
+    "variants": [
+      "Dela Villa's Balacay Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Diocesan Shrine of the Holy Cross",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.588668,
+      "lng": 124.31519
+    },
+    "variants": [
+      "Diocesan Shrine of the Holy Cross"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "DON N ' MALYN'S Carinderia",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.780174,
+      "lng": 124.39144
+    },
+    "variants": [
+      "DON N ' MALYN'S Carinderia"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "DRUNKBOX",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.581211,
+      "lng": 124.231436
+    },
+    "variants": [
+      "DRUNKBOX"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "E-Crown Hotel",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.593886,
+      "lng": 124.256174
+    },
+    "variants": [
+      "E-Crown Hotel"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "E-Lounge Resto Bar",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.941527,
+      "lng": 124.288536
+    },
+    "variants": [
+      "E-Lounge Resto Bar"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "East Coast Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.64513,
+      "lng": 124.346018
+    },
+    "variants": [
+      "East Coast Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Emerich Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.871908,
+      "lng": 124.309752
+    },
+    "variants": [
+      "Emerich Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Emmalyn's Paradise Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.600789,
+      "lng": 124.060487
+    },
+    "variants": [
+      "Emmalyn's Paradise Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Emmans Eatery",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.941215,
+      "lng": 124.288182
+    },
+    "variants": [
+      "Emmans Eatery"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Enerking Garden Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.906842,
+      "lng": 124.300819
+    },
+    "variants": [
+      "Enerking Garden Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Ericsson Beach",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.569451,
+      "lng": 124.142823
+    },
+    "variants": [
+      "Ericsson Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Ernest Eatery",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.906364,
+      "lng": 124.303519
+    },
+    "variants": [
+      "Ernest Eatery"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Fernando's Asian Cuisine",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.581024,
+      "lng": 124.228436
+    },
+    "variants": [
+      "Fernando's Asian Cuisine"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Fleur de Lilies Glamping Farm",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.522815,
+      "lng": 124.203195
+    },
+    "variants": [
+      "Fleur de Lilies Glamping Farm"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 4,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Gigmoto Inasal",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.780796,
+      "lng": 124.391882
+    },
+    "variants": [
+      "Gigmoto Inasal"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Gottsaa Milktea House",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.581633,
+      "lng": 124.213686
+    },
+    "variants": [
+      "Gottsaa Milktea House"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "H20 Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.855343,
+      "lng": 124.30744
+    },
+    "variants": [
+      "H20 Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Hamapayo Pension House",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.58892,
+      "lng": 124.208395
+    },
+    "variants": [
+      "Hamapayo Pension House"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Happy Island Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.594221,
+      "lng": 124.261117
+    },
+    "variants": [
+      "Happy Island Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Haring Manok - Calatagan",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.584064,
+      "lng": 124.208601
+    },
+    "variants": [
+      "Haring Manok - Calatagan"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Haring Manok - Rawis",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.585908,
+      "lng": 124.237634
+    },
+    "variants": [
+      "Haring Manok - Rawis"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Hideout Bar and Lounge",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.584336,
+      "lng": 124.207493
+    },
+    "variants": [
+      "Hideout Bar and Lounge"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Hinagasan Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.600609,
+      "lng": 124.224217
+    },
+    "variants": [
+      "Hinagasan Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 4,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Hinik-Hinik Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.019267,
+      "lng": 124.231355
+    },
+    "variants": [
+      "Hinik-Hinik Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 4,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Hiyop Highlands",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.069834,
+      "lng": 124.195156
+    },
+    "variants": [
+      "Hiyop Highlands"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 3,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Hot Palace",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.781122,
+      "lng": 124.390533
+    },
+    "variants": [
+      "Hot Palace"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Isla Be Back Staycation",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.58574,
+      "lng": 124.21644
+    },
+    "variants": [
+      "Isla Be Back Staycation"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Isla Bistro Café",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.872557,
+      "lng": 124.308836
+    },
+    "variants": [
+      "Isla Bistro Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Island Homestay",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.570723,
+      "lng": 124.203757
+    },
+    "variants": [
+      "Island Homestay"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Jac's Eatery",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.87175,
+      "lng": 124.311472
+    },
+    "variants": [
+      "Jac's Eatery"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Jillian's Kitchenette",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.581343,
+      "lng": 124.213647
+    },
+    "variants": [
+      "Jillian's Kitchenette"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "JM Pension House",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.578997,
+      "lng": 124.224741
+    },
+    "variants": [
+      "JM Pension House"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Jo Surf Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.688158,
+      "lng": 124.395916
+    },
+    "variants": [
+      "Jo Surf Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Jollibee",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.581176,
+      "lng": 124.228245
+    },
+    "variants": [
+      "Jollibee"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Kape't Tagpuan Sa Isla",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.607683,
+      "lng": 124.299815
+    },
+    "variants": [
+      "Kape't Tagpuan Sa Isla"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 3,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Kasa Inndustria Mountain Resort",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.580628,
+      "lng": 124.191215
+    },
+    "variants": [
+      "Kasa Inndustria Mountain Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Kasiram Grill and Restaurant",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.584005,
+      "lng": 124.208343
+    },
+    "variants": [
+      "Kasiram Grill and Restaurant"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Kemji Garden & Resto",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.58109,
+      "lng": 124.215057
+    },
+    "variants": [
+      "Kemji Garden & Resto"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Kibanggas Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.645637,
+      "lng": 124.037603
+    },
+    "variants": [
+      "Kibanggas Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Kubo Suzara",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.887408,
+      "lng": 124.351992
+    },
+    "variants": [
+      "Kubo Suzara"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Kuwago's Restobar",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.586178,
+      "lng": 124.204864
+    },
+    "variants": [
+      "Kuwago's Restobar"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 3,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "L'Astrolabe",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.690957,
+      "lng": 124.388565
+    },
+    "variants": [
+      "L'Astrolabe"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "La Playa Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.5692,
+      "lng": 124.14289
+    },
+    "variants": [
+      "La Playa Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "La Prisa Campsite",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.044124,
+      "lng": 124.245571
+    },
+    "variants": [
+      "La Prisa Campsite"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 3,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Liebe Max Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.601924,
+      "lng": 124.08432
+    },
+    "variants": [
+      "Liebe Max Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Linampawan Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.014603,
+      "lng": 124.238823
+    },
+    "variants": [
+      "Linampawan Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Little Bliss Cafe",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.607171,
+      "lng": 124.29862
+    },
+    "variants": [
+      "Little Bliss Cafe"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Liz & Bel Café",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.599282,
+      "lng": 124.095649
+    },
+    "variants": [
+      "Liz & Bel Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Liz & Bel Tourist Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.599279,
+      "lng": 124.095687
+    },
+    "variants": [
+      "Liz & Bel Tourist Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Lolong Point Lighthouse",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.950359,
+      "lng": 124.354305
+    },
+    "variants": [
+      "Lolong Point Lighthouse"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "LouCa Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.54854,
+      "lng": 124.157695
+    },
+    "variants": [
+      "LouCa Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 3,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Luyang Cave",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.605723,
+      "lng": 124.13509
+    },
+    "variants": [
+      "Luyang Cave"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 5,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Macutal Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.679963,
+      "lng": 124.368443
+    },
+    "variants": [
+      "Macutal Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 4,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Majestic Puraran Beach Resort",
+    "mapping_status": "unresolved",
+    "best_coordinates": {
+      "lat": 13.68941,
+      "lng": 124.394827
+    },
+    "variants": [
+      "Majestic Puraran Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mamangal Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.555008,
+      "lng": 124.149231
+    },
+    "variants": [
+      "Mamangal Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 6,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mamangal Beach Resort",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.556366,
+      "lng": 124.148856
+    },
+    "variants": [
+      "Mamangal Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mambang Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.05239,
+      "lng": 124.16012
+    },
+    "variants": [
+      "Mambang Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Manuria Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.899928,
+      "lng": 124.363212
+    },
+    "variants": [
+      "Manuria Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Marem Pension House",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.585028,
+      "lng": 124.236164
+    },
+    "variants": [
+      "Marem Pension House"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Maribina Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.601709,
+      "lng": 124.270695
+    },
+    "variants": [
+      "Maribina Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 9,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Marilima Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.538907,
+      "lng": 124.168046
+    },
+    "variants": [
+      "Marilima Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Maturin Rock Formation",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.112195,
+      "lng": 124.28345
+    },
+    "variants": [
+      "Maturin Rock Formation"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mayan Café",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.583952,
+      "lng": 124.234185
+    },
+    "variants": [
+      "Mayan Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mcdonald's",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.579765,
+      "lng": 124.228308
+    },
+    "variants": [
+      "Mcdonald’s"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Melfel Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.779121,
+      "lng": 124.390758
+    },
+    "variants": [
+      "Melfel Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Miekoys Pizza",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.587613,
+      "lng": 124.239449
+    },
+    "variants": [
+      "Miekoys Pizza"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Miguilas Inn and Resto Bar",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.987552,
+      "lng": 124.134865
+    },
+    "variants": [
+      "Miguilas Inn and Resto Bar"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Minaabat Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.854511,
+      "lng": 124.418512
+    },
+    "variants": [
+      "Minaabat Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Minabobo Creek Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.84708,
+      "lng": 124.134865
+    },
+    "variants": [
+      "Minabobo Creek Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mizuna Restaurant",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.582915,
+      "lng": 124.213353
+    },
+    "variants": [
+      "Mizuna Restaurant"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Monj Bistro",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.585893,
+      "lng": 124.237582
+    },
+    "variants": [
+      "Monj Bistro"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Monte Cielo",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.566109,
+      "lng": 124.145189
+    },
+    "variants": [
+      "Monte Cielo"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Moonwalk Villa Resort",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.584791,
+      "lng": 124.22012
+    },
+    "variants": [
+      "Moonwalk Villa Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mount Cagmasoso",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.62348,
+      "lng": 124.132864
+    },
+    "variants": [
+      "Mount Cagmasoso"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mount Pinagkaayonan",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.606679,
+      "lng": 124.278242
+    },
+    "variants": [
+      "Mount Pinagkaayonan"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mount Pinagkaayonan (Lantad)",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.606679,
+      "lng": 124.278242
+    },
+    "variants": [
+      "Mount Pinagkaayonan (Lantad)"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Mt. Sadab",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.885858,
+      "lng": 124.161791
+    },
+    "variants": [
+      "Mt. Sadab"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Muraw Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.057363,
+      "lng": 124.129303
+    },
+    "variants": [
+      "Muraw Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Museo De Catanduanes",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.607199,
+      "lng": 124.240179
+    },
+    "variants": [
+      "Museo De Catanduanes"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 6,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Nahulugan Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.78862,
+      "lng": 124.367737
+    },
+    "variants": [
+      "Nahulugan Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 6,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Natotoo Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.879263,
+      "lng": 124.152987
+    },
+    "variants": [
+      "Natotoo Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Nicole's Grill Resto Bar",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.570704,
+      "lng": 124.142135
+    },
+    "variants": [
+      "Nicole's Grill Resto Bar"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Niño Bistro",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.579295,
+      "lng": 124.228029
+    },
+    "variants": [
+      "Niño Bistro"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Nitto Lodge",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.5833,
+      "lng": 124.205449
+    },
+    "variants": [
+      "Nitto Lodge"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 4,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "North Travel Lodge",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.04225,
+      "lng": 124.170843
+    },
+    "variants": [
+      "North Travel Lodge"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Nupa Green Lagoon",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.757143,
+      "lng": 124.40409
+    },
+    "variants": [
+      "Nupa Green Lagoon"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Nyxx & Match Café",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.660709,
+      "lng": 124.368938
+    },
+    "variants": [
+      "Nyxx & Match Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Oliver's Riff Mamangal Beach Resort",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.555836,
+      "lng": 124.14869
+    },
+    "variants": [
+      "Oliver's Riff Mamangal Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "On D’ Wings - Calatagan",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.591324,
+      "lng": 124.208163
+    },
+    "variants": [
+      "On D’ Wings - Calatagan"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "On D' Wings - Francia",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.586624,
+      "lng": 124.238535
+    },
+    "variants": [
+      "On D' Wings - Francia"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "One Two Sawa Eatery",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.584357,
+      "lng": 124.231879
+    },
+    "variants": [
+      "One Two Sawa Eatery"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Our Lady of Mount Carmel Parish Church",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.893931,
+      "lng": 124.371738
+    },
+    "variants": [
+      "Our Lady of Mount Carmel Parish Church"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Our Lady of Sorrows Parish Church",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.61159,
+      "lng": 124.093488
+    },
+    "variants": [
+      "Our Lady of Sorrows Parish Church"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Our Lady of the Assumption Parish Church",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.870936,
+      "lng": 124.308357
+    },
+    "variants": [
+      "Our Lady of the Assumption Parish Church"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Oyana Café",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.581512,
+      "lng": 124.232837
+    },
+    "variants": [
+      "Oyana Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Paday Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.961656,
+      "lng": 124.272936
+    },
+    "variants": [
+      "Paday Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Palestina Rolling Hills",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.978003,
+      "lng": 124.328999
+    },
+    "variants": [
+      "Palestina Rolling Hills"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Palumbanes Island",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.024205,
+      "lng": 124.043353
+    },
+    "variants": [
+      "Palumbanes Island"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 5,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Pandan Lighthouse",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.065381,
+      "lng": 124.1748
+    },
+    "variants": [
+      "Pandan Lighthouse"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Pandan Seashore Park",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.052563,
+      "lng": 124.167534
+    },
+    "variants": [
+      "Pandan Seashore Park"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Panyero Café",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.907879,
+      "lng": 124.299676
+    },
+    "variants": [
+      "Panyero Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Paraiso ni Honesto",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.083944,
+      "lng": 124.193838
+    },
+    "variants": [
+      "Paraiso ni Honesto"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Peymus Resto",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.579402,
+      "lng": 124.227622
+    },
+    "variants": [
+      "Peymus Resto"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Poseidon Cove Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.56392,
+      "lng": 124.332249
+    },
+    "variants": [
+      "Poseidon Cove Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Puraran Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.691946,
+      "lng": 124.398818
+    },
+    "variants": [
+      "Puraran Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 22,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Puraran Surf Resort",
+    "mapping_status": "unresolved",
+    "best_coordinates": {
+      "lat": 13.689923,
+      "lng": 124.394303
+    },
+    "variants": [
+      "Puraran Surf Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Pusgo Island",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.978581,
+      "lng": 124.323673
+    },
+    "variants": [
+      "Pusgo Island"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Queen Maricel Inn",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.57803,
+      "lng": 124.216374
+    },
+    "variants": [
+      "Queen Maricel Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Queen Maricel Inn Ramen House",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.578005,
+      "lng": 124.216265
+    },
+    "variants": [
+      "Queen Maricel Inn Ramen House"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Rakdell Inn",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.583462,
+      "lng": 124.232501
+    },
+    "variants": [
+      "Rakdell Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Regina's Beachfront Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.539766,
+      "lng": 124.164884
+    },
+    "variants": [
+      "Regina's Beachfront Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Renel's Travellers Inn",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.579801,
+      "lng": 124.228025
+    },
+    "variants": [
+      "Renel's Travellers Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Rhaj Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.579106,
+      "lng": 124.226282
+    },
+    "variants": [
+      "Rhaj Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 4,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Rojazz Café",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.58438,
+      "lng": 124.234717
+    },
+    "variants": [
+      "Rojazz Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Saint Ignatius of Loyola Parish Church",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.04461,
+      "lng": 124.168783
+    },
+    "variants": [
+      "Saint Ignatius of Loyola Parish Church"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Sakahon Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.561646,
+      "lng": 124.329513
+    },
+    "variants": [
+      "Sakahon Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "San Miguel River Park",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.705961,
+      "lng": 124.281109
+    },
+    "variants": [
+      "San Miguel River Park"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "San Pedro Calungsod Parish",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.833944,
+      "lng": 124.399997
+    },
+    "variants": [
+      "San Pedro Calungsod Parish"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Saturday’s Restaurant",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.58102,
+      "lng": 124.214599
+    },
+    "variants": [
+      "Saturday’s Restaurant"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Sea Breeze 2001",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.581391,
+      "lng": 124.232786
+    },
+    "variants": [
+      "Sea Breeze 2001"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Sitio Concepcion",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.062874,
+      "lng": 124.219578
+    },
+    "variants": [
+      "Sitio Concepcion"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Sizzling House",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.580889,
+      "lng": 124.228616
+    },
+    "variants": [
+      "Sizzling House"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Sofeca Travellers Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.872631,
+      "lng": 124.31609
+    },
+    "variants": [
+      "Sofeca Travellers Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Solong Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.654843,
+      "lng": 124.293186
+    },
+    "variants": [
+      "Solong Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "St. Anthony of Padua Parish Church",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.596889,
+      "lng": 124.28389
+    },
+    "variants": [
+      "St. Anthony of Padua Parish Church"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "St. John the Baptist Church",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.610733,
+      "lng": 124.297035
+    },
+    "variants": [
+      "St. John the Baptist Church"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Stanza De Benedicto",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.682383,
+      "lng": 124.406017
+    },
+    "variants": [
+      "Stanza De Benedicto"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Sugod Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.884837,
+      "lng": 124.131271
+    },
+    "variants": [
+      "Sugod Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Summit View Park",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.790842,
+      "lng": 124.269964
+    },
+    "variants": [
+      "Summit View Park"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Sunset Coast Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.552637,
+      "lng": 124.155694
+    },
+    "variants": [
+      "Sunset Coast Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Talaga Pebble Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.708497,
+      "lng": 124.096483
+    },
+    "variants": [
+      "Talaga Pebble Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Talahid Falls",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.792831,
+      "lng": 124.140306
+    },
+    "variants": [
+      "Talahid Falls"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Taller's Brew",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.595368,
+      "lng": 124.204987
+    },
+    "variants": [
+      "Taller's Brew",
+      "Taller’s Brew"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Tampad Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.518764,
+      "lng": 124.205952
+    },
+    "variants": [
+      "Tampad Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Tampad Beach Resort",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.519177,
+      "lng": 124.205936
+    },
+    "variants": [
+      "Tampad Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Tandu Coffee",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.582914,
+      "lng": 124.232506
+    },
+    "variants": [
+      "Tandu Coffee"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Tapsihan sa Ilaya",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.86721,
+      "lng": 124.308767
+    },
+    "variants": [
+      "Tapsihan sa Ilaya"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Tarahid KTV Bar",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.912122,
+      "lng": 124.304876
+    },
+    "variants": [
+      "Tarahid KTV Bar"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "TasTea",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.65949,
+      "lng": 124.371092
+    },
+    "variants": [
+      "TasTea"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Teaholic",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.57864,
+      "lng": 124.231282
+    },
+    "variants": [
+      "Teaholic"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "The Hungry Bar",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.585364,
+      "lng": 124.238128
+    },
+    "variants": [
+      "The Hungry Bar"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "The Lumber Hotel",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.592218,
+      "lng": 124.248449
+    },
+    "variants": [
+      "The Lumber Hotel"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 3,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "The Prime Resto Bar",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.578715,
+      "lng": 124.231355
+    },
+    "variants": [
+      "The Prime Resto Bar"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "The Rezidence",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.910962,
+      "lng": 124.304415
+    },
+    "variants": [
+      "The Rezidence"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Thirstea",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.580947,
+      "lng": 124.228556
+    },
+    "variants": [
+      "Thirstea"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 2,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Thirstea - Virac Town Center",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.580913,
+      "lng": 124.228585
+    },
+    "variants": [
+      "Thirstea - Virac Town Center"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Tignob Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.018107,
+      "lng": 124.022598
+    },
+    "variants": [
+      "Tignob Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Timo-Tea Milktea & Coffee Hub",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.580707,
+      "lng": 124.232227
+    },
+    "variants": [
+      "Timo-Tea Milktea &Coffee Hub"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Titaay Surfers Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.688946,
+      "lng": 124.394266
+    },
+    "variants": [
+      "Titaay Surfers Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 3,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Torres Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.894428,
+      "lng": 124.371857
+    },
+    "variants": [
+      "Torres Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Toytoy Beach",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.996104,
+      "lng": 124.130756
+    },
+    "variants": [
+      "Toytoy Beach"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Tuwad-Tuwadan Blue Lagoon",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.058633,
+      "lng": 124.126643
+    },
+    "variants": [
+      "Tuwad-Tuwadan Blue Lagoon"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 8,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Twin Bar & Café",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.578752,
+      "lng": 124.229929
+    },
+    "variants": [
+      "Twin Bar & Café"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Twin Rock Beach Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.522663,
+      "lng": 124.212691
+    },
+    "variants": [
+      "Twin Rock Beach Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json",
+        "new_entries.json"
+      ],
+      "row_count": 16,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Villa Amacepia Resort",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.86642,
+      "lng": 124.308515
+    },
+    "variants": [
+      "Villa Amacepia Resort"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Villa Andrea Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.626112,
+      "lng": 124.333939
+    },
+    "variants": [
+      "Villa Andrea Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Villa Felina",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.942121,
+      "lng": 124.28617
+    },
+    "variants": [
+      "Villa Felina"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Villa Toledo Travel Lodge",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.584315,
+      "lng": 124.233798
+    },
+    "variants": [
+      "Villa Toledo Travel Lodge"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Virac Airport",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.579601,
+      "lng": 124.211843
+    },
+    "variants": [
+      "Virac Airport"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 13,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Virac Hometel",
+    "mapping_status": "config_only",
+    "best_coordinates": {
+      "lat": 13.581798,
+      "lng": 124.226959
+    },
+    "variants": [
+      "Virac Hometel"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": false,
+      "has_config_match": true,
+      "coordinate_sources": [
+        "config",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Virac Nightlife",
+    "mapping_status": "unresolved",
+    "best_coordinates": null,
+    "variants": [
+      "Virac Nightlife"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 8,
+      "has_geo_match": false,
+      "has_config_match": false,
+      "coordinate_sources": []
+    }
+  },
+  {
+    "place_name_canonical": "Virac Public Market",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.578202,
+      "lng": 124.228686
+    },
+    "variants": [
+      "Virac Public Market"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 15,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Virac Town Center",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.579951,
+      "lng": 124.228551
+    },
+    "variants": [
+      "Virac Town Center"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "dataset.json"
+      ],
+      "row_count": 22,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Wuppertaler Travellers Inn",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 13.598845,
+      "lng": 124.098919
+    },
+    "variants": [
+      "Wuppertaler Travellers Inn"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  },
+  {
+    "place_name_canonical": "Yabu-Yabuhan",
+    "mapping_status": "geo_exact",
+    "best_coordinates": {
+      "lat": 14.063824,
+      "lng": 124.17692
+    },
+    "variants": [
+      "Yabu-Yabuhan"
+    ],
+    "source_provenance": {
+      "source_files": [
+        "new_entries.json"
+      ],
+      "row_count": 1,
+      "has_geo_match": true,
+      "has_config_match": false,
+      "coordinate_sources": [
+        "geojson",
+        "row_coordinates"
+      ]
+    }
+  }
+]
